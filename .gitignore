@@ -13,7 +13,7 @@ api/dist
 web/dist
 
 # prisma
-api/prisma/migrations
+# api/prisma/migrations
 
 # misc
 .DS_Store
