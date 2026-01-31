@@ -7,43 +7,57 @@ datasource db {
 }
 
 model User {
-  id         BigInt    @id @default(autoincrement())
-  telegramId BigInt    @unique @map("telegram_id")
-  firstName  String?   @map("first_name")
-  lastName   String?   @map("last_name")
+  id         BigInt   @id @default(autoincrement())
+  telegramId BigInt   @unique @map("telegram_id")
+  firstName  String?  @map("first_name")
+  lastName   String?  @map("last_name")
   username   String?
-  photoUrl   String?   @map("photo_url")
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
-  profiles   Profile[]
+  photoUrl   String?  @map("photo_url")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  // все профили пользователя (parent/specialist/shop)
+  profiles Profile[] @relation("UserProfiles")
+
 
   @@map("users")
 }
 
 model Profile {
-  id                  BigInt                @id @default(autoincrement())
-  userId              BigInt                @map("user_id")
-  type                profile_type
-  isActive            Boolean               @default(true) @map("is_active")
-  displayName         String?               @map("display_name")
-  avatarUrl           String?               @map("avatar_url")
-  city                String?
-  district            String?
-  ratingAvg           Decimal               @default(0.0) @map("rating_avg") @db.Decimal(2, 1)
-  ratingCount         Int                   @default(0) @map("rating_count")
-  promotedUntil       DateTime?             @map("promoted_until") @db.Timestamptz(6)
-  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime              @default(now()) @map("updated_at") @db.Timestamptz(6)
-  offersAsSpecialist  Offer[]               @relation("SpecialistOffers")
-  parent              ParentProfile?
-  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  requestsAsParent    Request[]             @relation("ParentRequests")
-  reviewsWritten      Review[]              @relation("ReviewFrom")
-  reviewsReceived     Review[]              @relation("ReviewTo")
-  shopProducts        ShopProduct[]
-  shop                ShopProfile?
+  id            BigInt       @id @default(autoincrement())
+  userId        BigInt       @map("user_id")
+  type          profile_type
+  isActive      Boolean      @default(true) @map("is_active")
+  displayName   String?      @map("display_name")
+  avatarUrl     String?      @map("avatar_url")
+  city          String?
+  district      String?
+  ratingAvg     Decimal      @default(0.0) @map("rating_avg") @db.Decimal(2, 1)
+  ratingCount   Int          @default(0) @map("rating_count")
+  promotedUntil DateTime?    @map("promoted_until") @db.Timestamptz(6)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  // связь "профили пользователя"
+  user User @relation("UserProfiles", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+
+  // role-specific таблицы (1:1)
+  parent     ParentProfile?
+  specialist SpecialistProfile?
+  shop       ShopProfile?
+
+  // связи, которые ссылаются на profiles(id)
   specialistPortfolio SpecialistPortfolio[]
-  specialist          SpecialistProfile?
+  shopProducts        ShopProduct[]
+
+  // marketplace
+  requestsAsParent   Request[] @relation("ParentRequests")
+  offersAsSpecialist Offer[]   @relation("SpecialistOffers")
+
+  // reviews
+  reviewsWritten  Review[] @relation("ReviewFrom")
+  reviewsReceived Review[] @relation("ReviewTo")
 
   @@unique([userId, type])
   @@index([type, isActive], map: "idx_profiles_type_active")
@@ -54,7 +68,8 @@ model ParentProfile {
   profileId     BigInt  @id @map("profile_id")
   childrenAges  Json?   @map("children_ages")
   specialWishes String? @map("special_wishes")
-  profile       Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("parent_profiles")
 }
@@ -67,7 +82,8 @@ model SpecialistProfile {
   pricePerHour    Int?    @map("price_per_hour")
   workDistricts   Json?   @map("work_districts")
   about           String?
-  profile         Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("specialist_profiles")
 }
@@ -78,7 +94,8 @@ model SpecialistPortfolio {
   imageUrl  String   @map("image_url")
   sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("specialist_portfolio")
 }
@@ -92,7 +109,8 @@ model ShopProfile {
   workHours   String? @map("work_hours")
   contacts    Json?
   categories  Json?
-  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("shop_profiles")
 }
@@ -108,7 +126,8 @@ model ShopProduct {
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("shop_products")
 }
@@ -127,9 +146,10 @@ model Request {
   completedAt     DateTime?      @map("completed_at") @db.Timestamptz(6)
   createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
-  offers          Offer[]
-  parentProfile   Profile        @relation("ParentRequests", fields: [parentProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  reviews         Review[]
+
+  parentProfile Profile  @relation("ParentRequests", fields: [parentProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  offers        Offer[]
+  reviews       Review[]
 
   @@index([status], map: "idx_requests_status")
   @@map("requests")
@@ -144,8 +164,9 @@ model Offer {
   status              offer_status @default(pending)
   createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
-  request             Request      @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  specialistProfile   Profile      @relation("SpecialistOffers", fields: [specialistProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  request           Request @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  specialistProfile Profile @relation("SpecialistOffers", fields: [specialistProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([requestId, specialistProfileId])
   @@index([requestId], map: "idx_offers_request")
@@ -161,9 +182,10 @@ model Review {
   text          String?
   isHidden      Boolean  @default(false) @map("is_hidden")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  fromProfile   Profile  @relation("ReviewFrom", fields: [fromProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  request       Request? @relation(fields: [requestId], references: [id], onUpdate: NoAction)
-  toProfile     Profile  @relation("ReviewTo", fields: [toProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  fromProfile Profile  @relation("ReviewFrom", fields: [fromProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  toProfile   Profile  @relation("ReviewTo", fields: [toProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  request     Request? @relation(fields: [requestId], references: [id], onUpdate: NoAction)
 
   @@index([toProfileId], map: "idx_reviews_to_profile")
   @@map("reviews")
