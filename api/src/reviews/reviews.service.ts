@@ -1,0 +1,85 @@
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
+import { getActiveProfileOrThrow } from "../common/active-profile";
+
+@Injectable()
+export class ReviewsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(
+    userId: bigint,
+    dto: {
+      toProfileId: string;
+      requestId: string;
+      rating: number;
+      text?: string | null;
+    },
+  ) {
+    const active = await getActiveProfileOrThrow(this.prisma, userId);
+    if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
+
+    if (!dto?.toProfileId) throw new BadRequestException("toProfileId is required");
+    if (!dto?.requestId) throw new BadRequestException("requestId is required");
+    if (!dto?.rating || dto.rating < 1 || dto.rating > 5) throw new BadRequestException("rating must be 1..5");
+
+    const toProfileId = BigInt(dto.toProfileId);
+    const requestId = BigInt(dto.requestId);
+
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException("Request not found");
+    if (request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
+    if (request.status !== "done" || !request.completedAt) throw new BadRequestException("Request is not completed");
+
+    const minAt = new Date(request.completedAt.getTime() + 24 * 60 * 60 * 1000);
+    if (Date.now() < minAt.getTime()) throw new BadRequestException("Review is available 24 hours after completion");
+
+    const existing = await this.prisma.review.findFirst({
+      where: { fromProfileId: active.id, requestId },
+      select: { id: true },
+    });
+    if (existing) throw new BadRequestException("Review already exists for this request");
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const review = await tx.review.create({
+        data: {
+          fromProfileId: active.id,
+          toProfileId,
+          requestId,
+          rating: dto.rating,
+          text: dto.text ?? null,
+        },
+      });
+
+      const agg = await tx.review.aggregate({
+        where: { toProfileId, isHidden: false },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
+
+      const avg = agg._avg.rating ?? 0;
+      const cnt = agg._count.rating ?? 0;
+
+      await tx.profile.update({
+        where: { id: toProfileId },
+        data: {
+          ratingAvg: new Prisma.Decimal(avg),
+          ratingCount: cnt,
+        },
+      });
+
+      return review;
+    });
+
+    return created;
+  }
+
+  async listForProfile(profileId: bigint) {
+    return this.prisma.review.findMany({
+      where: { toProfileId: profileId, isHidden: false },
+      orderBy: { createdAt: "desc" },
+      include: { fromProfile: { select: { id: true, type: true } } },
+    });
+  }
+}
+

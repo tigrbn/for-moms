@@ -46,6 +46,17 @@ CREATE TABLE IF NOT EXISTS profiles (
   UNIQUE(user_id, type)
 );
 
+-- active profile (role switch)
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS active_profile_id BIGINT;
+
+DO $$ BEGIN
+  ALTER TABLE users
+    ADD CONSTRAINT users_active_profile_id_fkey
+    FOREIGN KEY (active_profile_id) REFERENCES profiles(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS parent_profiles (
   profile_id          BIGINT PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
   children_ages       JSONB,

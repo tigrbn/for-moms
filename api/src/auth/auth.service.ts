@@ -70,6 +70,7 @@ export class AuthService {
         city: p.city,
         district: p.district,
       })),
+      activeProfileId: user.activeProfileId ? user.activeProfileId.toString() : null,
     };
   }
 }

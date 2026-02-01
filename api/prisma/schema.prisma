@@ -6,186 +6,210 @@ datasource db {
   provider = "postgresql"
 }
 
-model banners {
+model Banner {
   id         BigInt    @id @default(autoincrement())
   title      String?
-  image_url  String
-  target_url String?
-  is_active  Boolean   @default(true)
+  imageUrl   String    @map("image_url")
+  targetUrl  String?   @map("target_url")
+  isActive   Boolean   @default(true) @map("is_active")
   placements Json?
-  starts_at  DateTime? @db.Timestamptz(6)
-  ends_at    DateTime? @db.Timestamptz(6)
-  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  startsAt   DateTime? @db.Timestamptz(6) @map("starts_at")
+  endsAt     DateTime? @db.Timestamptz(6) @map("ends_at")
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@map("banners")
 }
 
-model offers {
-  id                    BigInt       @id @default(autoincrement())
-  request_id            BigInt
-  specialist_profile_id BigInt
-  price_offer           Int?
-  comment               String?
-  status                offer_status @default(pending)
-  created_at            DateTime     @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime     @default(now()) @db.Timestamptz(6)
-  requests              requests     @relation(fields: [request_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  profiles              profiles     @relation(fields: [specialist_profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model Offer {
+  id                  BigInt      @id @default(autoincrement())
+  requestId           BigInt      @map("request_id")
+  specialistProfileId BigInt      @map("specialist_profile_id")
+  priceOffer          Int?        @map("price_offer")
+  comment             String?
+  status              OfferStatus @default(pending)
+  createdAt           DateTime    @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt           DateTime    @default(now()) @db.Timestamptz(6) @map("updated_at")
 
-  @@unique([request_id, specialist_profile_id])
-  @@index([request_id], map: "idx_offers_request")
+  request             Request     @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  specialistProfile   Profile     @relation(fields: [specialistProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([requestId, specialistProfileId])
+  @@index([requestId], map: "idx_offers_request")
+  @@map("offers")
 }
 
-model parent_profiles {
-  profile_id     BigInt   @id
-  children_ages  Json?
-  special_wishes String?
-  profiles       profiles @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model ParentProfile {
+  profileId     BigInt  @id @map("profile_id")
+  childrenAges  Json?   @map("children_ages")
+  specialWishes String? @map("special_wishes")
+  profile       Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("parent_profiles")
 }
 
-model profiles {
-  id              BigInt        @id @default(autoincrement())
-  user_id         BigInt
-  type            profile_type
-  is_active       Boolean       @default(true)
-  display_name    String?
-  avatar_url      String?
-  city            String?
-  district        String?
-  rating_avg      Decimal       @default(0.0) @db.Decimal(2, 1)
-  rating_count    Int           @default(0)
-  promoted_until  DateTime?     @db.Timestamptz(6)
-  created_at      DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime      @default(now()) @db.Timestamptz(6)
-  
+model Profile {
+  id            BigInt      @id @default(autoincrement())
+  userId        BigInt      @map("user_id")
+  type          ProfileType
+  isActive      Boolean     @default(true) @map("is_active")
+  displayName   String?     @map("display_name")
+  avatarUrl     String?     @map("avatar_url")
+  city          String?
+  district      String?
+  ratingAvg     Decimal     @default(0.0) @db.Decimal(2, 1) @map("rating_avg")
+  ratingCount   Int         @default(0) @map("rating_count")
+  promotedUntil DateTime?   @db.Timestamptz(6) @map("promoted_until")
+  createdAt     DateTime    @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt     DateTime    @default(now()) @db.Timestamptz(6) @map("updated_at")
+
   // Relations
-  user            users         @relation("UserProfiles", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  offers          offers[]
-  parent_profiles parent_profiles?
-  requests        requests[]
-  reviews_from    reviews[]     @relation("reviews_from_profile_idToprofiles")
-  reviews_to      reviews[]     @relation("reviews_to_profile_idToprofiles")
-  shop_products   shop_products[]
-  shop_profiles   shop_profiles?
-  specialist_portfolio specialist_portfolio[]
-  specialist_profiles specialist_profiles?
-  users_as_active users[]       @relation("UserActiveProfile")
+  user               User                @relation("UserProfiles", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  offers             Offer[]
+  parentProfile      ParentProfile?
+  requests           Request[]
+  reviewsFrom        Review[]            @relation("ReviewsFrom")
+  reviewsTo          Review[]            @relation("ReviewsTo")
+  shopProducts       ShopProduct[]
+  shopProfile        ShopProfile?
+  specialistPortfolio SpecialistPortfolio[]
+  specialistProfile  SpecialistProfile?
+  usersAsActive      User[]              @relation("UserActiveProfile")
 
-  @@unique([user_id, type])
-  @@index([type, is_active], map: "idx_profiles_type_active")
+  @@unique([userId, type])
+  @@index([type, isActive], map: "idx_profiles_type_active")
+  @@map("profiles")
 }
 
-model requests {
-  id                BigInt         @id @default(autoincrement())
-  parent_profile_id BigInt
-  category          String
-  child_age         Int?
-  description       String?
-  start_at          DateTime?      @db.Timestamptz(6)
-  duration_min      Int?
-  budget            Int?
-  district          String?
-  status            request_status @default(active)
-  completed_at      DateTime?      @db.Timestamptz(6)
-  created_at        DateTime       @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime       @default(now()) @db.Timestamptz(6)
-  offers            offers[]
-  parent            profiles       @relation(fields: [parent_profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  reviews           reviews[]
+model Request {
+  id              BigInt        @id @default(autoincrement())
+  parentProfileId BigInt        @map("parent_profile_id")
+  category        String
+  childAge        Int?          @map("child_age")
+  description     String?
+  startAt         DateTime?     @db.Timestamptz(6) @map("start_at")
+  durationMin     Int?          @map("duration_min")
+  budget          Int?
+  district        String?
+  status          RequestStatus @default(active)
+  completedAt     DateTime?     @db.Timestamptz(6) @map("completed_at")
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime      @default(now()) @db.Timestamptz(6) @map("updated_at")
+
+  offers          Offer[]
+  parent          Profile       @relation(fields: [parentProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reviews         Review[]
 
   @@index([status], map: "idx_requests_status")
+  @@map("requests")
 }
 
-model reviews {
-  id               BigInt    @id @default(autoincrement())
-  from_profile_id  BigInt
-  to_profile_id    BigInt
-  request_id       BigInt?
-  rating           Int
-  text             String?
-  is_hidden        Boolean   @default(false)
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  
-  from_profile     profiles  @relation("reviews_from_profile_idToprofiles", fields: [from_profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  to_profile       profiles  @relation("reviews_to_profile_idToprofiles", fields: [to_profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  request          requests? @relation(fields: [request_id], references: [id], onUpdate: NoAction)
+model Review {
+  id            BigInt   @id @default(autoincrement())
+  fromProfileId BigInt   @map("from_profile_id")
+  toProfileId   BigInt   @map("to_profile_id")
+  requestId     BigInt?  @map("request_id")
+  rating        Int
+  text          String?
+  isHidden      Boolean  @default(false) @map("is_hidden")
+  createdAt     DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
 
-  @@index([to_profile_id], map: "idx_reviews_to_profile")
+  fromProfile   Profile  @relation("ReviewsFrom", fields: [fromProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  toProfile     Profile  @relation("ReviewsTo", fields: [toProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  request       Request? @relation(fields: [requestId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([toProfileId], map: "idx_reviews_to_profile")
+  @@map("reviews")
 }
 
-model shop_products {
+model ShopProduct {
   id          BigInt   @id @default(autoincrement())
-  profile_id  BigInt
+  profileId   BigInt   @map("profile_id")
   title       String
   description String?
   price       Int?
   category    String?
-  image_urls  Json?
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime @default(now()) @db.Timestamptz(6)
-  shop        profiles @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  imageUrls   Json?    @map("image_urls")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt   DateTime @default(now()) @db.Timestamptz(6) @map("updated_at")
+
+  shop        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("shop_products")
 }
 
-model shop_profiles {
-  profile_id  BigInt   @id
-  shop_name   String?
-  logo_url    String?
+model ShopProfile {
+  profileId   BigInt  @id @map("profile_id")
+  shopName    String? @map("shop_name")
+  logoUrl     String? @map("logo_url")
   description String?
   address     String?
-  work_hours  String?
+  workHours   String? @map("work_hours")
   contacts    Json?
   categories  Json?
-  profile     profiles @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("shop_profiles")
 }
 
-model specialist_portfolio {
-  id         BigInt   @id @default(autoincrement())
-  profile_id BigInt
-  image_url  String
-  sort_order Int      @default(0)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  profile    profiles @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model SpecialistPortfolio {
+  id        BigInt   @id @default(autoincrement())
+  profileId BigInt   @map("profile_id")
+  imageUrl  String   @map("image_url")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("specialist_portfolio")
 }
 
-model specialist_profiles {
-  profile_id       BigInt   @id
-  skills           Json?
-  experience_years Int?
-  age_groups       Json?
-  price_per_hour   Int?
-  work_districts   Json?
-  about            String?
-  profile          profiles @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model SpecialistProfile {
+  profileId       BigInt @id @map("profile_id")
+  skills          Json?
+  experienceYears Int?   @map("experience_years")
+  ageGroups       Json?  @map("age_groups")
+  pricePerHour    Int?   @map("price_per_hour")
+  workDistricts   Json?  @map("work_districts")
+  about           String?
+
+  profile         Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("specialist_profiles")
 }
 
-model users {
-  id               BigInt   @id @default(autoincrement())
-  telegram_id      BigInt   @unique
-  first_name       String?
-  last_name        String?
-  username         String?
-  photo_url        String?
-  created_at       DateTime @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime @default(now()) @db.Timestamptz(6)
-  active_profile_id BigInt?
-  
-  profiles        profiles[] @relation("UserProfiles")
-  active_profile  profiles?  @relation("UserActiveProfile", fields: [active_profile_id], references: [id], onUpdate: NoAction)
+model User {
+  id              BigInt   @id @default(autoincrement())
+  telegramId      BigInt   @unique @map("telegram_id")
+  firstName       String?  @map("first_name")
+  lastName        String?  @map("last_name")
+  username        String?
+  photoUrl        String?  @map("photo_url")
+  createdAt       DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime @default(now()) @db.Timestamptz(6) @map("updated_at")
+  activeProfileId BigInt?  @map("active_profile_id")
+
+  profiles        Profile[] @relation("UserProfiles")
+  activeProfile   Profile?  @relation("UserActiveProfile", fields: [activeProfileId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@map("users")
 }
 
-enum offer_status {
+enum OfferStatus {
   pending
   accepted
   rejected
   cancelled
 }
 
-enum profile_type {
+enum ProfileType {
   parent
   specialist
   shop
 }
 
-enum request_status {
+enum RequestStatus {
   active
   in_progress
   done

@@ -11,7 +11,15 @@ type SessionResponse = {
     username?: string | null;
     photoUrl?: string | null;
   };
-  profiles: any[];
+  profiles: Array<{
+    id: string;
+    type: "parent" | "specialist" | "shop";
+    isActive: boolean;
+    displayName?: string | null;
+    city?: string | null;
+    district?: string | null;
+  }>;
+  activeProfileId: string | null;
 };
 
 function getInitData(): string | null {
