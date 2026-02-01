@@ -25,8 +25,47 @@ type MeResponse = {
 };
 
 type FeedResponse =
-  | { role: "parent"; items: any[] }
-  | { role: "specialist"; items: any[] };
+  | {
+      role: "parent";
+      items: Array<
+        | { kind: "banner"; id: string; imageUrl: string; targetUrl?: string | null }
+        | {
+            kind: "specialist_profile";
+            isPromoted: boolean;
+            profile: {
+              id: string;
+              displayName?: string | null;
+              avatarUrl?: string | null;
+              city?: string | null;
+              district?: string | null;
+              ratingAvg: string;
+              ratingCount: number;
+              pricePerHour?: number | null;
+            };
+          }
+      >;
+    }
+  | {
+      role: "specialist";
+      items: Array<
+        | { kind: "banner"; id: string; imageUrl: string; targetUrl?: string | null }
+        | {
+            kind: "request";
+            request: {
+              id: string;
+              category: string;
+              childAge?: number | null;
+              description?: string | null;
+              startAt?: string | null;
+              durationMin?: number | null;
+              budget?: number | null;
+              district?: string | null;
+              status: "active" | "in_progress" | "done" | "cancelled";
+              createdAt: string;
+            };
+          }
+      >;
+    };
 
 type RequestMineItem = {
   id: string;
@@ -99,6 +138,14 @@ type RequestDetails = {
   }>;
 };
 
+type ReviewListItem = {
+  id: string;
+  rating: number;
+  text?: string | null;
+  createdAt: string;
+  fromProfile: { id: string; type: "parent" | "specialist" | "shop" };
+};
+
 function TopBar(props: { title: string; right?: React.ReactNode; sub?: React.ReactNode }) {
   return (
     <div className="card">
@@ -134,6 +181,10 @@ function formatDate(iso?: string | null) {
   return d.toLocaleString();
 }
 
+function hoursBetween(a: Date, b: Date) {
+  return Math.abs(a.getTime() - b.getTime()) / (1000 * 60 * 60);
+}
+
 export default function App() {
   const { token, clearToken, loading, error } = useTelegramAuth();
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -142,6 +193,8 @@ export default function App() {
 
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [feedError, setFeedError] = useState<string | null>(null);
+  const [feedDistrict, setFeedDistrict] = useState("");
+  const [feedCategory, setFeedCategory] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -191,14 +244,18 @@ export default function App() {
       if (!me?.activeProfileId) return;
       setFeedError(null);
       try {
-        const data = await getJSON<FeedResponse>("/feed", token);
+        const qs = new URLSearchParams();
+        if (feedDistrict.trim()) qs.set("district", feedDistrict.trim());
+        if (feedCategory.trim()) qs.set("category", feedCategory.trim());
+        const path = qs.toString() ? `/feed?${qs.toString()}` : "/feed";
+        const data = await getJSON<FeedResponse>(path, token);
         setFeed(data);
       } catch (e: any) {
         setFeedError(e?.message ?? "Failed to load feed");
       }
     };
     void run();
-  }, [token, me?.activeProfileId]);
+  }, [token, me?.activeProfileId, feedDistrict, feedCategory]);
 
   const ensureActiveProfile = async (profileId: string) => {
     if (!token) return;
@@ -419,10 +476,16 @@ export default function App() {
     const [sending, setSending] = useState(false);
     const [actionErr, setActionErr] = useState<string | null>(null);
 
+    const [reviewRating, setReviewRating] = useState<number>(5);
+    const [reviewText, setReviewText] = useState<string>("");
+    const [reviewSending, setReviewSending] = useState(false);
+    const [reviewOk, setReviewOk] = useState<string | null>(null);
+
     useEffect(() => {
       const run = async () => {
         setErr(null);
         setData(null);
+        setReviewOk(null);
         try {
           const r = await authedGet<RequestDetails>(`/requests/${requestId}`);
           setData(r);
@@ -472,10 +535,43 @@ export default function App() {
       }
     };
 
+    const completeRequest = async () => {
+      setActionErr(null);
+      try {
+        await authedPost(`/requests/${requestId}/complete`, {});
+        const r = await authedGet<RequestDetails>(`/requests/${requestId}`);
+        setData(r);
+      } catch (e: any) {
+        setActionErr(e?.message ?? "Failed to complete request");
+      }
+    };
+
+    const sendReview = async (toProfileId: string) => {
+      setActionErr(null);
+      setReviewOk(null);
+      setReviewSending(true);
+      try {
+        await authedPost(`/reviews`, {
+          toProfileId,
+          requestId,
+          rating: reviewRating,
+          text: reviewText || null,
+        });
+        setReviewOk("Отзыв отправлен");
+      } catch (e: any) {
+        setActionErr(e?.message ?? "Failed to create review");
+      } finally {
+        setReviewSending(false);
+      }
+    };
+
     if (err) return <ErrorBox error={err} />;
     if (!data) return <div className="card">Загрузка…</div>;
 
     const accepted = data.offers.find((o) => o.status === "accepted") ?? null;
+    const completedAt = data.completedAt ? new Date(data.completedAt) : null;
+    const reviewAvailable =
+      data.status === "done" && completedAt ? hoursBetween(new Date(), new Date(completedAt.getTime() + 24 * 60 * 60 * 1000)) >= 0 && Date.now() >= completedAt.getTime() + 24 * 60 * 60 * 1000 : false;
 
     return (
       <div style={{ display: "grid", gap: 12 }}>
@@ -528,6 +624,17 @@ export default function App() {
                 </a>
               )}
             </div>
+
+            {data.status === "in_progress" && (
+              <div className="row" style={{ marginTop: 10 }}>
+                <button className="btn" onClick={() => void completeRequest()} disabled={!accepted}>
+                  Завершить заявку
+                </button>
+                <div className="spacer" />
+                <div className="muted">{accepted ? "После завершения можно оставить отзыв (через 24ч)." : "Сначала нужно принять отклик."}</div>
+              </div>
+            )}
+
             {data.offers.length === 0 && <div className="muted" style={{ marginTop: 8 }}>Пока нет откликов.</div>}
             <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
               {data.offers.map((o) => (
@@ -560,6 +667,62 @@ export default function App() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {accepted && data.status === "done" && (
+          <div className="card">
+            <div className="h2">Отзыв</div>
+            {!completedAt && <div className="muted" style={{ marginTop: 8 }}>Заявка завершена, но время завершения не указано.</div>}
+            {completedAt && !reviewAvailable && (
+              <div className="muted" style={{ marginTop: 8 }}>
+                Отзыв будет доступен через 24 часа после завершения: {formatDate(data.completedAt)}
+              </div>
+            )}
+            {reviewOk && <div className="muted" style={{ marginTop: 8 }}>{reviewOk}</div>}
+
+            {completedAt && reviewAvailable && (
+              <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+                <div className="field">
+                  <div className="label">Оценка</div>
+                  <select
+                    className="select"
+                    value={reviewRating}
+                    onChange={(e) => setReviewRating(Number(e.target.value))}
+                  >
+                    {[5, 4, 3, 2, 1].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <div className="label">Текст (необязательно)</div>
+                  <textarea className="textarea" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
+                </div>
+                <div className="row">
+                  {activeProfileType === "parent" && (
+                    <button
+                      className="btn"
+                      disabled={reviewSending}
+                      onClick={() => void sendReview(accepted.specialist.profileId)}
+                    >
+                      {reviewSending ? "Отправка…" : "Оставить отзыв специалисту"}
+                    </button>
+                  )}
+                  {activeProfileType === "specialist" && (
+                    <button
+                      className="btn"
+                      disabled={reviewSending}
+                      onClick={() => void sendReview(data.parent.profileId)}
+                    >
+                      {reviewSending ? "Отправка…" : "Оставить отзыв родителю"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -645,12 +808,28 @@ export default function App() {
 
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
+    const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
+    const [reviewsErr, setReviewsErr] = useState<string | null>(null);
 
     useEffect(() => {
       setDisplayName(activeProfile?.displayName ?? "");
       setCity(activeProfile?.city ?? "");
       setDistrict(activeProfile?.district ?? "");
     }, [activeProfileId]);
+
+    useEffect(() => {
+      const run = async () => {
+        setReviewsErr(null);
+        setReviews(null);
+        try {
+          const items = await authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`);
+          setReviews(items);
+        } catch (e: any) {
+          setReviewsErr(e?.message ?? "Failed to load reviews");
+        }
+      };
+      void run();
+    }, [profileId]);
 
     const save = async () => {
       setErr(null);
@@ -745,6 +924,134 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        <div style={{ marginTop: 18 }}>
+          <div className="h2">Отзывы</div>
+          {reviewsErr && <div className="muted" style={{ marginTop: 8 }}>{reviewsErr}</div>}
+          {!reviews && !reviewsErr && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
+          {reviews && reviews.length === 0 && <div className="muted" style={{ marginTop: 8 }}>Пока нет отзывов.</div>}
+          {reviews && reviews.length > 0 && (
+            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+              {reviews.map((r) => (
+                <div key={r.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                  <div className="row">
+                    <div style={{ fontWeight: 900 }}>★ {r.rating}</div>
+                    <div className="spacer" />
+                    <div className="muted">{formatDate(r.createdAt)}</div>
+                  </div>
+                  {r.text && <div style={{ marginTop: 8 }}>{r.text}</div>}
+                  <div className="muted" style={{ marginTop: 8 }}>От: {r.fromProfile.type}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function FeedScreen() {
+    const role = activeProfileType;
+
+    return (
+      <div className="card">
+        <div className="row">
+          <div className="h2">Лента</div>
+          <div className="spacer" />
+          <button className="btn secondary" onClick={() => { setFeed(null); setFeedError(null); }}>
+            Обновить
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+          <div className="field">
+            <div className="label">Район (фильтр)</div>
+            <input
+              className="input"
+              value={feedDistrict}
+              onChange={(e) => setFeedDistrict(e.target.value)}
+              placeholder="Напр. Центральный"
+            />
+          </div>
+
+          {role === "specialist" && (
+            <div className="field">
+              <div className="label">Категория (фильтр)</div>
+              <input
+                className="input"
+                value={feedCategory}
+                onChange={(e) => setFeedCategory(e.target.value)}
+                placeholder="Напр. Няня"
+              />
+            </div>
+          )}
+        </div>
+
+        {feedError && <div className="muted" style={{ marginTop: 10 }}>{feedError}</div>}
+        {!feed && <div className="muted" style={{ marginTop: 10 }}>Загрузка…</div>}
+
+        {feed && (
+          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+            {feed.items.map((it, idx) => {
+              if (it.kind === "banner") {
+                return (
+                  <div key={`b-${it.id}-${idx}`} className="card" style={{ background: "var(--tg-bg)" }}>
+                    <div className="muted" style={{ marginBottom: 8 }}>Реклама</div>
+                    <a href={it.targetUrl ?? "#"} target="_blank" rel="noreferrer" style={{ display: "block" }}>
+                      <img
+                        src={it.imageUrl}
+                        alt=""
+                        style={{ width: "100%", borderRadius: 12, display: "block" }}
+                      />
+                    </a>
+                  </div>
+                );
+              }
+
+              if (it.kind === "specialist_profile") {
+                const p = it.profile;
+                return (
+                  <div key={`sp-${p.id}-${idx}`} className="card" style={{ background: "var(--tg-bg)" }}>
+                    <div className="row">
+                      <div style={{ fontWeight: 900 }}>
+                        {p.displayName ?? "Специалист"}
+                        {it.isPromoted && <span className="pill" style={{ marginLeft: 8 }}>TOP</span>}
+                      </div>
+                      <div className="spacer" />
+                      <div className="muted">★ {p.ratingAvg} ({p.ratingCount})</div>
+                    </div>
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      {p.city ?? "—"} · {p.district ?? "—"} · {p.pricePerHour != null ? `${p.pricePerHour} ₽/час` : "цена —"}
+                    </div>
+                  </div>
+                );
+              }
+
+              // request
+              const r = it.request;
+              return (
+                <div key={`r-${r.id}-${idx}`} className="card" style={{ background: "var(--tg-bg)" }}>
+                  <div className="row">
+                    <div style={{ fontWeight: 900 }}>{r.category}</div>
+                    <div className="spacer" />
+                    <div className="muted">{formatDate(r.createdAt)}</div>
+                  </div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)}
+                  </div>
+                  {r.description && <div style={{ marginTop: 8 }}>{r.description}</div>}
+                  <div className="row" style={{ marginTop: 10 }}>
+                    <Link className="btn secondary" to={`/requests/${r.id}`}>
+                      Открыть
+                    </Link>
+                    <div className="spacer" />
+                    <div className="muted">{r.status}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
@@ -827,24 +1134,7 @@ export default function App() {
                 <Routes>
                   <Route
                     path="/"
-                    element={
-                      <div className="card">
-                        <div className="h2">Лента</div>
-                        {feedError && <div className="muted" style={{ marginTop: 8 }}>{feedError}</div>}
-                        {!feed && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
-                        {feed && (
-                          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-                            {feed.items.map((it: any, idx: number) => (
-                              <div key={idx} className="card" style={{ background: "var(--tg-bg)" }}>
-                                <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                                  {JSON.stringify(it, null, 2)}
-                                </pre>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    }
+                    element={<FeedScreen />}
                   />
 
                   <Route

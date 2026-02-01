@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "formoms-api",
       cwd: "/root/formoms/api",
-      script: "dist/src/main.js",
+      script: "dist/main.js",
       instances: 1,
       exec_mode: "fork",
       env_file: "/root/formoms-secrets/api.env",

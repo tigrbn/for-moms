@@ -16,7 +16,9 @@ export class ReviewsService {
     },
   ) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
-    if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
+    if (active.type !== "parent" && active.type !== "specialist") {
+      throw new BadRequestException("Active profile must be parent or specialist");
+    }
 
     if (!dto?.toProfileId) throw new BadRequestException("toProfileId is required");
     if (!dto?.requestId) throw new BadRequestException("requestId is required");
@@ -25,10 +27,27 @@ export class ReviewsService {
     const toProfileId = BigInt(dto.toProfileId);
     const requestId = BigInt(dto.requestId);
 
-    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    const request = await this.prisma.request.findUnique({
+      where: { id: requestId },
+      include: { offers: true },
+    });
     if (!request) throw new NotFoundException("Request not found");
-    if (request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
     if (request.status !== "done" || !request.completedAt) throw new BadRequestException("Request is not completed");
+
+    const accepted = request.offers.find((o) => o.status === "accepted") ?? null;
+    if (!accepted) throw new BadRequestException("Request has no accepted offer");
+
+    // Access + allowed recipient:
+    // - parent can review the accepted specialist
+    // - specialist can review the parent
+    if (active.type === "parent") {
+      if (request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
+      if (toProfileId !== accepted.specialistProfileId) throw new BadRequestException("Invalid toProfileId for this request");
+    } else {
+      // specialist
+      if (active.id !== accepted.specialistProfileId) throw new NotFoundException("Request not found");
+      if (toProfileId !== request.parentProfileId) throw new BadRequestException("Invalid toProfileId for this request");
+    }
 
     const minAt = new Date(request.completedAt.getTime() + 24 * 60 * 60 * 1000);
     if (Date.now() < minAt.getTime()) throw new BadRequestException("Review is available 24 hours after completion");

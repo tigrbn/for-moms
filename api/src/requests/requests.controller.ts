@@ -113,5 +113,16 @@ export class RequestsController {
     const updated = await this.requests.update(userId, BigInt(id), body ?? {});
     return { id: updated.id.toString(), status: updated.status };
   }
+
+  @Post(":id/complete")
+  async complete(@Req() req: Request, @Param("id") id: string) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const updated = await this.requests.complete(userId, BigInt(id));
+    return {
+      id: updated.id.toString(),
+      status: updated.status,
+      completedAt: updated.completedAt?.toISOString() ?? null,
+    };
+  }
 }
 

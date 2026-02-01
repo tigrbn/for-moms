@@ -109,5 +109,27 @@ export class RequestsService {
       },
     });
   }
+
+  async complete(userId: bigint, requestId: bigint) {
+    const active = await getActiveProfileOrThrow(this.prisma, userId);
+    if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
+
+    const request = await this.prisma.request.findUnique({
+      where: { id: requestId },
+      include: { offers: true },
+    });
+    if (!request || request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
+
+    if (request.status === "done") return request;
+    if (request.status !== "in_progress") throw new BadRequestException("Request must be in_progress to complete");
+
+    const accepted = request.offers.find((o) => o.status === "accepted") ?? null;
+    if (!accepted) throw new BadRequestException("You must accept an offer before completing the request");
+
+    return this.prisma.request.update({
+      where: { id: requestId },
+      data: { status: "done", completedAt: new Date() },
+    });
+  }
 }
 

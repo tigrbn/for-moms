@@ -8,8 +8,21 @@
   --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
   --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f2f3f5);
 
-  --radius: 14px;
-  --shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  /* Softer “mom & kids” palette (keeps Telegram theme compatibility) */
+  --radius: 18px;
+  --radius-sm: 14px;
+  --shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.06);
+
+  --surface: color-mix(in srgb, var(--tg-secondary-bg) 86%, white 14%);
+  --surface-2: color-mix(in srgb, var(--tg-secondary-bg) 72%, white 28%);
+  --field: color-mix(in srgb, var(--tg-secondary-bg) 70%, black 30%);
+
+  /* playful accents */
+  --accent-pink: #ff5ea8;
+  --accent-mint: #3ddc97;
+  --accent-sun: #ffb020;
+  --accent-lav: #7b7cff;
 
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   line-height: 1.35;
@@ -66,9 +79,9 @@ a {
 }
 
 .card {
-  background: var(--tg-secondary-bg);
+  background: var(--surface);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
   padding: 14px;
 }
 
@@ -102,24 +115,27 @@ a {
 .btn {
   appearance: none;
   border: 0;
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 999px;
+  padding: 10px 14px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  background: var(--tg-button);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tg-button) 90%, white 10%), var(--tg-button));
   color: var(--tg-button-text);
+  box-shadow: var(--shadow-soft);
 }
 
 .btn.secondary {
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--surface-2);
   color: var(--tg-text);
+  box-shadow: none;
 }
 
 .btn.ghost {
   background: transparent;
   color: var(--tg-link);
   padding: 8px 10px;
+  box-shadow: none;
 }
 
 .btn:disabled {
@@ -129,9 +145,9 @@ a {
 
 .segmented {
   display: inline-flex;
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  padding: 3px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 4px;
   gap: 3px;
 }
 
@@ -139,8 +155,8 @@ a {
   border: 0;
   background: transparent;
   color: var(--tg-text);
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
   font-weight: 700;
   cursor: pointer;
   font-size: 13px;
@@ -148,7 +164,7 @@ a {
 
 .segmented button.active {
   background: var(--tg-bg);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .input,
@@ -156,9 +172,9 @@ a {
 .select {
   width: 100%;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--surface-2);
   color: var(--tg-text);
   outline: none;
   font-size: 14px;
@@ -177,4 +193,27 @@ a {
 .label {
   font-size: 12px;
   color: var(--tg-hint);
+}
+
+/* cute pills */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-sun) 20%, var(--surface-2));
+  color: var(--tg-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* subtle background “glow” for the whole page */
+@supports (background: color-mix(in srgb, red 50%, blue 50%)) {
+  body {
+    background:
+      radial-gradient(900px 500px at 10% 0%, color-mix(in srgb, var(--accent-pink) 16%, transparent) 0%, transparent 60%),
+      radial-gradient(900px 500px at 90% 10%, color-mix(in srgb, var(--accent-mint) 14%, transparent) 0%, transparent 55%),
+      var(--tg-bg);
+  }
 }
