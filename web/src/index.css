@@ -11,12 +11,15 @@
   /* Softer “mom & kids” palette (keeps Telegram theme compatibility) */
   --radius: 18px;
   --radius-sm: 14px;
-  --shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
-  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.06);
+  --shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.10);
 
-  --surface: color-mix(in srgb, var(--tg-secondary-bg) 86%, white 14%);
-  --surface-2: color-mix(in srgb, var(--tg-secondary-bg) 72%, white 28%);
-  --field: color-mix(in srgb, var(--tg-secondary-bg) 70%, black 30%);
+  /* IMPORTANT: iOS Telegram WebView may not support color-mix().
+     Keep safe defaults, then enhance in @supports below. */
+  --surface: var(--tg-secondary-bg);
+  --surface-2: var(--tg-bg);
+  --field: var(--tg-secondary-bg);
+  --border: rgba(0, 0, 0, 0.08);
 
   /* playful accents */
   --accent-pink: #ff5ea8;
@@ -46,6 +49,15 @@ body {
   min-width: 320px;
   background: var(--tg-bg);
   color: var(--tg-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --border: rgba(255, 255, 255, 0.08);
+    --shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    --shadow-soft: 0 2px 14px rgba(0, 0, 0, 0.28);
+    --surface-2: rgba(255, 255, 255, 0.06);
+  }
 }
 
 a {
@@ -79,10 +91,11 @@ a {
 }
 
 .card {
-  background: var(--surface);
+  background: var(--surface, var(--tg-secondary-bg));
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
   padding: 14px;
+  border: 1px solid var(--border);
 }
 
 .muted {
@@ -126,9 +139,10 @@ a {
 }
 
 .btn.secondary {
-  background: var(--surface-2);
+  background: var(--surface-2, var(--tg-bg));
   color: var(--tg-text);
   box-shadow: none;
+  border: 1px solid var(--border);
 }
 
 .btn.ghost {
@@ -138,6 +152,10 @@ a {
   box-shadow: none;
 }
 
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -145,10 +163,11 @@ a {
 
 .segmented {
   display: inline-flex;
-  background: var(--surface-2);
+  background: var(--surface-2, var(--tg-bg));
   border-radius: 999px;
   padding: 4px;
   gap: 3px;
+  border: 1px solid var(--border);
 }
 
 .segmented button {
@@ -174,10 +193,11 @@ a {
   border: 0;
   border-radius: var(--radius-sm);
   padding: 10px 12px;
-  background: var(--surface-2);
+  background: var(--surface-2, var(--tg-bg));
   color: var(--tg-text);
   outline: none;
   font-size: 14px;
+  border: 1px solid var(--border);
 }
 
 .textarea {
@@ -202,18 +222,55 @@ a {
   gap: 6px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-sun) 20%, var(--surface-2));
+  background: rgba(255, 176, 32, 0.16);
   color: var(--tg-text);
   font-size: 12px;
   font-weight: 800;
+  border: 1px solid var(--border);
 }
 
 /* subtle background “glow” for the whole page */
 @supports (background: color-mix(in srgb, red 50%, blue 50%)) {
+  :root {
+    --surface: color-mix(in srgb, var(--tg-secondary-bg) 86%, white 14%);
+    --surface-2: color-mix(in srgb, var(--tg-secondary-bg) 72%, white 28%);
+    --field: color-mix(in srgb, var(--tg-secondary-bg) 70%, black 30%);
+    --border: color-mix(in srgb, var(--tg-hint) 24%, transparent);
+  }
+
   body {
     background:
       radial-gradient(900px 500px at 10% 0%, color-mix(in srgb, var(--accent-pink) 16%, transparent) 0%, transparent 60%),
       radial-gradient(900px 500px at 90% 10%, color-mix(in srgb, var(--accent-mint) 14%, transparent) 0%, transparent 55%),
       var(--tg-bg);
   }
+}
+
+/* Top tabs */
+.navtabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.navtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  color: var(--tg-text);
+  background: transparent;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 13px;
+}
+.navtab.active {
+  background: var(--surface-2, var(--tg-bg));
+  border-color: var(--border);
+  box-shadow: var(--shadow-soft);
 }

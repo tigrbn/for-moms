@@ -329,24 +329,30 @@ export default function App() {
 
   const nav = (
     <div className="card">
-      <div className="row">
-        <Link className="btn ghost" to="/" style={{ textDecoration: "none" }}>
+      <div className="navtabs">
+        <Link className={`navtab ${location.pathname === "/" ? "active" : ""}`} to="/">
           Лента
         </Link>
-        <Link className="btn ghost" to="/requests" style={{ textDecoration: "none" }}>
+        <Link className={`navtab ${location.pathname.startsWith("/requests") ? "active" : ""}`} to="/requests">
           Заявки
         </Link>
-        <Link className="btn ghost" to="/offers" style={{ textDecoration: "none" }}>
+        <Link className={`navtab ${location.pathname.startsWith("/offers") ? "active" : ""}`} to="/offers">
           Отклики
         </Link>
-        <Link className="btn ghost" to="/roles" style={{ textDecoration: "none" }}>
+        <Link className={`navtab ${location.pathname.startsWith("/roles") ? "active" : ""}`} to="/roles">
           Роли
         </Link>
-        <Link className="btn ghost" to="/profile" style={{ textDecoration: "none" }}>
+        <Link className={`navtab ${location.pathname.startsWith("/profile") ? "active" : ""}`} to="/profile">
           Профиль
         </Link>
         <div className="spacer" />
-        <button className="btn secondary" onClick={() => { clearToken(); navigate("/", { replace: true }); }}>
+        <button
+          className="btn secondary"
+          onClick={() => {
+            clearToken();
+            navigate("/", { replace: true });
+          }}
+        >
           Выйти
         </button>
       </div>
