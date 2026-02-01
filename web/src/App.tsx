@@ -274,6 +274,23 @@ export default function App() {
     await ensureActiveProfile(created.id);
   };
 
+  const activeTypes = useMemo(() => new Set((me?.profiles ?? []).filter((p) => p.isActive).map((p) => p.type)), [me]);
+  const missingRole = useMemo(() => {
+    // MVP: only parent + specialist
+    if (!activeTypes.has("parent")) return "parent" as const;
+    if (!activeTypes.has("specialist")) return "specialist" as const;
+    return null;
+  }, [activeTypes]);
+
+  const addMissingRole = async () => {
+    if (!missingRole) return;
+    try {
+      await createRole(missingRole);
+    } catch (e: any) {
+      setMeError(e?.message ?? "Не удалось добавить роль");
+    }
+  };
+
   const nav = (
     <div className="card">
       <div className="row">
@@ -299,20 +316,28 @@ export default function App() {
 
   const roleSwitcher =
     me && me.profiles.length > 0 ? (
-      <div className="segmented" role="tablist" aria-label="Role switcher">
-        {me.profiles
-          .filter((p) => p.isActive)
-          .filter((p) => p.type === "parent" || p.type === "specialist")
-          .map((p) => (
-            <button
-              key={p.id}
-              className={p.id === me.activeProfileId ? "active" : ""}
-              onClick={() => void ensureActiveProfile(p.id)}
-              type="button"
-            >
-              {p.type === "parent" ? "👶 Родитель" : "👩‍🏫 Специалист"}
-            </button>
-          ))}
+      <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
+        <div className="segmented" role="tablist" aria-label="Role switcher">
+          {me.profiles
+            .filter((p) => p.isActive)
+            .filter((p) => p.type === "parent" || p.type === "specialist")
+            .map((p) => (
+              <button
+                key={p.id}
+                className={p.id === me.activeProfileId ? "active" : ""}
+                onClick={() => void ensureActiveProfile(p.id)}
+                type="button"
+                title="Переключить роль"
+              >
+                {p.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+              </button>
+            ))}
+        </div>
+        {missingRole && (
+          <button className="btn secondary" onClick={() => void addMissingRole()} title="Добавить вторую роль">
+            + {missingRole === "parent" ? "Мама" : "Специалист"}
+          </button>
+        )}
       </div>
     ) : null;
 
@@ -358,7 +383,7 @@ export default function App() {
         <div className="card">
           <div className="h2">Заявки</div>
           <div className="muted" style={{ marginTop: 8 }}>
-            В режиме специалиста заявки доступны в ленте (раздел “Лента”).
+            В режиме специалиста заявки находятся в ленте (раздел “Лента”).
           </div>
         </div>
       );
@@ -875,6 +900,21 @@ export default function App() {
           <div className="spacer" />
           <div className="muted">{type}</div>
         </div>
+        {(type === "parent" || type === "specialist") && (
+          <div style={{ marginTop: 10 }}>
+            <div className="h2">Роли</div>
+            <div className="muted" style={{ marginTop: 6 }}>
+              Можно быть и “Мамой”, и “Специалистом” в одном аккаунте — переключатель сверху.
+            </div>
+            {missingRole && (
+              <div className="row" style={{ marginTop: 10 }}>
+                <button className="btn" onClick={() => void addMissingRole()}>
+                  + Добавить роль: {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
           <div className="field">
@@ -1099,7 +1139,7 @@ export default function App() {
                       });
                     }}
                   >
-                    👶 Родитель
+                    👩‍🍼 Мама
                   </button>
                   <button
                     className="btn"
