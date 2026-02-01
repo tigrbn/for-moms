@@ -210,6 +210,7 @@ export default function App() {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [feedDistrict, setFeedDistrict] = useState("");
   const [feedCategory, setFeedCategory] = useState("");
+  const [feedReloadKey, setFeedReloadKey] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -270,7 +271,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token, me?.activeProfileId, feedDistrict, feedCategory]);
+  }, [token, me?.activeProfileId, feedDistrict, feedCategory, feedReloadKey]);
 
   const ensureActiveProfile = async (profileId: string) => {
     if (!token) return;
@@ -418,6 +419,19 @@ export default function App() {
         </div>
         {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
+        {items && items.length === 0 && (
+          <div className="card" style={{ background: "var(--tg-bg)", marginTop: 10 }}>
+            <div style={{ fontWeight: 900 }}>Пока нет заявок</div>
+            <div className="muted" style={{ marginTop: 6 }}>
+              Создайте первую — специалисты увидят её в своей ленте и смогут откликнуться.
+            </div>
+            <div className="row" style={{ marginTop: 10 }}>
+              <Link className="btn" to="/requests/new">
+                + Создать заявку
+              </Link>
+            </div>
+          </div>
+        )}
         {items && (
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             {items.map((r) => (
@@ -807,6 +821,19 @@ export default function App() {
         <div className="h2">Мои отклики</div>
         {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
+        {items && items.length === 0 && (
+          <div className="card" style={{ background: "var(--tg-bg)", marginTop: 10 }}>
+            <div style={{ fontWeight: 900 }}>Пока нет откликов</div>
+            <div className="muted" style={{ marginTop: 6 }}>
+              Откройте ленту, выберите подходящую заявку и отправьте отклик.
+            </div>
+            <div className="row" style={{ marginTop: 10 }}>
+              <Link className="btn" to="/">
+                Перейти в ленту
+              </Link>
+            </div>
+          </div>
+        )}
         {items && (
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             {items.map((o) => (
@@ -1010,13 +1037,23 @@ export default function App() {
 
   function FeedScreen() {
     const role = activeProfileType;
+    const contentCount = feed
+      ? feed.items.filter((it) => it.kind !== "banner").length
+      : 0;
 
     return (
       <div className="card">
         <div className="row">
           <div className="h2">Лента</div>
           <div className="spacer" />
-          <button className="btn secondary" onClick={() => { setFeed(null); setFeedError(null); }}>
+          <button
+            className="btn secondary"
+            onClick={() => {
+              setFeed(null);
+              setFeedError(null);
+              setFeedReloadKey((x) => x + 1);
+            }}
+          >
             Обновить
           </button>
         </div>
@@ -1050,6 +1087,40 @@ export default function App() {
 
         {feed && (
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+            {contentCount === 0 && (
+              <div className="card" style={{ background: "var(--tg-bg)" }}>
+                <div style={{ fontWeight: 900 }}>
+                  {role === "parent" ? "Пока нет специалистов" : "Пока нет заявок"}
+                </div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  {role === "parent"
+                    ? "Попробуйте убрать фильтр по району — или добавьте роль “Специалист”, чтобы создать первую анкету."
+                    : "Попробуйте убрать фильтры — или переключитесь на роль “Мама”, чтобы создать заявку."}
+                </div>
+                <div className="row" style={{ marginTop: 10 }}>
+                  <button
+                    className="btn secondary"
+                    onClick={() => {
+                      setFeedDistrict("");
+                      setFeedCategory("");
+                      setFeedReloadKey((x) => x + 1);
+                    }}
+                  >
+                    Очистить фильтры
+                  </button>
+                  <div className="spacer" />
+                  {missingRole ? (
+                    <button className="btn" onClick={() => void addMissingRole()}>
+                      + Добавить роль: {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+                    </button>
+                  ) : (
+                    <Link className="btn" to="/roles">
+                      Роли
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
             {feed.items.map((it, idx) => {
               if (it.kind === "banner") {
                 return (
