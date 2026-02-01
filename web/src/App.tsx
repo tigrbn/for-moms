@@ -196,6 +196,26 @@ function formatDate(iso?: string | null) {
   return d.toLocaleString();
 }
 
+function labelProfileType(t: "parent" | "specialist" | "shop") {
+  if (t === "parent") return "👩‍🍼 Мама";
+  if (t === "specialist") return "👩‍🏫 Специалист";
+  return "🏪 Магазин";
+}
+
+function labelRequestStatus(s: "active" | "in_progress" | "done" | "cancelled") {
+  if (s === "active") return "🟢 Активна";
+  if (s === "in_progress") return "🟡 В работе";
+  if (s === "done") return "✅ Завершена";
+  return "⛔ Отменена";
+}
+
+function labelOfferStatus(s: "pending" | "accepted" | "rejected" | "cancelled") {
+  if (s === "pending") return "🕓 Ожидает";
+  if (s === "accepted") return "✅ Принят";
+  if (s === "rejected") return "⛔ Отклонён";
+  return "🚫 Отменён";
+}
+
 function hoursBetween(a: Date, b: Date) {
   return Math.abs(a.getTime() - b.getTime()) / (1000 * 60 * 60);
 }
@@ -439,7 +459,7 @@ export default function App() {
                 <div className="row">
                   <div style={{ fontWeight: 800 }}>{r.category}</div>
                   <div className="spacer" />
-                  <div className="muted">{r.status}</div>
+                  <div className="pill">{labelRequestStatus(r.status)}</div>
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>
                   Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · Откликов: {r.offersCount}
@@ -841,7 +861,7 @@ export default function App() {
                 <div className="row">
                   <div style={{ fontWeight: 800 }}>{o.request.category}</div>
                   <div className="spacer" />
-                  <div className="muted">{o.status}</div>
+                  <div className="pill">{labelOfferStatus(o.status)}</div>
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>
                   Район: {o.request.district ?? "—"} · Бюджет: {formatMoney(o.request.budget)}
@@ -943,7 +963,7 @@ export default function App() {
         <div className="row">
           <div className="h2">Профиль</div>
           <div className="spacer" />
-          <div className="muted">{type}</div>
+          <div className="pill">{labelProfileType(type)}</div>
         </div>
         {(type === "parent" || type === "specialist") && (
           <div style={{ marginTop: 10 }}>
@@ -1025,7 +1045,7 @@ export default function App() {
                     <div className="muted">{formatDate(r.createdAt)}</div>
                   </div>
                   {r.text && <div style={{ marginTop: 8 }}>{r.text}</div>}
-                  <div className="muted" style={{ marginTop: 8 }}>От: {r.fromProfile.type}</div>
+                  <div className="muted" style={{ marginTop: 8 }}>От: {labelProfileType(r.fromProfile.type)}</div>
                 </div>
               ))}
             </div>
@@ -1179,7 +1199,7 @@ export default function App() {
                       Открыть
                     </Link>
                     <div className="spacer" />
-                    <div className="muted">{r.status}</div>
+                    <div className="pill">{labelRequestStatus(r.status)}</div>
                   </div>
                 </div>
               );
