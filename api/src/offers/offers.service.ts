@@ -38,6 +38,7 @@ export class OffersService {
     return this.prisma.offer.findMany({
       where: { specialistProfileId: active.id },
       orderBy: { createdAt: "desc" },
+      include: { request: true },
     });
   }
 

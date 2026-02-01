@@ -38,6 +38,7 @@ export class FeedController {
         },
         orderBy: [{ promotedUntil: "desc" }, { createdAt: "desc" }],
         take: 30,
+        include: { specialistProfile: true },
       });
 
       return {
@@ -60,6 +61,7 @@ export class FeedController {
               district: p.district,
               ratingAvg: p.ratingAvg.toString(),
               ratingCount: p.ratingCount,
+              pricePerHour: p.specialistProfile?.pricePerHour ?? null,
             },
           })),
         ],

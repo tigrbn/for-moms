@@ -63,6 +63,15 @@ export class RequestsController {
       district: r.district,
       completedAt: r.completedAt?.toISOString() ?? null,
       createdAt: r.createdAt.toISOString(),
+      parent: {
+        profileId: r.parent.id.toString(),
+        displayName: r.parent.displayName,
+        city: r.parent.city,
+        district: r.parent.district,
+        username: r.parent.user?.username ?? null,
+        firstName: r.parent.user?.firstName ?? null,
+        lastName: r.parent.user?.lastName ?? null,
+      },
       offers: r.offers.map((o) => ({
         id: o.id.toString(),
         specialistProfileId: o.specialistProfileId.toString(),
@@ -70,6 +79,16 @@ export class RequestsController {
         comment: o.comment,
         status: o.status,
         createdAt: o.createdAt.toISOString(),
+        specialist: {
+          profileId: o.specialistProfile.id.toString(),
+          displayName: o.specialistProfile.displayName,
+          city: o.specialistProfile.city,
+          district: o.specialistProfile.district,
+          username: o.specialistProfile.user?.username ?? null,
+          firstName: o.specialistProfile.user?.firstName ?? null,
+          lastName: o.specialistProfile.user?.lastName ?? null,
+          pricePerHour: o.specialistProfile.specialistProfile?.pricePerHour ?? null,
+        },
       })),
     };
   }

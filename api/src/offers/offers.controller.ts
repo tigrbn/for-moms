@@ -26,6 +26,14 @@ export class OffersController {
       priceOffer: o.priceOffer,
       comment: o.comment,
       createdAt: o.createdAt.toISOString(),
+      request: {
+        id: o.request.id.toString(),
+        status: o.request.status,
+        category: o.request.category,
+        district: o.request.district,
+        budget: o.request.budget,
+        createdAt: o.request.createdAt.toISOString(),
+      },
     }));
   }
 

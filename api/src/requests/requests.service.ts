@@ -45,7 +45,32 @@ export class RequestsService {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
-      include: { offers: true },
+      include: {
+        offers: {
+          include: {
+            specialistProfile: {
+              include: {
+                user: {
+                  select: {
+                    username: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                specialistProfile: true,
+              },
+            },
+          },
+        },
+        parent: {
+          include: {
+            user: {
+              select: { username: true, firstName: true, lastName: true },
+            },
+            parentProfile: true,
+          },
+        },
+      },
     });
     if (!request) throw new NotFoundException("Request not found");
 
