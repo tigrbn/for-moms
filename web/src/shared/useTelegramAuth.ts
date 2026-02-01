@@ -36,6 +36,11 @@ export function useTelegramAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const clearToken = () => {
+    localStorage.removeItem("accessToken");
+    setToken(null);
+  };
+
   useEffect(() => {
     const run = async () => {
       const initData = getInitData();
@@ -60,13 +65,11 @@ export function useTelegramAuth() {
         setError(e?.message ?? "Auth failed");
       } finally {
         setLoading(false);
-        console.log("initData length:", initData?.length);
       }
     };
 
     void run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [token]);
 
-  return { token, loading, error };
+  return { token, setToken, clearToken, loading, error };
 }

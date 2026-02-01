@@ -27,7 +27,7 @@ type FeedResponse =
   | { role: "specialist"; items: any[] };
 
 export default function App() {
-  const { token, loading, error } = useTelegramAuth();
+  const { token, clearToken, loading, error } = useTelegramAuth();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
   const [meError, setMeError] = useState<string | null>(null);
@@ -40,6 +40,16 @@ export default function App() {
     return me.profiles.find((p) => p.id === me.activeProfileId) ?? null;
   }, [me]);
 
+  // Manual reset: open https://.../?reset=1
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("reset") === "1") {
+      localStorage.removeItem("accessToken");
+      url.searchParams.delete("reset");
+      window.location.replace(url.toString());
+    }
+  }, []);
+
   useEffect(() => {
     const run = async () => {
       if (!token) return;
@@ -49,7 +59,14 @@ export default function App() {
         const data = await getJSON<MeResponse>("/me", token);
         setMe(data);
       } catch (e: any) {
-        setMeError(e?.message ?? "Failed to load /me");
+        const msg = e?.message ?? "Failed to load /me";
+        // If token is invalid/expired, clear and re-auth (Telegram initData)
+        if (typeof msg === "string" && msg.includes("HTTP 401")) {
+          clearToken();
+          setMe(null);
+          return;
+        }
+        setMeError(msg);
       } finally {
         setMeLoading(false);
       }

@@ -1,7 +1,7 @@
 import { BadRequestException } from "@nestjs/common";
-import { Profile, PrismaClient } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
 
-export async function getActiveProfileOrThrow(prisma: PrismaClient, userId: bigint): Promise<Profile> {
+export async function getActiveProfileOrThrow(prisma: PrismaService, userId: bigint) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { activeProfileId: true },

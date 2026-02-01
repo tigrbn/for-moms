@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 
@@ -63,7 +62,8 @@ export class ReviewsService {
       await tx.profile.update({
         where: { id: toProfileId },
         data: {
-          ratingAvg: new Prisma.Decimal(avg),
+          // Prisma accepts string for Decimal fields
+          ratingAvg: Number(avg).toFixed(1),
           ratingCount: cnt,
         },
       });

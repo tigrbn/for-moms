@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 
@@ -25,7 +24,7 @@ export class OffersService {
         },
       });
     } catch (e: any) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      if (e?.code === "P2002") {
         throw new BadRequestException("You already sent an offer for this request");
       }
       throw e;
