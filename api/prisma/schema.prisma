@@ -4,211 +4,173 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id         BigInt   @id @default(autoincrement())
-  telegramId BigInt   @unique @map("telegram_id")
-  firstName  String?  @map("first_name")
-  lastName   String?  @map("last_name")
-  username   String?
-  photoUrl   String?  @map("photo_url")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-
-  // ✅ нормальное имя поля вместо active_profile_id
-  activeProfileId BigInt? @map("active_profile_id")
-
-  // ✅ нормальное имя связи вместо profiles_users_active_profile_idToprofiles
-  activeProfile Profile? @relation("UserActiveProfile", fields: [activeProfileId], references: [id], onDelete: SetNull)
-
-  profiles Profile[] @relation("UserProfiles")
-
-  @@index([activeProfileId], map: "users_active_profile_id_idx")
-  @@map("users")
+  id               Int      @id @default(autoincrement())
+  telegramId       BigInt   @unique
+  telegramData     Json
+  firstName        String?
+  lastName         String?
+  username         String?
+  photoUrl         String?
+  languageCode     String?
+  activeProfileId  Int?     @unique
+  activeProfile    Profile? @relation("UserActiveProfile", fields: [activeProfileId], references: [id])
+  profiles         Profile[] @relation("UserProfiles")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Profile {
-  id                  BigInt                @id @default(autoincrement())
-  userId              BigInt                @map("user_id")
-  type                profile_type
-  isActive            Boolean               @default(true) @map("is_active")
-  displayName         String?               @map("display_name")
-  avatarUrl           String?               @map("avatar_url")
-  city                String?
-  district            String?
-  ratingAvg           Decimal               @default(0.0) @map("rating_avg") @db.Decimal(2, 1)
-  ratingCount         Int                   @default(0) @map("rating_count")
-  promotedUntil       DateTime?             @map("promoted_until") @db.Timestamptz(6)
-  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime              @default(now()) @map("updated_at") @db.Timestamptz(6)
-  offersAsSpecialist  Offer[]               @relation("SpecialistOffers")
-  parent              ParentProfile?
-  user                User                  @relation("UserProfiles", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  requestsAsParent    Request[]             @relation("ParentRequests")
-  reviewsWritten      Review[]              @relation("ReviewFrom")
-  reviewsReceived     Review[]              @relation("ReviewTo")
-  shopProducts        ShopProduct[]
-  shop                ShopProfile?
-  specialistPortfolio SpecialistPortfolio[]
-  specialist          SpecialistProfile?
-
-  activeForUsers User[] @relation("UserActiveProfile")
-
-  @@unique([userId, type])
-  @@index([type, isActive], map: "idx_profiles_type_active")
-  @@map("profiles")
-}
-
-model ParentProfile {
-  profileId     BigInt  @id @map("profile_id")
-  childrenAges  Json?   @map("children_ages")
-  specialWishes String? @map("special_wishes")
-  profile       Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@map("parent_profiles")
-}
-
-model SpecialistProfile {
-  profileId       BigInt  @id @map("profile_id")
-  skills          Json?
-  experienceYears Int?    @map("experience_years")
-  ageGroups       Json?   @map("age_groups")
-  pricePerHour    Int?    @map("price_per_hour")
-  workDistricts   Json?   @map("work_districts")
-  about           String?
-  profile         Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@map("specialist_profiles")
-}
-
-model SpecialistPortfolio {
-  id        BigInt   @id @default(autoincrement())
-  profileId BigInt   @map("profile_id")
-  imageUrl  String   @map("image_url")
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@map("specialist_portfolio")
-}
-
-model ShopProfile {
-  profileId   BigInt  @id @map("profile_id")
-  shopName    String? @map("shop_name")
-  logoUrl     String? @map("logo_url")
-  description String?
-  address     String?
-  workHours   String? @map("work_hours")
-  contacts    Json?
-  categories  Json?
-  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@map("shop_profiles")
-}
-
-model ShopProduct {
-  id          BigInt   @id @default(autoincrement())
-  profileId   BigInt   @map("profile_id")
-  title       String
-  description String?
-  price       Int?
-  category    String?
-  imageUrls   Json?    @map("image_urls")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@map("shop_products")
+  id               Int      @id @default(autoincrement())
+  type             String   // 'parent' | 'specialist' | 'shop'
+  userId           Int
+  user             User     @relation("UserProfiles", fields: [userId], references: [id])
+  name             String?
+  photoUrl         String?
+  
+  // Общие поля для всех профилей
+  city             String?
+  district         String?
+  description      String?
+  rating           Float    @default(0)
+  reviewCount      Int      @default(0)
+  isVerified       Boolean  @default(false)
+  isPromoted       Boolean  @default(false)
+  
+  // Поля для родителя
+  childrenAgeMin   Int?
+  childrenAgeMax   Int?
+  specialWishes    String?
+  
+  // Поля для специалиста
+  skills           String[]
+  experienceYears  Int?
+  ageGroups        String[]
+  pricePerHour     Decimal? @db.Decimal(10, 2)
+  portfolioPhotos  String[]
+  workingDistricts String[]
+  
+  // Поля для магазина
+  shopName         String?
+  logoUrl          String?
+  address          String?
+  workingHours     String?
+  contacts         String?
+  productCategories String[]
+  
+  // Отношения
+  requests         Request[]
+  applications     Application[]
+  products         Product[]
+  reviewsGiven     Review[] @relation("ProfileGivenReviews")
+  reviewsReceived  Review[] @relation("ProfileReceivedReviews")
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Request {
-  id              BigInt         @id @default(autoincrement())
-  parentProfileId BigInt         @map("parent_profile_id")
-  category        String
-  childAge        Int?           @map("child_age")
-  description     String?
-  startAt         DateTime?      @map("start_at") @db.Timestamptz(6)
-  durationMin     Int?           @map("duration_min")
-  budget          Int?
-  district        String?
-  status          request_status @default(active)
-  completedAt     DateTime?      @map("completed_at") @db.Timestamptz(6)
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
-  offers          Offer[]
-  parentProfile   Profile        @relation("ParentRequests", fields: [parentProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  reviews         Review[]
-
-  @@index([status], map: "idx_requests_status")
-  @@map("requests")
+  id               Int      @id @default(autoincrement())
+  parentProfileId  Int
+  parentProfile    Profile  @relation(fields: [parentProfileId], references: [id])
+  category         String
+  childAge         Int
+  description      String
+  dateTime         DateTime
+  durationHours    Int
+  budget           Decimal? @db.Decimal(10, 2)
+  status           String   @default("active") // 'active', 'in_progress', 'completed', 'cancelled'
+  applications     Application[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
-model Offer {
-  id                  BigInt       @id @default(autoincrement())
-  requestId           BigInt       @map("request_id")
-  specialistProfileId BigInt       @map("specialist_profile_id")
-  priceOffer          Int?         @map("price_offer")
-  comment             String?
-  status              offer_status @default(pending)
-  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
-  request             Request      @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  specialistProfile   Profile      @relation("SpecialistOffers", fields: [specialistProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model Application {
+  id               Int      @id @default(autoincrement())
+  requestId        Int
+  request          Request  @relation(fields: [requestId], references: [id])
+  specialistProfileId Int
+  specialistProfile Profile @relation(fields: [specialistProfileId], references: [id])
+  price            Decimal? @db.Decimal(10, 2)
+  message          String?
+  status           String   @default("pending") // 'pending', 'accepted', 'rejected'
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
 
-  @@unique([requestId, specialistProfileId])
-  @@index([requestId], map: "idx_offers_request")
-  @@map("offers")
+model Product {
+  id               Int      @id @default(autoincrement())
+  shopProfileId    Int
+  shopProfile      Profile  @relation(fields: [shopProfileId], references: [id])
+  name             String
+  description      String?
+  price            Decimal  @db.Decimal(10, 2)
+  category         String
+  images           String[]
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Review {
-  id            BigInt   @id @default(autoincrement())
-  fromProfileId BigInt   @map("from_profile_id")
-  toProfileId   BigInt   @map("to_profile_id")
-  requestId     BigInt?  @map("request_id")
-  rating        Int
-  text          String?
-  isHidden      Boolean  @default(false) @map("is_hidden")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  fromProfile   Profile  @relation("ReviewFrom", fields: [fromProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  request       Request? @relation(fields: [requestId], references: [id], onUpdate: NoAction)
-  toProfile     Profile  @relation("ReviewTo", fields: [toProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([toProfileId], map: "idx_reviews_to_profile")
-  @@map("reviews")
+  id               Int      @id @default(autoincrement())
+  fromProfileId    Int
+  fromProfile      Profile  @relation("ProfileGivenReviews", fields: [fromProfileId], references: [id])
+  toProfileId      Int
+  toProfile        Profile  @relation("ProfileReceivedReviews", fields: [toProfileId], references: [id])
+  requestId        Int?
+  request          Request? @relation(fields: [requestId], references: [id])
+  rating           Int      // 1-5
+  comment          String?
+  createdAt        DateTime @default(now())
 }
 
-model Banner {
-  id         BigInt    @id @default(autoincrement())
-  title      String?
-  imageUrl   String    @map("image_url")
-  targetUrl  String?   @map("target_url")
-  isActive   Boolean   @default(true) @map("is_active")
-  placements Json?
-  startsAt   DateTime? @map("starts_at") @db.Timestamptz(6)
-  endsAt     DateTime? @map("ends_at") @db.Timestamptz(6)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  @@map("banners")
+model Advertisement {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String?
+  imageUrl         String
+  targetUrl        String?
+  targetRole       String?  // 'parent', 'specialist', 'shop', или null для всех
+  isActive         Boolean  @default(true)
+  displayCount     Int      @default(0)
+  clickCount       Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
-enum offer_status {
-  pending
-  accepted
-  rejected
-  cancelled
+// Индексы для производительности
+index ProfileUserIndex {
+  userId
 }
 
-enum profile_type {
-  parent
-  specialist
-  shop
+index ProfileTypeIndex {
+  type
 }
 
-enum request_status {
-  active
-  in_progress
-  done
-  cancelled
+index RequestParentIndex {
+  parentProfileId
+}
+
+index ApplicationRequestIndex {
+  requestId
+}
+
+index ApplicationSpecialistIndex {
+  specialistProfileId
+}
+
+index ProductShopIndex {
+  shopProfileId
+}
+
+index ReviewFromIndex {
+  fromProfileId
+}
+
+index ReviewToIndex {
+  toProfileId
 }
