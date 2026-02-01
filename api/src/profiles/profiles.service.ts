@@ -143,5 +143,19 @@ export class ProfilesService {
       return updated;
     });
   }
+
+  async getPublicProfileOrThrow(profileId: bigint) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      include: {
+        user: { select: { username: true, firstName: true, lastName: true } },
+        specialistProfile: true,
+        parentProfile: true,
+      },
+    });
+    if (!profile || !profile.isActive) throw new NotFoundException("Profile not found");
+    if (profile.type === "shop") throw new NotFoundException("Profile not found");
+    return profile;
+  }
 }
 

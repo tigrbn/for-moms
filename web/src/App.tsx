@@ -146,6 +146,21 @@ type ReviewListItem = {
   fromProfile: { id: string; type: "parent" | "specialist" | "shop" };
 };
 
+type PublicProfile = {
+  id: string;
+  type: "parent" | "specialist" | "shop";
+  isActive: boolean;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  city?: string | null;
+  district?: string | null;
+  ratingAvg: string;
+  ratingCount: number;
+  user: { username?: string | null; firstName?: string | null; lastName?: string | null };
+  specialist: { pricePerHour?: number | null; about?: string | null } | null;
+  parent: { childrenAges?: any; specialWishes?: string | null } | null;
+};
+
 function TopBar(props: { title: string; right?: React.ReactNode; sub?: React.ReactNode }) {
   return (
     <div className="card">
@@ -274,13 +289,13 @@ export default function App() {
     await ensureActiveProfile(created.id);
   };
 
-  const activeTypes = useMemo(() => new Set((me?.profiles ?? []).filter((p) => p.isActive).map((p) => p.type)), [me]);
+  const allTypes = useMemo(() => new Set((me?.profiles ?? []).map((p) => p.type)), [me]);
   const missingRole = useMemo(() => {
     // MVP: only parent + specialist
-    if (!activeTypes.has("parent")) return "parent" as const;
-    if (!activeTypes.has("specialist")) return "specialist" as const;
+    if (!allTypes.has("parent")) return "parent" as const;
+    if (!allTypes.has("specialist")) return "specialist" as const;
     return null;
-  }, [activeTypes]);
+  }, [allTypes]);
 
   const addMissingRole = async () => {
     if (!missingRole) return;
@@ -302,6 +317,9 @@ export default function App() {
         </Link>
         <Link className="btn ghost" to="/offers" style={{ textDecoration: "none" }}>
           Отклики
+        </Link>
+        <Link className="btn ghost" to="/roles" style={{ textDecoration: "none" }}>
+          Роли
         </Link>
         <Link className="btn ghost" to="/profile" style={{ textDecoration: "none" }}>
           Профиль
@@ -1063,6 +1081,11 @@ export default function App() {
                     <div className="muted" style={{ marginTop: 6 }}>
                       {p.city ?? "—"} · {p.district ?? "—"} · {p.pricePerHour != null ? `${p.pricePerHour} ₽/час` : "цена —"}
                     </div>
+                    <div className="row" style={{ marginTop: 10 }}>
+                      <Link className="btn secondary" to={`/profiles/${p.id}`}>
+                        Открыть анкету
+                      </Link>
+                    </div>
                   </div>
                 );
               }
@@ -1092,6 +1115,177 @@ export default function App() {
             })}
           </div>
         )}
+      </div>
+    );
+  }
+
+  function PublicProfileScreen() {
+    const params = useParams();
+    const profileId = params.id!;
+    const [p, setP] = useState<PublicProfile | null>(null);
+    const [err, setErr] = useState<string | null>(null);
+    const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
+    const [reviewsErr, setReviewsErr] = useState<string | null>(null);
+
+    useEffect(() => {
+      const run = async () => {
+        setErr(null);
+        setP(null);
+        try {
+          const data = await authedGet<PublicProfile>(`/profiles/${profileId}`);
+          setP(data);
+        } catch (e: any) {
+          setErr(e?.message ?? "Не удалось загрузить профиль");
+        }
+      };
+      void run();
+    }, [profileId, activeProfileId]);
+
+    useEffect(() => {
+      const run = async () => {
+        setReviewsErr(null);
+        setReviews(null);
+        try {
+          const items = await authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`);
+          setReviews(items);
+        } catch (e: any) {
+          setReviewsErr(e?.message ?? "Не удалось загрузить отзывы");
+        }
+      };
+      void run();
+    }, [profileId]);
+
+    if (err) return <ErrorBox error={err} />;
+    if (!p) return <div className="card">Загрузка…</div>;
+
+    const title = p.displayName ?? p.user.username ?? "Профиль";
+    const tg = p.user.username ? `https://t.me/${p.user.username}` : null;
+
+    return (
+      <div style={{ display: "grid", gap: 12 }}>
+        <div className="card">
+          <div className="row">
+            <div className="h2">{title}</div>
+            <div className="spacer" />
+            <div className="muted">★ {p.ratingAvg} ({p.ratingCount})</div>
+          </div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            {p.city ?? "—"} · {p.district ?? "—"}
+          </div>
+          {p.specialist?.pricePerHour != null && (
+            <div className="muted" style={{ marginTop: 6 }}>
+              Цена: {p.specialist.pricePerHour} ₽/час
+            </div>
+          )}
+          {p.specialist?.about && <div style={{ marginTop: 10 }}>{p.specialist.about}</div>}
+          <div className="row" style={{ marginTop: 12 }}>
+            {tg && (
+              <a className="btn" href={tg} target="_blank" rel="noreferrer">
+                Написать в Telegram
+              </a>
+            )}
+            <button className="btn secondary" onClick={() => navigate(-1)}>
+              Назад
+            </button>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="h2">Отзывы</div>
+          {reviewsErr && <div className="muted" style={{ marginTop: 8 }}>{reviewsErr}</div>}
+          {!reviews && !reviewsErr && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
+          {reviews && reviews.length === 0 && <div className="muted" style={{ marginTop: 8 }}>Пока нет отзывов.</div>}
+          {reviews && reviews.length > 0 && (
+            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+              {reviews.map((r) => (
+                <div key={r.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                  <div className="row">
+                    <div style={{ fontWeight: 900 }}>★ {r.rating}</div>
+                    <div className="spacer" />
+                    <div className="muted">{formatDate(r.createdAt)}</div>
+                  </div>
+                  {r.text && <div style={{ marginTop: 8 }}>{r.text}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function RolesScreen() {
+    if (!me) return <div className="card">Загрузка…</div>;
+
+    const roles = me.profiles
+      .filter((p) => p.type === "parent" || p.type === "specialist")
+      .map((p) => ({
+        ...p,
+        title: p.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист",
+      }));
+
+    const toggle = async (profileId: string, nextActive: boolean) => {
+      try {
+        await authedPost(`/profiles/${profileId}/${nextActive ? "activate" : "deactivate"}`, {});
+        await refreshMe();
+      } catch (e: any) {
+        setMeError(e?.message ?? "Не удалось изменить роль");
+      }
+    };
+
+    return (
+      <div className="card">
+        <div className="row">
+          <div className="h2">Роли</div>
+          <div className="spacer" />
+          {missingRole && (
+            <button className="btn" onClick={() => void addMissingRole()}>
+              + Добавить: {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+            </button>
+          )}
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          Здесь можно включать/выключать роли и выбирать активную.
+        </div>
+
+        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+          {roles.map((p) => (
+            <div key={p.id} className="card" style={{ background: "var(--tg-bg)" }}>
+              <div className="row">
+                <div style={{ fontWeight: 900 }}>{p.title}</div>
+                <div className="spacer" />
+                {p.id === me.activeProfileId && <span className="pill">Активная</span>}
+                <span className="pill" style={{ background: p.isActive ? undefined : "color-mix(in srgb, var(--tg-theme-hint-color, #999) 18%, var(--surface-2))" }}>
+                  {p.isActive ? "Включена" : "Выключена"}
+                </span>
+              </div>
+
+              <div className="muted" style={{ marginTop: 6 }}>
+                {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
+              </div>
+
+              <div className="row" style={{ marginTop: 10 }}>
+                {p.isActive ? (
+                  <button className="btn secondary" onClick={() => void toggle(p.id, false)}>
+                    Выключить
+                  </button>
+                ) : (
+                  <button className="btn" onClick={() => void toggle(p.id, true)}>
+                    Включить
+                  </button>
+                )}
+
+                <button
+                  className="btn secondary"
+                  disabled={!p.isActive}
+                  onClick={() => void ensureActiveProfile(p.id)}
+                >
+                  Сделать активной
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -1189,10 +1383,14 @@ export default function App() {
                     element={<OffersScreen />}
                   />
 
+                  <Route path="/roles" element={<RolesScreen />} />
+
                   <Route
                     path="/profile"
                     element={<ProfileScreen />}
                   />
+
+                  <Route path="/profiles/:id" element={<PublicProfileScreen />} />
 
                   <Route path="*" element={<Navigate to="/" replace state={{ from: location.pathname }} />} />
                 </Routes>
