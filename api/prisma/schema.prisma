@@ -201,12 +201,16 @@ enum OfferStatus {
   accepted
   rejected
   cancelled
+
+  @@map("offer_status")
 }
 
 enum ProfileType {
   parent
   specialist
   shop
+
+  @@map("profile_type")
 }
 
 enum RequestStatus {
@@ -214,4 +218,6 @@ enum RequestStatus {
   in_progress
   done
   cancelled
+
+  @@map("request_status")
 }

@@ -784,10 +784,24 @@ export default function App() {
               <div className="card">
                 <div className="h2">Выберите роли</div>
                 <div className="row" style={{ marginTop: 10 }}>
-                  <button className="btn" onClick={() => void createRole("parent")}>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      void createRole("parent").catch((e: any) => {
+                        setMeError(e?.message ?? "Не удалось создать роль");
+                      });
+                    }}
+                  >
                     👶 Родитель
                   </button>
-                  <button className="btn" onClick={() => void createRole("specialist")}>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      void createRole("specialist").catch((e: any) => {
+                        setMeError(e?.message ?? "Не удалось создать роль");
+                      });
+                    }}
+                  >
                     👩‍🏫 Специалист
                   </button>
                 </div>

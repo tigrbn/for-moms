@@ -11,28 +11,53 @@ export class ProfilesService {
       throw new BadRequestException("Invalid profile type");
     }
 
-    const profile = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.profile.create({
-        data: {
-          userId,
-          type,
-          isActive: true,
-          ...(type === "parent" ? { parentProfile: { create: {} } } : {}),
-          ...(type === "specialist" ? { specialistProfile: { create: {} } } : {}),
-          ...(type === "shop" ? { shopProfile: { create: {} } } : {}),
-        },
+    try {
+      const profile = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.profile.create({
+          data: {
+            userId,
+            type,
+            isActive: true,
+            ...(type === "parent" ? { parentProfile: { create: {} } } : {}),
+            ...(type === "specialist" ? { specialistProfile: { create: {} } } : {}),
+            ...(type === "shop" ? { shopProfile: { create: {} } } : {}),
+          },
+        });
+
+        // если у пользователя ещё не выбран активный профиль — выберем первый созданный
+        await tx.user.updateMany({
+          where: { id: userId, activeProfileId: null },
+          data: { activeProfileId: created.id },
+        });
+
+        return created;
       });
 
-      // если у пользователя ещё не выбран активный профиль — выберем первый созданный
-      await tx.user.updateMany({
-        where: { id: userId, activeProfileId: null },
-        data: { activeProfileId: created.id },
-      });
+      return profile;
+    } catch (e: any) {
+      // Unique constraint (userId,type) -> profile already exists
+      if (e?.code === "P2002") {
+        const existing = await this.prisma.profile.findUnique({
+          where: { userId_type: { userId, type } },
+        });
+        if (!existing) throw e;
 
-      return created;
-    });
+        // if user has no active profile, set it
+        await this.prisma.user.updateMany({
+          where: { id: userId, activeProfileId: null },
+          data: { activeProfileId: existing.id },
+        });
 
-    return profile;
+        return existing;
+      }
+
+      // Schema mismatch / missing columns or tables
+      if (e?.code === "P2021" || e?.code === "P2022") {
+        throw new BadRequestException("Database schema is not up to date. Run: npx prisma migrate deploy");
+      }
+
+      throw e;
+    }
   }
 
   async getOwnedProfileOrThrow(userId: bigint, profileId: bigint) {

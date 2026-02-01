@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { ProfileType } from "@prisma/client";
 import type { Request } from "express";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -12,6 +12,8 @@ export class ProfilesController {
   @Post()
   async create(@Req() req: Request, @Body() body: { type: ProfileType }) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
+    if (!body?.type) throw new BadRequestException("type is required");
+    if (body.type === "shop") throw new BadRequestException("shop role is disabled in MVP");
     const profile = await this.profiles.createProfile(userId, body?.type);
     return {
       id: profile.id.toString(),
