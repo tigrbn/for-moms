@@ -52,6 +52,7 @@ export function useTelegramAuth() {
         setError(e?.message ?? "Auth failed");
       } finally {
         setLoading(false);
+        console.log("initData length:", initData?.length);
       }
     };
 
