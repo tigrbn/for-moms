@@ -183,13 +183,19 @@ export class OffersService {
       if (!offer) throw new NotFoundException("Offer not found");
       if (offer.request.parentProfileId !== active.id) throw new NotFoundException("Offer not found");
 
+      // Prevent accepting multiple offers: after first acceptance request becomes in_progress.
+      if (offer.status === "accepted") return offer;
+      if (offer.request.status !== "active") {
+        throw new BadRequestException("Request is not active");
+      }
+
       const updated = await tx.offer.update({
         where: { id: offerId },
         data: { status: "accepted" },
       });
 
       await tx.offer.updateMany({
-        where: { requestId: offer.requestId, id: { not: offerId }, status: { in: ["pending"] } },
+        where: { requestId: offer.requestId, id: { not: offerId }, status: { in: ["pending", "accepted"] } },
         data: { status: "rejected" },
       });
 

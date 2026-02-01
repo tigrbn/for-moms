@@ -728,12 +728,18 @@ export default function App() {
                   </div>
                   {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
                   <div className="row" style={{ marginTop: 10 }}>
-                    <button className="btn" onClick={() => void acceptOffer(o.id)} disabled={o.status !== "pending"}>
-                      Принять
-                    </button>
-                    <button className="btn secondary" onClick={() => void rejectOffer(o.id)} disabled={o.status !== "pending"}>
-                      Отклонить
-                    </button>
+                    {!accepted ? (
+                      <>
+                        <button className="btn" onClick={() => void acceptOffer(o.id)} disabled={o.status !== "pending"}>
+                          Принять
+                        </button>
+                        <button className="btn secondary" onClick={() => void rejectOffer(o.id)} disabled={o.status !== "pending"}>
+                          Отклонить
+                        </button>
+                      </>
+                    ) : (
+                      <div className="muted">Исполнитель уже выбран</div>
+                    )}
                     <div className="spacer" />
                     {o.specialist.username && (
                       <a className="btn ghost" href={`https://t.me/${o.specialist.username}`} target="_blank" rel="noreferrer">
