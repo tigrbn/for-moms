@@ -77,3 +77,20 @@ export async function deleteJSON<TResponse = unknown>(path: string, token?: stri
   const text = await res.text();
   return (text ? JSON.parse(text) : {}) as TResponse;
 }
+
+/** Загрузка файла (фото). Возвращает URL для подстановки в imageUrl. */
+export async function uploadFile(path: string, file: File, token: string): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+  }
+  const data = (await res.json()) as { url: string };
+  return { url: `${API_BASE}${data.url}` };
+}

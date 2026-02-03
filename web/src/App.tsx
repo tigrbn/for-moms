@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import { deleteJSON, getJSON, patchJSON, postJSON } from "./shared/api";
+import { deleteJSON, getJSON, patchJSON, postJSON, uploadFile } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
@@ -231,10 +231,13 @@ function ShopPromoEditInline(props: {
   saving: boolean;
   onSave: (imageUrl: string, title: string, text: string) => Promise<void>;
   onCancel: () => void;
+  onUpload?: (file: File) => Promise<string>;
 }) {
   const [imageUrl, setImageUrl] = useState(props.imageUrl);
   const [title, setTitle] = useState(props.title);
   const [text, setText] = useState(props.text);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     setImageUrl(props.imageUrl);
     setTitle(props.title);
@@ -242,7 +245,26 @@ function ShopPromoEditInline(props: {
   }, [props.imageUrl, props.title, props.text]);
   return (
     <div style={{ display: "grid", gap: 8 }}>
-      <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+      <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
+        {props.onUpload && (
+          <>
+            <input type="file" accept="image/*" ref={fileRef} style={{ display: "none" }} onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f || !props.onUpload) return;
+              setUploading(true);
+              try {
+                const url = await props.onUpload(f);
+                setImageUrl(url);
+              } finally {
+                setUploading(false);
+                e.target.value = "";
+              }
+            }} />
+            <button type="button" className="btn secondary" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? "Загрузка…" : "Загрузить фото"}</button>
+          </>
+        )}
+      </div>
       <input className="input" placeholder="Заголовок" value={title} onChange={(e) => setTitle(e.target.value)} />
       <input className="input" placeholder="Текст" value={text} onChange={(e) => setText(e.target.value)} />
       <div className="row" style={{ gap: 8 }}>
@@ -262,12 +284,15 @@ function ShopProductEditInline(props: {
   saving: boolean;
   onSave: (title: string, description: string, price: string, category: string, imageUrl: string) => Promise<void>;
   onCancel: () => void;
+  onUpload?: (file: File) => Promise<string>;
 }) {
   const [title, setTitle] = useState(props.title);
   const [description, setDescription] = useState(props.description);
   const [price, setPrice] = useState(String(props.price ?? ""));
   const [category, setCategory] = useState(props.category);
   const [imageUrl, setImageUrl] = useState(props.imageUrl);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     setTitle(props.title);
     setDescription(props.description);
@@ -281,7 +306,26 @@ function ShopProductEditInline(props: {
       <input className="input" placeholder="Описание" value={description} onChange={(e) => setDescription(e.target.value)} />
       <input className="input" placeholder="Цена (₽)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
       <input className="input" placeholder="Категория" value={category} onChange={(e) => setCategory(e.target.value)} />
-      <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+      <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
+        {props.onUpload && (
+          <>
+            <input type="file" accept="image/*" ref={fileRef} style={{ display: "none" }} onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f || !props.onUpload) return;
+              setUploading(true);
+              try {
+                const url = await props.onUpload(f);
+                setImageUrl(url);
+              } finally {
+                setUploading(false);
+                e.target.value = "";
+              }
+            }} />
+            <button type="button" className="btn secondary" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? "Загрузка…" : "Загрузить фото"}</button>
+          </>
+        )}
+      </div>
       <div className="row" style={{ gap: 8 }}>
         <button type="button" className="btn" disabled={props.saving || !title.trim()} onClick={() => void props.onSave(title, description, price, category, imageUrl)}>{props.saving ? "Сохранение…" : "Сохранить"}</button>
         <button type="button" className="btn secondary" onClick={props.onCancel}>Отмена</button>
@@ -425,9 +469,6 @@ export default function App() {
         </Link>
         <Link className={`navtab ${location.pathname.startsWith("/offers") ? "active" : ""}`} to="/offers">
           Отклики
-        </Link>
-        <Link className={`navtab ${location.pathname.startsWith("/profile") ? "active" : ""}`} to="/profile">
-          Профиль
         </Link>
         <div className="spacer" />
         {me && activeProfile && (
@@ -1040,6 +1081,9 @@ export default function App() {
     const [newProductImageUrl, setNewProductImageUrl] = useState("");
     const [savingPromo, setSavingPromo] = useState(false);
     const [savingProduct, setSavingProduct] = useState(false);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const promoFileRef = useRef<HTMLInputElement>(null);
+    const productFileRef = useRef<HTMLInputElement>(null);
 
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
@@ -1244,6 +1288,7 @@ export default function App() {
                               }
                             }}
                             onCancel={() => setEditingPromoId(null)}
+                            onUpload={token ? async (file) => { const { url } = await uploadFile("/upload", file, token); return url; } : undefined}
                           />
                         ) : (
                           <>
@@ -1271,7 +1316,27 @@ export default function App() {
                 <div className="card" style={{ marginTop: 10, background: "var(--tg-bg)" }}>
                   <div className="muted" style={{ marginBottom: 8 }}>Добавить акцию (картинка + текст)</div>
                   <div style={{ display: "grid", gap: 8 }}>
-                    <input className="input" placeholder="URL картинки" value={newPromoImageUrl} onChange={(e) => setNewPromoImageUrl(e.target.value)} />
+                    <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                      <input className="input" placeholder="URL картинки" value={newPromoImageUrl} onChange={(e) => setNewPromoImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
+                      <input type="file" accept="image/*" ref={promoFileRef} style={{ display: "none" }} onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f || !token) return;
+                        setUploadingPhoto(true);
+                        setShopContentErr(null);
+                        try {
+                          const { url } = await uploadFile("/upload", f, token);
+                          setNewPromoImageUrl(url);
+                        } catch (err: any) {
+                          setShopContentErr(err?.message ?? "Ошибка загрузки");
+                        } finally {
+                          setUploadingPhoto(false);
+                          e.target.value = "";
+                        }
+                      }} />
+                      <button type="button" className="btn secondary" disabled={uploadingPhoto} onClick={() => promoFileRef.current?.click()}>
+                        {uploadingPhoto ? "Загрузка…" : "Загрузить фото"}
+                      </button>
+                    </div>
                     <input className="input" placeholder="Заголовок" value={newPromoTitle} onChange={(e) => setNewPromoTitle(e.target.value)} />
                     <input className="input" placeholder="Текст" value={newPromoText} onChange={(e) => setNewPromoText(e.target.value)} />
                   </div>
@@ -1325,6 +1390,7 @@ export default function App() {
                               }
                             }}
                             onCancel={() => setEditingProductId(null)}
+                            onUpload={token ? async (file) => { const { url } = await uploadFile("/upload", file, token); return url; } : undefined}
                           />
                         ) : (
                           <>
@@ -1360,7 +1426,27 @@ export default function App() {
                       <input className="input" placeholder="Описание" value={newProductDesc} onChange={(e) => setNewProductDesc(e.target.value)} />
                       <input className="input" placeholder="Цена (₽)" type="number" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
                       <input className="input" placeholder="Категория" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)} />
-                      <input className="input" placeholder="URL картинки" value={newProductImageUrl} onChange={(e) => setNewProductImageUrl(e.target.value)} />
+                      <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                        <input className="input" placeholder="URL картинки" value={newProductImageUrl} onChange={(e) => setNewProductImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
+                        <input type="file" accept="image/*" ref={productFileRef} style={{ display: "none" }} onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f || !token) return;
+                          setUploadingPhoto(true);
+                          setShopContentErr(null);
+                          try {
+                            const { url } = await uploadFile("/upload", f, token);
+                            setNewProductImageUrl(url);
+                          } catch (err: any) {
+                            setShopContentErr(err?.message ?? "Ошибка загрузки");
+                          } finally {
+                            setUploadingPhoto(false);
+                            e.target.value = "";
+                          }
+                        }} />
+                        <button type="button" className="btn secondary" disabled={uploadingPhoto} onClick={() => productFileRef.current?.click()}>
+                          {uploadingPhoto ? "Загрузка…" : "Загрузить фото"}
+                        </button>
+                      </div>
                     </div>
                     <button type="button" className="btn" style={{ marginTop: 8 }} disabled={savingProduct || !newProductTitle.trim()} onClick={async () => {
                       setSavingProduct(true);
@@ -1852,6 +1938,13 @@ export default function App() {
       <div className="container">
         <TopBar
           title="Для мам"
+          right={
+            token && me?.activeProfileId ? (
+              <Link className="btn secondary" to="/profile">
+                Личный кабинет
+              </Link>
+            ) : undefined
+          }
           sub={
             loading
               ? "Авторизация…"

@@ -10,6 +10,7 @@ import { OffersModule } from "./offers/offers.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { BannersModule } from "./banners/banners.module";
 import { FeedModule } from "./feed/feed.module";
+import { UploadModule } from "./upload/upload.module";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { FeedModule } from "./feed/feed.module";
     ReviewsModule,
     BannersModule,
     FeedModule,
+    UploadModule,
   ],
 })
 export class AppModule {}
