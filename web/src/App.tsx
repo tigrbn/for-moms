@@ -305,7 +305,7 @@ export default function App() {
     setMe(data);
   };
 
-  const createRole = async (type: "parent" | "specialist") => {
+  const createRole = async (type: "parent" | "specialist" | "shop") => {
     if (!token) return;
     const created = await postJSON<{ id: string }>("/profiles", { type }, token);
     await ensureActiveProfile(created.id);
