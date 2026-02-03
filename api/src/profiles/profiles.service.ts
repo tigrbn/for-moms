@@ -128,6 +128,32 @@ export class ProfilesService {
     });
   }
 
+  async updateShop(
+    userId: bigint,
+    profileId: bigint,
+    data: { shopName?: string | null; description?: string | null; address?: string | null; workHours?: string | null },
+  ) {
+    const profile = await this.getOwnedProfileOrThrow(userId, profileId);
+    if (profile.type !== "shop") throw new BadRequestException("Not a shop profile");
+
+    return this.prisma.shopProfile.upsert({
+      where: { profileId },
+      create: {
+        profileId,
+        shopName: data.shopName ?? undefined,
+        description: data.description ?? undefined,
+        address: data.address ?? undefined,
+        workHours: data.workHours ?? undefined,
+      },
+      update: {
+        shopName: data.shopName ?? undefined,
+        description: data.description ?? undefined,
+        address: data.address ?? undefined,
+        workHours: data.workHours ?? undefined,
+      },
+    });
+  }
+
   async activate(userId: bigint, profileId: bigint) {
     await this.getOwnedProfileOrThrow(userId, profileId);
     return this.prisma.profile.update({ where: { id: profileId }, data: { isActive: true } });
@@ -151,10 +177,10 @@ export class ProfilesService {
         user: { select: { username: true, firstName: true, lastName: true } },
         specialistProfile: true,
         parentProfile: true,
+        shopProfile: true,
       },
     });
     if (!profile || !profile.isActive) throw new NotFoundException("Profile not found");
-    if (profile.type === "shop") throw new NotFoundException("Profile not found");
     return profile;
   }
 }

@@ -39,6 +39,15 @@ export class ProfilesController {
             specialWishes: p.parentProfile?.specialWishes ?? null,
           }
         : null,
+      shop: p.type === "shop" && p.shopProfile
+        ? {
+            shopName: p.shopProfile.shopName ?? null,
+            logoUrl: p.shopProfile.logoUrl ?? null,
+            description: p.shopProfile.description ?? null,
+            address: p.shopProfile.address ?? null,
+            workHours: p.shopProfile.workHours ?? null,
+          }
+        : null,
     };
   }
 
@@ -46,7 +55,6 @@ export class ProfilesController {
   async create(@Req() req: Request, @Body() body: { type: ProfileType }) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
     if (!body?.type) throw new BadRequestException("type is required");
-    if (body.type === "shop") throw new BadRequestException("shop role is disabled in MVP");
     const profile = await this.profiles.createProfile(userId, body?.type);
     return {
       id: profile.id.toString(),
@@ -108,6 +116,24 @@ export class ProfilesController {
       pricePerHour: specialist.pricePerHour,
       workDistricts: specialist.workDistricts,
       about: specialist.about,
+    };
+  }
+
+  @Patch(":id/shop")
+  async updateShop(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body()
+    body: { shopName?: string | null; description?: string | null; address?: string | null; workHours?: string | null },
+  ) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const shop = await this.profiles.updateShop(userId, BigInt(id), body ?? {});
+    return {
+      profileId: shop.profileId.toString(),
+      shopName: shop.shopName,
+      description: shop.description,
+      address: shop.address,
+      workHours: shop.workHours,
     };
   }
 

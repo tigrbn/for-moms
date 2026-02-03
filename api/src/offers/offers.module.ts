@@ -9,6 +9,7 @@ import { OffersService } from "./offers.service";
   imports: [PrismaModule, TelegramModule],
   controllers: [OffersController],
   providers: [OffersService, JwtAuthGuard],
+  exports: [OffersService],
 })
 export class OffersModule {}
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import { getJSON, postJSON } from "./shared/api";
+import { deleteJSON, getJSON, patchJSON, postJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
@@ -159,6 +159,7 @@ type PublicProfile = {
   user: { username?: string | null; firstName?: string | null; lastName?: string | null };
   specialist: { pricePerHour?: number | null; about?: string | null } | null;
   parent: { childrenAges?: any; specialWishes?: string | null } | null;
+  shop: { shopName?: string | null; logoUrl?: string | null; description?: string | null; address?: string | null; workHours?: string | null } | null;
 };
 
 function TopBar(props: { title: string; right?: React.ReactNode; sub?: React.ReactNode }) {
@@ -397,6 +398,14 @@ export default function App() {
     if (!token) throw new Error("No token");
     return postJSON<T>(path, body, token);
   };
+  const authedDelete = async <T,>(path: string): Promise<T> => {
+    if (!token) throw new Error("No token");
+    return deleteJSON<T>(path, token);
+  };
+  const authedPatch = async <T,>(path: string, body: unknown): Promise<T> => {
+    if (!token) throw new Error("No token");
+    return patchJSON<T>(path, body, token);
+  };
 
   const refreshMe = async () => {
     if (!token) return;
@@ -475,6 +484,21 @@ export default function App() {
                   <Link className="btn secondary" to={`/requests/${r.id}`}>
                     Открыть
                   </Link>
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    onClick={async () => {
+                      if (!confirm("Удалить заявку?")) return;
+                      try {
+                        await authedDelete(`/requests/${r.id}`);
+                        setItems((prev) => (prev ?? []).filter((x) => x.id !== r.id));
+                      } catch (e: any) {
+                        setErr(e?.message ?? "Не удалось удалить");
+                      }
+                    }}
+                  >
+                    Удалить
+                  </button>
                   <div className="spacer" />
                   <div className="muted">{formatDate(r.createdAt)}</div>
                 </div>
@@ -668,33 +692,66 @@ export default function App() {
             Район: {data.district ?? "—"} · Бюджет: {formatMoney(data.budget)} · Создано: {formatDate(data.createdAt)}
           </div>
           {data.description && <div style={{ marginTop: 10 }}>{data.description}</div>}
+          {activeProfileType === "parent" && (
+            <div className="row" style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={async () => {
+                  if (!confirm("Удалить заявку? Отклики тоже будут удалены.")) return;
+                  try {
+                    await authedDelete(`/requests/${requestId}`);
+                    navigate("/requests", { replace: true });
+                  } catch (e: any) {
+                    setActionErr(e?.message ?? "Не удалось удалить");
+                  }
+                }}
+              >
+                Удалить заявку
+              </button>
+            </div>
+          )}
         </div>
 
         {actionErr && <ErrorBox error={actionErr} />}
 
-        {activeProfileType === "specialist" && (
-          <div className="card">
-            <div className="h2">Откликнуться</div>
-            <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
-              <div className="field">
-                <div className="label">Цена (₽)</div>
-                <input className="input" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} inputMode="numeric" />
+        {activeProfileType === "specialist" && (() => {
+          const myOffer = data.offers.find((o) => o.specialistProfileId === activeProfileId);
+          if (myOffer) {
+            return (
+              <div className="card" style={{ background: "var(--tg-bg)" }}>
+                <div className="h2">Вы уже откликнулись</div>
+                <div className="muted" style={{ marginTop: 8 }}>
+                  Цена: {formatMoney(myOffer.priceOffer)} · {myOffer.status}
+                </div>
+                {myOffer.comment && <div style={{ marginTop: 8 }}>{myOffer.comment}</div>}
               </div>
-              <div className="field">
-                <div className="label">Комментарий</div>
-                <textarea className="textarea" value={offerComment} onChange={(e) => setOfferComment(e.target.value)} />
-              </div>
-              <div className="row">
-                <button className="btn" disabled={sending} onClick={() => void sendOffer()}>
-                  {sending ? "Отправка…" : "Отправить отклик"}
-                </button>
-                <button className="btn secondary" onClick={() => navigate(-1)} disabled={sending}>
-                  Назад
-                </button>
+            );
+          }
+          return (
+            <div className="card">
+              <div className="h2">Откликнуться</div>
+              <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+                <div className="field">
+                  <div className="label">Цена (₽)</div>
+                  <input className="input" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} inputMode="numeric" />
+                </div>
+                <div className="field">
+                  <div className="label">Комментарий</div>
+                  <textarea className="textarea" value={offerComment} onChange={(e) => setOfferComment(e.target.value)} />
+                </div>
+                <div className="row">
+                  <button className="btn" disabled={sending} onClick={() => void sendOffer()}>
+                    {sending ? "Отправка…" : "Отправить отклик"}
+                  </button>
+                  <button className="btn secondary" onClick={() => navigate(-1)} disabled={sending}>
+                    Назад
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {activeProfileType === "parent" && (
           <div className="card">
@@ -908,6 +965,11 @@ export default function App() {
     const [pricePerHour, setPricePerHour] = useState("");
     const [about, setAbout] = useState("");
 
+    const [shopName, setShopName] = useState("");
+    const [shopAddress, setShopAddress] = useState("");
+    const [shopWorkHours, setShopWorkHours] = useState("");
+    const [shopDescription, setShopDescription] = useState("");
+
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
     const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
@@ -918,6 +980,24 @@ export default function App() {
       setCity(activeProfile?.city ?? "");
       setDistrict(activeProfile?.district ?? "");
     }, [activeProfileId]);
+
+    useEffect(() => {
+      if (type !== "shop") return;
+      const load = async () => {
+        try {
+          const p = await authedGet<PublicProfile>(`/profiles/${profileId}`);
+          if (p.shop) {
+            setShopName(p.shop.shopName ?? "");
+            setShopAddress(p.shop.address ?? "");
+            setShopWorkHours(p.shop.workHours ?? "");
+            setShopDescription(p.shop.description ?? "");
+          }
+        } catch {
+          // ignore
+        }
+      };
+      void load();
+    }, [profileId, type]);
 
     useEffect(() => {
       const run = async () => {
@@ -959,6 +1039,14 @@ export default function App() {
           await authedPost(`/profiles/${profileId}/specialist`, {
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
+          });
+        }
+        if (type === "shop") {
+          await authedPatch(`/profiles/${profileId}/shop`, {
+            shopName: shopName || null,
+            address: shopAddress || null,
+            workHours: shopWorkHours || null,
+            description: shopDescription || null,
           });
         }
 
@@ -1031,6 +1119,27 @@ export default function App() {
               <div className="field">
                 <div className="label">О себе</div>
                 <textarea className="textarea" value={about} onChange={(e) => setAbout(e.target.value)} />
+              </div>
+            </>
+          )}
+
+          {type === "shop" && (
+            <>
+              <div className="field">
+                <div className="label">Название магазина</div>
+                <input className="input" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Напр. Детский мир" />
+              </div>
+              <div className="field">
+                <div className="label">Адрес</div>
+                <input className="input" value={shopAddress} onChange={(e) => setShopAddress(e.target.value)} />
+              </div>
+              <div className="field">
+                <div className="label">Часы работы</div>
+                <input className="input" value={shopWorkHours} onChange={(e) => setShopWorkHours(e.target.value)} placeholder="Пн–Пт 10:00–19:00" />
+              </div>
+              <div className="field">
+                <div className="label">Описание</div>
+                <textarea className="textarea" value={shopDescription} onChange={(e) => setShopDescription(e.target.value)} />
               </div>
             </>
           )}
@@ -1281,6 +1390,14 @@ export default function App() {
             </div>
           )}
           {p.specialist?.about && <div style={{ marginTop: 10 }}>{p.specialist.about}</div>}
+          {p.type === "shop" && p.shop && (
+            <div style={{ marginTop: 12 }}>
+              <div className="h3">{p.shop.shopName ?? p.displayName ?? "Магазин"}</div>
+              {p.shop.address && <div className="muted">{p.shop.address}</div>}
+              {p.shop.workHours && <div className="muted">{p.shop.workHours}</div>}
+              {p.shop.description && <div style={{ marginTop: 8 }}>{p.shop.description}</div>}
+            </div>
+          )}
           <div className="row" style={{ marginTop: 12 }}>
             {tg && (
               <a className="btn" href={tg} target="_blank" rel="noreferrer">
@@ -1449,9 +1566,16 @@ export default function App() {
                     👩‍🏫 Специалист
                   </button>
                 </div>
-                <div className="muted" style={{ marginTop: 10 }}>
-                  Магазин перенесён во 2-й релиз.
-                </div>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    void createRole("shop").catch((e: any) => {
+                      setMeError(e?.message ?? "Не удалось создать роль");
+                    });
+                  }}
+                >
+                  🏪 Магазин
+                </button>
               </div>
             )}
 

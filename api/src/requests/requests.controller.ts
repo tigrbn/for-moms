@@ -1,12 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { OffersService } from "../offers/offers.service";
 import { RequestsService } from "./requests.service";
 
 @UseGuards(JwtAuthGuard)
 @Controller("requests")
 export class RequestsController {
-  constructor(private readonly requests: RequestsService) {}
+  constructor(
+    private readonly requests: RequestsService,
+    private readonly offers: OffersService,
+  ) {}
 
   @Post()
   async create(
@@ -45,6 +49,23 @@ export class RequestsController {
       createdAt: r.createdAt.toISOString(),
       offersCount: r.offersCount,
     }));
+  }
+
+  @Post(":id/offers")
+  async createOffer(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: { priceOffer?: number | null; comment?: string | null },
+  ) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const created = await this.offers.createForRequest(userId, BigInt(id), body ?? {});
+    return {
+      id: created.id.toString(),
+      status: created.status,
+      priceOffer: created.priceOffer,
+      comment: created.comment,
+      createdAt: created.createdAt.toISOString(),
+    };
   }
 
   @Get(":id")
@@ -112,6 +133,13 @@ export class RequestsController {
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const updated = await this.requests.update(userId, BigInt(id), body ?? {});
     return { id: updated.id.toString(), status: updated.status };
+  }
+
+  @Delete(":id")
+  async delete(@Req() req: Request, @Param("id") id: string) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    await this.requests.delete(userId, BigInt(id));
+    return { ok: true };
   }
 
   @Post(":id/complete")

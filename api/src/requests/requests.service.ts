@@ -110,6 +110,16 @@ export class RequestsService {
     });
   }
 
+  async delete(userId: bigint, requestId: bigint) {
+    const active = await getActiveProfileOrThrow(this.prisma, userId);
+    if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
+
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request || request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
+
+    await this.prisma.request.delete({ where: { id: requestId } });
+  }
+
   async complete(userId: bigint, requestId: bigint) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
     if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");

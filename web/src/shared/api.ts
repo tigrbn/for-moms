@@ -38,3 +38,42 @@ export async function postJSON<TResponse>(
 
   return res.json() as Promise<TResponse>;
 }
+
+export async function patchJSON<TResponse>(
+  path: string,
+  body: unknown,
+  token?: string,
+): Promise<TResponse> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+  }
+
+  return res.json() as Promise<TResponse>;
+}
+
+export async function deleteJSON<TResponse = unknown>(path: string, token?: string): Promise<TResponse> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+  }
+
+  const text = await res.text();
+  return (text ? JSON.parse(text) : {}) as TResponse;
+}
