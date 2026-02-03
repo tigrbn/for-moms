@@ -1514,12 +1514,12 @@ export default function App() {
     <div className="app safe">
       <div className="container">
         <TopBar
-          title="ForMoms"
+          title="Для мам"
           sub={
             loading
               ? "Авторизация…"
               : token
-                ? "✅ Logged in."
+                ? "✅ Онлайн"
                 : "Откройте внутри Telegram Mini App"
           }
           right={roleSwitcher}
