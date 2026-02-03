@@ -32,16 +32,11 @@ type FeedResponse =
         | {
             kind: "specialist_profile";
             isPromoted: boolean;
-            profile: {
-              id: string;
-              displayName?: string | null;
-              avatarUrl?: string | null;
-              city?: string | null;
-              district?: string | null;
-              ratingAvg: string;
-              ratingCount: number;
-              pricePerHour?: number | null;
-            };
+            profile: { id: string; displayName?: string | null; avatarUrl?: string | null; city?: string | null; district?: string | null; ratingAvg: string; ratingCount: number; pricePerHour?: number | null };
+          }
+        | {
+            kind: "shop_profile";
+            profile: { id: string; displayName?: string | null; shopName?: string | null; address?: string | null; district?: string | null };
           }
       >;
     }
@@ -63,6 +58,10 @@ type FeedResponse =
               status: "active" | "in_progress" | "done" | "cancelled";
               createdAt: string;
             };
+          }
+        | {
+            kind: "shop_profile";
+            profile: { id: string; displayName?: string | null; shopName?: string | null; address?: string | null; district?: string | null };
           }
       >;
     };
@@ -159,7 +158,15 @@ type PublicProfile = {
   user: { username?: string | null; firstName?: string | null; lastName?: string | null };
   specialist: { pricePerHour?: number | null; about?: string | null } | null;
   parent: { childrenAges?: any; specialWishes?: string | null } | null;
-  shop: { shopName?: string | null; logoUrl?: string | null; description?: string | null; address?: string | null; workHours?: string | null } | null;
+  shop: {
+    shopName?: string | null;
+    logoUrl?: string | null;
+    description?: string | null;
+    address?: string | null;
+    workHours?: string | null;
+    products?: Array<{ id: string; title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: unknown }>;
+    promotions?: Array<{ id: string; imageUrl: string; title?: string | null; text?: string | null }>;
+  } | null;
 };
 
 function TopBar(props: { title: string; right?: React.ReactNode; sub?: React.ReactNode }) {
@@ -217,6 +224,72 @@ function labelOfferStatus(s: "pending" | "accepted" | "rejected" | "cancelled") 
   return "🚫 Отменён";
 }
 
+function ShopPromoEditInline(props: {
+  imageUrl: string;
+  title: string;
+  text: string;
+  saving: boolean;
+  onSave: (imageUrl: string, title: string, text: string) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [imageUrl, setImageUrl] = useState(props.imageUrl);
+  const [title, setTitle] = useState(props.title);
+  const [text, setText] = useState(props.text);
+  useEffect(() => {
+    setImageUrl(props.imageUrl);
+    setTitle(props.title);
+    setText(props.text);
+  }, [props.imageUrl, props.title, props.text]);
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+      <input className="input" placeholder="Заголовок" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <input className="input" placeholder="Текст" value={text} onChange={(e) => setText(e.target.value)} />
+      <div className="row" style={{ gap: 8 }}>
+        <button type="button" className="btn" disabled={props.saving || !imageUrl.trim()} onClick={() => void props.onSave(imageUrl, title, text)}>{props.saving ? "Сохранение…" : "Сохранить"}</button>
+        <button type="button" className="btn secondary" onClick={props.onCancel}>Отмена</button>
+      </div>
+    </div>
+  );
+}
+
+function ShopProductEditInline(props: {
+  title: string;
+  description: string;
+  price: string | number;
+  category: string;
+  imageUrl: string;
+  saving: boolean;
+  onSave: (title: string, description: string, price: string, category: string, imageUrl: string) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(props.title);
+  const [description, setDescription] = useState(props.description);
+  const [price, setPrice] = useState(String(props.price ?? ""));
+  const [category, setCategory] = useState(props.category);
+  const [imageUrl, setImageUrl] = useState(props.imageUrl);
+  useEffect(() => {
+    setTitle(props.title);
+    setDescription(props.description);
+    setPrice(String(props.price ?? ""));
+    setCategory(props.category);
+    setImageUrl(props.imageUrl);
+  }, [props.title, props.description, props.price, props.category, props.imageUrl]);
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <input className="input" placeholder="Название" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <input className="input" placeholder="Описание" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <input className="input" placeholder="Цена (₽)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+      <input className="input" placeholder="Категория" value={category} onChange={(e) => setCategory(e.target.value)} />
+      <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+      <div className="row" style={{ gap: 8 }}>
+        <button type="button" className="btn" disabled={props.saving || !title.trim()} onClick={() => void props.onSave(title, description, price, category, imageUrl)}>{props.saving ? "Сохранение…" : "Сохранить"}</button>
+        <button type="button" className="btn secondary" onClick={props.onCancel}>Отмена</button>
+      </div>
+    </div>
+  );
+}
+
 function hoursBetween(a: Date, b: Date) {
   return Math.abs(a.getTime() - b.getTime()) / (1000 * 60 * 60);
 }
@@ -230,6 +303,7 @@ const FEED_CATEGORIES = [
   { id: "Психолог", label: "🧠 Психолог" },
   { id: "Логопед", label: "🗣 Логопед" },
   { id: "Массажист", label: "💆 Массажист" },
+  { id: "Магазины", label: "🏪 Магазины" },
   { id: "Другое", label: "✨ Другое" },
 ];
 
@@ -352,52 +426,22 @@ export default function App() {
         <Link className={`navtab ${location.pathname.startsWith("/offers") ? "active" : ""}`} to="/offers">
           Отклики
         </Link>
-        <Link className={`navtab ${location.pathname.startsWith("/roles") ? "active" : ""}`} to="/roles">
-          Роли
-        </Link>
         <Link className={`navtab ${location.pathname.startsWith("/profile") ? "active" : ""}`} to="/profile">
           Профиль
         </Link>
         <div className="spacer" />
-        <button
-          className="btn secondary"
-          onClick={() => {
-            clearToken();
-            navigate("/", { replace: true });
-          }}
-        >
-          Выйти
-        </button>
+        {me && activeProfile && (
+          <Link
+            className="navtab role-link"
+            to="/roles"
+            title="Сменить роль"
+          >
+            {activeProfile.type === "parent" ? "👩‍🍼 Мама" : activeProfile.type === "specialist" ? "👩‍🏫 Специалист" : "🏪 Магазин"}
+          </Link>
+        )}
       </div>
     </div>
   );
-
-  const roleSwitcher =
-    me && me.profiles.length > 0 ? (
-      <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
-        <div className="segmented" role="tablist" aria-label="Role switcher">
-          {me.profiles
-            .filter((p) => p.isActive)
-            .filter((p) => p.type === "parent" || p.type === "specialist")
-            .map((p) => (
-              <button
-                key={p.id}
-                className={p.id === me.activeProfileId ? "active" : ""}
-                onClick={() => void ensureActiveProfile(p.id)}
-                type="button"
-                title="Переключить роль"
-              >
-                {p.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
-              </button>
-            ))}
-        </div>
-        {missingRole && (
-          <button className="btn secondary" onClick={() => void addMissingRole()} title="Добавить вторую роль">
-            + {missingRole === "parent" ? "Мама" : "Специалист"}
-          </button>
-        )}
-      </div>
-    ) : null;
 
   const activeProfileId = me?.activeProfileId ?? null;
   const activeProfileType = activeProfile?.type ?? null;
@@ -981,6 +1025,21 @@ export default function App() {
     const [shopAddress, setShopAddress] = useState("");
     const [shopWorkHours, setShopWorkHours] = useState("");
     const [shopDescription, setShopDescription] = useState("");
+    const [shopPromotions, setShopPromotions] = useState<Array<{ id: string; imageUrl: string; title?: string | null; text?: string | null }>>([]);
+    const [shopProducts, setShopProducts] = useState<Array<{ id: string; title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: unknown }>>([]);
+    const [shopContentErr, setShopContentErr] = useState<string | null>(null);
+    const [editingPromoId, setEditingPromoId] = useState<string | null>(null);
+    const [editingProductId, setEditingProductId] = useState<string | null>(null);
+    const [newPromoImageUrl, setNewPromoImageUrl] = useState("");
+    const [newPromoTitle, setNewPromoTitle] = useState("");
+    const [newPromoText, setNewPromoText] = useState("");
+    const [newProductTitle, setNewProductTitle] = useState("");
+    const [newProductDesc, setNewProductDesc] = useState("");
+    const [newProductPrice, setNewProductPrice] = useState("");
+    const [newProductCategory, setNewProductCategory] = useState("");
+    const [newProductImageUrl, setNewProductImageUrl] = useState("");
+    const [savingPromo, setSavingPromo] = useState(false);
+    const [savingProduct, setSavingProduct] = useState(false);
 
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
@@ -993,22 +1052,27 @@ export default function App() {
       setDistrict(activeProfile?.district ?? "");
     }, [activeProfileId]);
 
+    const loadShopProfile = async () => {
+      if (type !== "shop") return;
+      setShopContentErr(null);
+      try {
+        const p = await authedGet<PublicProfile>(`/profiles/${profileId}`);
+        if (p.shop) {
+          setShopName(p.shop.shopName ?? "");
+          setShopAddress(p.shop.address ?? "");
+          setShopWorkHours(p.shop.workHours ?? "");
+          setShopDescription(p.shop.description ?? "");
+          setShopPromotions((p.shop.promotions ?? []) as Array<{ id: string; imageUrl: string; title?: string | null; text?: string | null }>);
+          setShopProducts((p.shop.products ?? []) as Array<{ id: string; title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: unknown }>);
+        }
+      } catch (e: any) {
+        setShopContentErr(e?.message ?? "Ошибка загрузки");
+      }
+    };
+
     useEffect(() => {
       if (type !== "shop") return;
-      const load = async () => {
-        try {
-          const p = await authedGet<PublicProfile>(`/profiles/${profileId}`);
-          if (p.shop) {
-            setShopName(p.shop.shopName ?? "");
-            setShopAddress(p.shop.address ?? "");
-            setShopWorkHours(p.shop.workHours ?? "");
-            setShopDescription(p.shop.description ?? "");
-          }
-        } catch {
-          // ignore
-        }
-      };
-      void load();
+      void loadShopProfile();
     }, [profileId, type]);
 
     useEffect(() => {
@@ -1152,6 +1216,176 @@ export default function App() {
               <div className="field">
                 <div className="label">Описание</div>
                 <textarea className="textarea" value={shopDescription} onChange={(e) => setShopDescription(e.target.value)} />
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <div className="h2">Акции (баннеры)</div>
+                {shopContentErr && <div className="muted" style={{ marginTop: 6 }}>{shopContentErr}</div>}
+                {shopPromotions.length > 0 && (
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    {shopPromotions.map((pr) => (
+                      <div key={pr.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                        {editingPromoId === pr.id ? (
+                          <ShopPromoEditInline
+                            imageUrl={pr.imageUrl}
+                            title={pr.title ?? ""}
+                            text={pr.text ?? ""}
+                            saving={savingPromo}
+                            onSave={async (imageUrl, title, text) => {
+                              setSavingPromo(true);
+                              try {
+                                await authedPatch(`/profiles/${profileId}/shop/promotions/${pr.id}`, { imageUrl: imageUrl || null, title: title || null, text: text || null });
+                                setEditingPromoId(null);
+                                await loadShopProfile();
+                              } catch (e: any) {
+                                setShopContentErr(e?.message ?? "Ошибка");
+                              } finally {
+                                setSavingPromo(false);
+                              }
+                            }}
+                            onCancel={() => setEditingPromoId(null)}
+                          />
+                        ) : (
+                          <>
+                            {pr.imageUrl && <img src={pr.imageUrl} alt="" style={{ width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8 }} />}
+                            {pr.title && <div className="h3" style={{ marginTop: 8 }}>{pr.title}</div>}
+                            {pr.text && <div className="muted" style={{ marginTop: 4 }}>{pr.text}</div>}
+                            <div className="row" style={{ marginTop: 8, flexWrap: "wrap", gap: 8 }}>
+                              <button type="button" className="btn secondary" onClick={() => setEditingPromoId(pr.id)}>Изменить</button>
+                              <button type="button" className="btn secondary" onClick={async () => {
+                                if (!confirm("Удалить акцию?")) return;
+                                try {
+                                  await authedDelete(`/profiles/${profileId}/shop/promotions/${pr.id}`);
+                                  await loadShopProfile();
+                                } catch (e: any) {
+                                  setShopContentErr(e?.message ?? "Ошибка");
+                                }
+                              }}>Удалить</button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="card" style={{ marginTop: 10, background: "var(--tg-bg)" }}>
+                  <div className="muted" style={{ marginBottom: 8 }}>Добавить акцию (картинка + текст)</div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <input className="input" placeholder="URL картинки" value={newPromoImageUrl} onChange={(e) => setNewPromoImageUrl(e.target.value)} />
+                    <input className="input" placeholder="Заголовок" value={newPromoTitle} onChange={(e) => setNewPromoTitle(e.target.value)} />
+                    <input className="input" placeholder="Текст" value={newPromoText} onChange={(e) => setNewPromoText(e.target.value)} />
+                  </div>
+                  <button type="button" className="btn" style={{ marginTop: 8 }} disabled={savingPromo || !newPromoImageUrl.trim()} onClick={async () => {
+                    setSavingPromo(true);
+                    try {
+                      await authedPost(`/profiles/${profileId}/shop/promotions`, { imageUrl: newPromoImageUrl.trim(), title: newPromoTitle.trim() || null, text: newPromoText.trim() || null });
+                      setNewPromoImageUrl("");
+                      setNewPromoTitle("");
+                      setNewPromoText("");
+                      await loadShopProfile();
+                    } catch (e: any) {
+                      setShopContentErr(e?.message ?? "Ошибка");
+                    } finally {
+                      setSavingPromo(false);
+                    }
+                  }}>{savingPromo ? "Сохранение…" : "Добавить акцию"}</button>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 20 }}>
+                <div className="h2">Товары (до 6)</div>
+                {shopProducts.length > 0 && (
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    {shopProducts.map((prod) => (
+                      <div key={prod.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                        {editingProductId === prod.id ? (
+                          <ShopProductEditInline
+                            title={prod.title}
+                            description={prod.description ?? ""}
+                            price={prod.price ?? ""}
+                            category={prod.category ?? ""}
+                            imageUrl={Array.isArray(prod.imageUrls) && prod.imageUrls[0] ? String(prod.imageUrls[0]) : ""}
+                            saving={savingProduct}
+                            onSave={async (title, description, price, category, imageUrl) => {
+                              setSavingProduct(true);
+                              try {
+                                await authedPatch(`/profiles/${profileId}/shop/products/${prod.id}`, {
+                                  title: title || prod.title,
+                                  description: description || null,
+                                  price: price ? Number(price) : null,
+                                  category: category || null,
+                                  imageUrls: imageUrl ? [imageUrl] : null,
+                                });
+                                setEditingProductId(null);
+                                await loadShopProfile();
+                              } catch (e: any) {
+                                setShopContentErr(e?.message ?? "Ошибка");
+                              } finally {
+                                setSavingProduct(false);
+                              }
+                            }}
+                            onCancel={() => setEditingProductId(null)}
+                          />
+                        ) : (
+                          <>
+                            {Array.isArray(prod.imageUrls) && prod.imageUrls[0] && (
+                              <img src={String(prod.imageUrls[0])} alt="" style={{ width: "100%", maxHeight: 100, objectFit: "cover", borderRadius: 8 }} />
+                            )}
+                            <div className="h3" style={{ marginTop: 8 }}>{prod.title}</div>
+                            {prod.description && <div className="muted" style={{ marginTop: 4 }}>{prod.description}</div>}
+                            {prod.price != null && <div style={{ marginTop: 4 }}>{formatMoney(prod.price)}</div>}
+                            <div className="row" style={{ marginTop: 8, flexWrap: "wrap", gap: 8 }}>
+                              <button type="button" className="btn secondary" onClick={() => setEditingProductId(prod.id)}>Изменить</button>
+                              <button type="button" className="btn secondary" onClick={async () => {
+                                if (!confirm("Удалить товар?")) return;
+                                try {
+                                  await authedDelete(`/profiles/${profileId}/shop/products/${prod.id}`);
+                                  await loadShopProfile();
+                                } catch (e: any) {
+                                  setShopContentErr(e?.message ?? "Ошибка");
+                                }
+                              }}>Удалить</button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {shopProducts.length < 6 && (
+                  <div className="card" style={{ marginTop: 10, background: "var(--tg-bg)" }}>
+                    <div className="muted" style={{ marginBottom: 8 }}>Добавить товар</div>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <input className="input" placeholder="Название" value={newProductTitle} onChange={(e) => setNewProductTitle(e.target.value)} />
+                      <input className="input" placeholder="Описание" value={newProductDesc} onChange={(e) => setNewProductDesc(e.target.value)} />
+                      <input className="input" placeholder="Цена (₽)" type="number" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
+                      <input className="input" placeholder="Категория" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)} />
+                      <input className="input" placeholder="URL картинки" value={newProductImageUrl} onChange={(e) => setNewProductImageUrl(e.target.value)} />
+                    </div>
+                    <button type="button" className="btn" style={{ marginTop: 8 }} disabled={savingProduct || !newProductTitle.trim()} onClick={async () => {
+                      setSavingProduct(true);
+                      try {
+                        await authedPost(`/profiles/${profileId}/shop/products`, {
+                          title: newProductTitle.trim(),
+                          description: newProductDesc.trim() || null,
+                          price: newProductPrice ? Number(newProductPrice) : null,
+                          category: newProductCategory.trim() || null,
+                          imageUrls: newProductImageUrl.trim() ? [newProductImageUrl.trim()] : null,
+                        });
+                        setNewProductTitle("");
+                        setNewProductDesc("");
+                        setNewProductPrice("");
+                        setNewProductCategory("");
+                        setNewProductImageUrl("");
+                        await loadShopProfile();
+                      } catch (e: any) {
+                        setShopContentErr(e?.message ?? "Ошибка");
+                      } finally {
+                        setSavingProduct(false);
+                      }
+                    }}>{savingProduct ? "Сохранение…" : "Добавить товар"}</button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -1345,6 +1579,28 @@ export default function App() {
                   </div>
                 );
               }
+
+              if (it.kind === "shop_profile") {
+                const sp = it.profile;
+                return (
+                  <div key={`shop-${sp.id}-${idx}`} className="card feed-card feed-card-specialist">
+                    <div className="feed-card-header">
+                      <div className="feed-card-avatar">
+                        <span className="feed-card-avatar-placeholder">🏪</span>
+                      </div>
+                      <div className="feed-card-title-block">
+                        <div className="feed-card-title">{sp.shopName ?? sp.displayName ?? "Магазин"}</div>
+                        <div className="muted feed-card-meta">
+                          {sp.address ?? "—"} · {sp.district ?? "—"}
+                        </div>
+                      </div>
+                    </div>
+                    <Link className="btn feed-card-btn" to={`/profiles/${sp.id}`}>
+                      Открыть магазин
+                    </Link>
+                  </div>
+                );
+              }
               return null;
             })}
           </div>
@@ -1418,6 +1674,36 @@ export default function App() {
               {p.shop.address && <div className="muted">{p.shop.address}</div>}
               {p.shop.workHours && <div className="muted">{p.shop.workHours}</div>}
               {p.shop.description && <div style={{ marginTop: 8 }}>{p.shop.description}</div>}
+              {p.shop.promotions && p.shop.promotions.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div className="h2" style={{ marginBottom: 10 }}>Акции</div>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {p.shop.promotions.map((pr) => (
+                      <div key={pr.id} className="card" style={{ background: "var(--tg-bg)", padding: 0, overflow: "hidden" }}>
+                        <img src={pr.imageUrl} alt="" style={{ width: "100%", display: "block" }} />
+                        <div style={{ padding: 12 }}>
+                          {pr.title && <div style={{ fontWeight: 800 }}>{pr.title}</div>}
+                          {pr.text && <div className="muted" style={{ marginTop: 6 }}>{pr.text}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {p.shop.products && p.shop.products.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div className="h2" style={{ marginBottom: 10 }}>Каталог</div>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {p.shop.products.map((prod) => (
+                      <div key={prod.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                        <div style={{ fontWeight: 800 }}>{prod.title}</div>
+                        {prod.description && <div className="muted" style={{ marginTop: 6 }}>{prod.description}</div>}
+                        {prod.price != null && <div style={{ marginTop: 6 }}>{prod.price} ₽</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <div className="row" style={{ marginTop: 12 }}>
@@ -1460,10 +1746,10 @@ export default function App() {
     if (!me) return <div className="card">Загрузка…</div>;
 
     const roles = me.profiles
-      .filter((p) => p.type === "parent" || p.type === "specialist")
+      .filter((p) => p.type === "parent" || p.type === "specialist" || p.type === "shop")
       .map((p) => ({
         ...p,
-        title: p.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист",
+        title: p.type === "parent" ? "👩‍🍼 Мама" : p.type === "specialist" ? "👩‍🏫 Специалист" : "🏪 Магазин",
       }));
 
     const toggle = async (profileId: string, nextActive: boolean) => {
@@ -1480,10 +1766,22 @@ export default function App() {
         <div className="row">
           <div className="h2">Роли</div>
           <div className="spacer" />
-          {missingRole && (
-            <button className="btn" onClick={() => void addMissingRole()}>
-              + Добавить: {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
-            </button>
+          {(missingRole || !me.profiles.some((p) => p.type === "shop")) && (
+            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+              {missingRole && (
+                <button className="btn" onClick={() => void addMissingRole()}>
+                  + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+                </button>
+              )}
+              {!me.profiles.some((p) => p.type === "shop") && (
+                <button
+                  className="btn"
+                  onClick={() => void createRole("shop").catch((e: any) => setMeError(e?.message ?? "Не удалось создать роль"))}
+                >
+                  + 🏪 Магазин
+                </button>
+              )}
+            </div>
           )}
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
@@ -1506,7 +1804,7 @@ export default function App() {
                 {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
               </div>
 
-              <div className="row" style={{ marginTop: 10 }}>
+              <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
                 {p.isActive ? (
                   <button className="btn secondary" onClick={() => void toggle(p.id, false)}>
                     Выключить
@@ -1516,7 +1814,6 @@ export default function App() {
                     Включить
                   </button>
                 )}
-
                 <button
                   className="btn secondary"
                   disabled={!p.isActive}
@@ -1524,6 +1821,24 @@ export default function App() {
                 >
                   Сделать активной
                 </button>
+                {p.type === "shop" && (
+                  <button
+                    className="btn secondary"
+                    style={{ color: "var(--tg-hint)" }}
+                    onClick={async () => {
+                      if (!confirm("Удалить аккаунт магазина? Все данные магазина будут удалены.")) return;
+                      try {
+                        await authedDelete(`/profiles/${p.id}`);
+                        await refreshMe();
+                        navigate("/", { replace: true });
+                      } catch (e: any) {
+                        setMeError(e?.message ?? "Не удалось удалить");
+                      }
+                    }}
+                  >
+                    Удалить аккаунт
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -1544,7 +1859,6 @@ export default function App() {
                 ? "✅ Онлайн"
                 : "Откройте внутри Telegram Mini App"
           }
-          right={roleSwitcher}
         />
 
         {error && <ErrorBox error={error} />}
@@ -1565,39 +1879,18 @@ export default function App() {
 
             {me && me.profiles.length === 0 && (
               <div className="card">
-                <div className="h2">Выберите роли</div>
-                <div className="row" style={{ marginTop: 10 }}>
-                  <button
-                    className="btn"
-                    onClick={() => {
-                      void createRole("parent").catch((e: any) => {
-                        setMeError(e?.message ?? "Не удалось создать роль");
-                      });
-                    }}
-                  >
+                <div className="h2">Выберите роль</div>
+                <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
+                  <button className="btn" onClick={() => void createRole("parent").catch((e: any) => setMeError(e?.message ?? "Не удалось создать роль"))}>
                     👩‍🍼 Мама
                   </button>
-                  <button
-                    className="btn"
-                    onClick={() => {
-                      void createRole("specialist").catch((e: any) => {
-                        setMeError(e?.message ?? "Не удалось создать роль");
-                      });
-                    }}
-                  >
+                  <button className="btn" onClick={() => void createRole("specialist").catch((e: any) => setMeError(e?.message ?? "Не удалось создать роль"))}>
                     👩‍🏫 Специалист
                   </button>
+                  <button className="btn" onClick={() => void createRole("shop").catch((e: any) => setMeError(e?.message ?? "Не удалось создать роль"))}>
+                    🏪 Магазин
+                  </button>
                 </div>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    void createRole("shop").catch((e: any) => {
-                      setMeError(e?.message ?? "Не удалось создать роль");
-                    });
-                  }}
-                >
-                  🏪 Магазин
-                </button>
               </div>
             )}
 

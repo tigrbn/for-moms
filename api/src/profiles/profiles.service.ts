@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { ProfileType } from "@prisma/client";
+import { Prisma, ProfileType } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -154,6 +154,98 @@ export class ProfilesService {
     });
   }
 
+  async createShopPromotion(userId: bigint, profileId: bigint, data: { imageUrl: string; title?: string | null; text?: string | null }) {
+    await this.getOwnedProfileOrThrow(userId, profileId);
+    const profile = await this.prisma.profile.findUnique({ where: { id: profileId }, include: { shopPromotions: true } });
+    if (!profile || profile.type !== "shop") throw new BadRequestException("Not a shop profile");
+    if (!data.imageUrl?.trim()) throw new BadRequestException("imageUrl is required");
+    return this.prisma.shopPromotion.create({
+      data: {
+        profileId,
+        imageUrl: data.imageUrl.trim(),
+        title: data.title?.trim() ?? null,
+        text: data.text?.trim() ?? null,
+        sortOrder: profile.shopPromotions.length,
+      },
+    });
+  }
+
+  async updateShopPromotion(userId: bigint, profileId: bigint, promotionId: bigint, data: { imageUrl?: string; title?: string | null; text?: string | null }) {
+    await this.getOwnedProfileOrThrow(userId, profileId);
+    const promo = await this.prisma.shopPromotion.findFirst({ where: { id: promotionId, profileId } });
+    if (!promo) throw new NotFoundException("Promotion not found");
+    return this.prisma.shopPromotion.update({
+      where: { id: promotionId },
+      data: {
+        imageUrl: data.imageUrl?.trim() ?? undefined,
+        title: data.title !== undefined ? (data.title?.trim() ?? null) : undefined,
+        text: data.text !== undefined ? (data.text?.trim() ?? null) : undefined,
+      },
+    });
+  }
+
+  async deleteShopPromotion(userId: bigint, profileId: bigint, promotionId: bigint) {
+    await this.getOwnedProfileOrThrow(userId, profileId);
+    const promo = await this.prisma.shopPromotion.findFirst({ where: { id: promotionId, profileId } });
+    if (!promo) throw new NotFoundException("Promotion not found");
+    await this.prisma.shopPromotion.delete({ where: { id: promotionId } });
+  }
+
+  async createShopProduct(userId: bigint, profileId: bigint, data: { title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: string[] | null }) {
+    await this.getOwnedProfileOrThrow(userId, profileId);
+    const profile = await this.prisma.profile.findUnique({ where: { id: profileId }, include: { shopProducts: true } });
+    if (!profile || profile.type !== "shop") throw new BadRequestException("Not a shop profile");
+    if (!data.title?.trim()) throw new BadRequestException("title is required");
+    if (profile.shopProducts.length >= 6) throw new BadRequestException("Maximum 6 products allowed");
+    return this.prisma.shopProduct.create({
+      data: {
+        profileId,
+        title: data.title.trim(),
+        description: data.description?.trim() ?? null,
+        price: data.price ?? null,
+        category: data.category?.trim() ?? null,
+        imageUrls: data.imageUrls == null ? Prisma.JsonNull : data.imageUrls,
+      },
+    });
+  }
+
+  async updateShopProduct(userId: bigint, profileId: bigint, productId: bigint, data: { title?: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: string[] | null; isActive?: boolean }) {
+    await this.getOwnedProfileOrThrow(userId, profileId);
+    const prod = await this.prisma.shopProduct.findFirst({ where: { id: productId, profileId } });
+    if (!prod) throw new NotFoundException("Product not found");
+    return this.prisma.shopProduct.update({
+      where: { id: productId },
+      data: {
+        title: data.title?.trim() ?? undefined,
+        description: data.description !== undefined ? (data.description?.trim() ?? null) : undefined,
+        price: data.price !== undefined ? data.price : undefined,
+        category: data.category !== undefined ? (data.category?.trim() ?? null) : undefined,
+        imageUrls: data.imageUrls ?? undefined,
+        isActive: data.isActive ?? undefined,
+      },
+    });
+  }
+
+  async deleteShopProduct(userId: bigint, profileId: bigint, productId: bigint) {
+    await this.getOwnedProfileOrThrow(userId, profileId);
+    const prod = await this.prisma.shopProduct.findFirst({ where: { id: productId, profileId } });
+    if (!prod) throw new NotFoundException("Product not found");
+    await this.prisma.shopProduct.delete({ where: { id: productId } });
+  }
+
+  async deleteProfile(userId: bigint, profileId: bigint) {
+    const profile = await this.getOwnedProfileOrThrow(userId, profileId);
+    if (profile.type !== "shop") throw new BadRequestException("Only shop profile can be deleted via this endpoint");
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.updateMany({
+        where: { id: userId, activeProfileId: profileId },
+        data: { activeProfileId: null },
+      });
+      await tx.profile.delete({ where: { id: profileId } });
+    });
+  }
+
   async activate(userId: bigint, profileId: bigint) {
     await this.getOwnedProfileOrThrow(userId, profileId);
     return this.prisma.profile.update({ where: { id: profileId }, data: { isActive: true } });
@@ -178,6 +270,8 @@ export class ProfilesService {
         specialistProfile: true,
         parentProfile: true,
         shopProfile: true,
+        shopProducts: { where: { isActive: true }, orderBy: { createdAt: "desc" } },
+        shopPromotions: { orderBy: { sortOrder: "asc", createdAt: "asc" } },
       },
     });
     if (!profile || !profile.isActive) throw new NotFoundException("Profile not found");

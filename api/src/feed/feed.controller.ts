@@ -36,6 +36,36 @@ export class FeedController {
       targetUrl: b.targetUrl ?? null,
     }));
 
+    const categoryNorm = category?.trim().toLowerCase();
+    const isShopCategory = categoryNorm === "магазины" || categoryNorm === "магазин";
+
+    if (isShopCategory) {
+      const shopWhere: any = { type: "shop", isActive: true };
+      if (district?.trim()) {
+        shopWhere.district = { equals: district.trim(), mode: "insensitive" };
+      }
+      const shops = await this.prisma.profile.findMany({
+        where: shopWhere,
+        include: { shopProfile: true },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+      const shopItems = shops.map((p) => ({
+        kind: "shop_profile" as const,
+        profile: {
+          id: p.id.toString(),
+          displayName: p.displayName,
+          shopName: p.shopProfile?.shopName ?? null,
+          address: p.shopProfile?.address ?? null,
+          district: p.district,
+        },
+      }));
+      return {
+        role: active.type === "specialist" ? ("specialist" as const) : ("parent" as const),
+        items: [...bannerItems, ...shopItems],
+      };
+    }
+
     if (active.type === "specialist") {
       const where: any = { status: "active" };
       if (district?.trim()) {
