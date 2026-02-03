@@ -70,21 +70,30 @@ export class FeedController {
       };
     }
 
-    // parent or shop: show specialist profiles
+    // parent or shop: show specialist profiles (filter by category = skills match)
     const profileWhere: any = { type: "specialist", isActive: true };
     if (district?.trim()) {
       profileWhere.district = { equals: district.trim(), mode: "insensitive" };
     }
-    const specialists = await this.prisma.profile.findMany({
+    let specialists = await this.prisma.profile.findMany({
       where: profileWhere,
       include: {
         user: { select: { username: true } },
         specialistProfile: true,
       },
       orderBy: [{ promotedUntil: "desc" }, { ratingAvg: "desc" }],
-      take: 50,
+      take: 100,
     });
-    const specialistItems = specialists.map((p) => ({
+    if (category?.trim()) {
+      const cat = category.trim().toLowerCase();
+      specialists = specialists.filter((p) => {
+        const skills = p.specialistProfile?.skills;
+        if (!skills) return false;
+        const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+        return arr.some((s: unknown) => String(s).toLowerCase().includes(cat));
+      });
+    }
+    const specialistItems = specialists.slice(0, 50).map((p) => ({
       kind: "specialist_profile" as const,
       isPromoted: Boolean(p.promotedUntil && p.promotedUntil > now),
       profile: {

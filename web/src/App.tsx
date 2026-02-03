@@ -221,6 +221,18 @@ function hoursBetween(a: Date, b: Date) {
   return Math.abs(a.getTime() - b.getTime()) / (1000 * 60 * 60);
 }
 
+/** Категории ленты: для мамы — специалисты по категории, для специалиста — заявки по категории */
+const FEED_CATEGORIES = [
+  { id: "", label: "Все" },
+  { id: "Няня", label: "👶 Няня" },
+  { id: "Репетитор", label: "📚 Репетитор" },
+  { id: "Гувернантка", label: "👩‍🏫 Гувернантка" },
+  { id: "Психолог", label: "🧠 Психолог" },
+  { id: "Логопед", label: "🗣 Логопед" },
+  { id: "Массажист", label: "💆 Массажист" },
+  { id: "Другое", label: "✨ Другое" },
+];
+
 export default function App() {
   const { token, clearToken, loading, error } = useTelegramAuth();
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -1178,67 +1190,92 @@ export default function App() {
 
   function FeedScreen() {
     const role = activeProfileType;
-    const contentCount = feed
-      ? feed.items.filter((it) => it.kind !== "banner").length
-      : 0;
+    const banners = feed?.items.filter((it) => it.kind === "banner") ?? [];
+    const contentItems = feed?.items.filter((it) => it.kind !== "banner") ?? [];
+    const contentCount = contentItems.length;
 
     return (
-      <div className="card">
-        <div className="row">
-          <div className="h2">Лента</div>
-          <div className="spacer" />
-          <button
-            className="btn secondary"
-            onClick={() => {
-              setFeed(null);
-              setFeedError(null);
-              setFeedReloadKey((x) => x + 1);
-            }}
-          >
-            Обновить
-          </button>
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Баннер(ы) сверху */}
+        {feed && banners.length > 0 && (
+          <div className="feed-banners">
+            {banners.map((it, idx) =>
+              it.kind === "banner" ? (
+                <a
+                  key={`b-${it.id}-${idx}`}
+                  href={it.targetUrl ?? "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="feed-banner-link"
+                >
+                  <img src={it.imageUrl} alt="" className="feed-banner-img" />
+                </a>
+              ) : null,
+            )}
+          </div>
+        )}
 
-        <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
-          <div className="field">
-            <div className="label">Район (фильтр)</div>
-            <input
-              className="input"
-              value={feedDistrict}
-              onChange={(e) => setFeedDistrict(e.target.value)}
-              placeholder="Напр. Центральный"
-            />
+        <div className="card">
+          <div className="row">
+            <div className="h2">Лента</div>
+            <div className="spacer" />
+            <button
+              className="btn secondary"
+              onClick={() => {
+                setFeed(null);
+                setFeedError(null);
+                setFeedReloadKey((x) => x + 1);
+              }}
+            >
+              Обновить
+            </button>
           </div>
 
-          {role === "specialist" && (
-            <div className="field">
-              <div className="label">Категория (фильтр)</div>
-              <input
-                className="input"
-                value={feedCategory}
-                onChange={(e) => setFeedCategory(e.target.value)}
-                placeholder="Напр. Няня"
-              />
-            </div>
-          )}
+          {/* Категории — для всех ролей */}
+          <div className="feed-categories-label">Категория</div>
+          <div className="feed-categories">
+            {FEED_CATEGORIES.map((c) => (
+              <button
+                key={c.id || "all"}
+                type="button"
+                className={`feed-category-chip ${feedCategory === c.id ? "active" : ""}`}
+                onClick={() => {
+                  setFeedCategory(c.id);
+                  setFeedReloadKey((x) => x + 1);
+                }}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="feed-district-row">
+            <input
+              className="input feed-district-input"
+              value={feedDistrict}
+              onChange={(e) => setFeedDistrict(e.target.value)}
+              onBlur={() => setFeedReloadKey((x) => x + 1)}
+              placeholder="Район (напр. Центральный)"
+            />
+          </div>
         </div>
 
-        {feedError && <div className="muted" style={{ marginTop: 10 }}>{feedError}</div>}
-        {!feed && <div className="muted" style={{ marginTop: 10 }}>Загрузка…</div>}
+        {feedError && <div className="card"><div className="muted">{feedError}</div></div>}
+        {!feed && <div className="card"><div className="muted">Загрузка…</div></div>}
 
         {feed && (
-          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+          <div className="feed-content">
             {contentCount === 0 && (
-              <div className="card" style={{ background: "var(--tg-bg)" }}>
-                <div style={{ fontWeight: 900 }}>
-                  {role === "parent" ? "Пока нет специалистов" : "Пока нет заявок"}
+              <div className="card feed-empty">
+                <div className="feed-empty-title">
+                  {role === "specialist" ? "Пока нет заявок в этой категории" : "Пока нет специалистов"}
                 </div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  {role === "parent"
-                    ? "Попробуйте убрать фильтр по району — или добавьте роль “Специалист”, чтобы создать первую анкету."
-                    : "Попробуйте убрать фильтры — или переключитесь на роль “Мама”, чтобы создать заявку."}
+                <div className="muted" style={{ marginTop: 8 }}>
+                  {role === "specialist"
+                    ? "Попробуйте другую категорию или уберите фильтр по району."
+                    : "Попробуйте категорию «Все» или другой район."}
                 </div>
-                <div className="row" style={{ marginTop: 10 }}>
+                <div className="row" style={{ marginTop: 14, flexWrap: "wrap", gap: 10 }}>
                   <button
                     className="btn secondary"
                     onClick={() => {
@@ -1247,83 +1284,68 @@ export default function App() {
                       setFeedReloadKey((x) => x + 1);
                     }}
                   >
-                    Очистить фильтры
+                    Сбросить фильтры
                   </button>
-                  <div className="spacer" />
-                  {missingRole ? (
+                  {missingRole && (
                     <button className="btn" onClick={() => void addMissingRole()}>
-                      + Добавить роль: {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+                      + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
                     </button>
-                  ) : (
-                    <Link className="btn" to="/roles">
-                      Роли
-                    </Link>
                   )}
                 </div>
               </div>
             )}
-            {feed.items.map((it, idx) => {
-              if (it.kind === "banner") {
-                return (
-                  <div key={`b-${it.id}-${idx}`} className="card" style={{ background: "var(--tg-bg)" }}>
-                    <div className="muted" style={{ marginBottom: 8 }}>Реклама</div>
-                    <a href={it.targetUrl ?? "#"} target="_blank" rel="noreferrer" style={{ display: "block" }}>
-                      <img
-                        src={it.imageUrl}
-                        alt=""
-                        style={{ width: "100%", borderRadius: 12, display: "block" }}
-                      />
-                    </a>
-                  </div>
-                );
-              }
-
+            {contentItems.map((it, idx) => {
               if (it.kind === "specialist_profile") {
                 const p = it.profile;
                 return (
-                  <div key={`sp-${p.id}-${idx}`} className="card" style={{ background: "var(--tg-bg)" }}>
-                    <div className="row">
-                      <div style={{ fontWeight: 900 }}>
-                        {p.displayName ?? "Специалист"}
-                        {it.isPromoted && <span className="pill" style={{ marginLeft: 8 }}>TOP</span>}
+                  <div key={`sp-${p.id}-${idx}`} className="card feed-card feed-card-specialist">
+                    <div className="feed-card-header">
+                      <div className="feed-card-avatar">
+                        {p.avatarUrl ? (
+                          <img src={p.avatarUrl} alt="" />
+                        ) : (
+                          <span className="feed-card-avatar-placeholder">👤</span>
+                        )}
                       </div>
-                      <div className="spacer" />
-                      <div className="muted">★ {p.ratingAvg} ({p.ratingCount})</div>
+                      <div className="feed-card-title-block">
+                        <div className="feed-card-title">
+                          {p.displayName ?? "Специалист"}
+                          {it.isPromoted && <span className="pill feed-card-top">TOP</span>}
+                        </div>
+                        <div className="muted feed-card-meta">
+                          ★ {p.ratingAvg} ({p.ratingCount}) · {p.city ?? "—"} · {p.district ?? "—"}
+                        </div>
+                        {p.pricePerHour != null && (
+                          <div className="feed-card-price">{p.pricePerHour} ₽/час</div>
+                        )}
+                      </div>
                     </div>
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      {p.city ?? "—"} · {p.district ?? "—"} · {p.pricePerHour != null ? `${p.pricePerHour} ₽/час` : "цена —"}
-                    </div>
-                    <div className="row" style={{ marginTop: 10 }}>
-                      <Link className="btn secondary" to={`/profiles/${p.id}`}>
-                        Открыть анкету
-                      </Link>
-                    </div>
+                    <Link className="btn feed-card-btn" to={`/profiles/${p.id}`}>
+                      Открыть анкету
+                    </Link>
                   </div>
                 );
               }
 
-              // request
-              const r = it.request;
-              return (
-                <div key={`r-${r.id}-${idx}`} className="card" style={{ background: "var(--tg-bg)" }}>
-                  <div className="row">
-                    <div style={{ fontWeight: 900 }}>{r.category}</div>
-                    <div className="spacer" />
-                    <div className="muted">{formatDate(r.createdAt)}</div>
+              if (it.kind === "request") {
+                const r = it.request;
+                return (
+                  <div key={`r-${r.id}-${idx}`} className="card feed-card feed-card-request">
+                    <div className="feed-card-request-category">{r.category}</div>
+                    <div className="muted feed-card-meta" style={{ marginTop: 6 }}>
+                      Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · {formatDate(r.createdAt)}
+                    </div>
+                    {r.description && <div className="feed-card-desc">{r.description}</div>}
+                    <div className="row" style={{ marginTop: 12, alignItems: "center" }}>
+                      <Link className="btn feed-card-btn" to={`/requests/${r.id}`}>
+                        Открыть заявку
+                      </Link>
+                      <div className="pill">{labelRequestStatus(r.status)}</div>
+                    </div>
                   </div>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)}
-                  </div>
-                  {r.description && <div style={{ marginTop: 8 }}>{r.description}</div>}
-                  <div className="row" style={{ marginTop: 10 }}>
-                    <Link className="btn secondary" to={`/requests/${r.id}`}>
-                      Открыть
-                    </Link>
-                    <div className="spacer" />
-                    <div className="pill">{labelRequestStatus(r.status)}</div>
-                  </div>
-                </div>
-              );
+                );
+              }
+              return null;
             })}
           </div>
         )}

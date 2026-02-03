@@ -274,3 +274,143 @@ a {
   border-color: var(--border);
   box-shadow: var(--shadow-soft);
 }
+
+/* Feed: баннер, категории, карточки */
+.feed-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.feed-banner-link {
+  display: block;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+}
+.feed-banner-img {
+  width: 100%;
+  display: block;
+  vertical-align: top;
+}
+
+.feed-categories-label {
+  font-size: 12px;
+  color: var(--tg-hint);
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+.feed-categories {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.feed-category-chip {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-2, var(--tg-bg));
+  color: var(--tg-text);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.feed-category-chip.active {
+  background: var(--tg-button);
+  color: var(--tg-button-text);
+  border-color: var(--tg-button);
+}
+
+.feed-district-row {
+  margin-top: 12px;
+}
+.feed-district-input {
+  width: 100%;
+}
+
+.feed-content {
+  display: grid;
+  gap: 12px;
+}
+
+.feed-empty {
+  background: var(--tg-bg);
+}
+.feed-empty-title {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.feed-card {
+  background: var(--tg-bg);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid var(--border);
+}
+.feed-card-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.feed-card-avatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.feed-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.feed-card-avatar-placeholder {
+  font-size: 24px;
+}
+.feed-card-title-block {
+  flex: 1;
+  min-width: 0;
+}
+.feed-card-title {
+  font-weight: 900;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.feed-card-top {
+  font-size: 11px;
+}
+.feed-card-meta {
+  font-size: 13px;
+  margin-top: 4px;
+}
+.feed-card-price {
+  font-weight: 700;
+  color: var(--tg-link);
+  margin-top: 4px;
+}
+.feed-card-btn {
+  display: inline-block;
+  margin-top: 12px;
+  text-align: center;
+}
+.feed-card-request-category {
+  font-weight: 900;
+  font-size: 16px;
+}
+.feed-card-desc {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
