@@ -74,19 +74,34 @@ export class ProfilesService {
   ) {
     await this.getOwnedProfileOrThrow(userId, profileId);
 
-    const updateData = {
-      ...(data.displayName !== undefined && { displayName: data.displayName }),
-      ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
-      ...(data.age !== undefined && { age: data.age }),
-      ...(data.city !== undefined && { city: data.city }),
-      ...(data.district !== undefined && { district: data.district }),
-    };
+    const updateData: Prisma.ProfileUpdateInput & { age?: number | null } = {};
+    if ("displayName" in data) updateData.displayName = data.displayName;
+    if ("avatarUrl" in data) updateData.avatarUrl = data.avatarUrl;
+    if ("age" in data) (updateData as { age?: number | null }).age = data.age;
+    if ("city" in data) updateData.city = data.city;
+    if ("district" in data) updateData.district = data.district;
+
     this.logger.log(`updateBase profileId=${profileId} data keys=${Object.keys(data).join(",")} updateData=${JSON.stringify(updateData)}`);
 
-    return this.prisma.profile.update({
+    if (Object.keys(updateData).length === 0) {
+      return this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
+    }
+
+    const updated = await this.prisma.profile.update({
       where: { id: profileId },
       data: updateData,
     });
+
+    const wantedAge = (updateData as { age?: number | null }).age;
+    const gotAge = (updated as { age?: number | null }).age;
+    if (wantedAge !== undefined && gotAge !== wantedAge) {
+      this.logger.warn(`updateBase age mismatch: wanted ${String(wantedAge)}, got ${String(gotAge)}; applying raw UPDATE`);
+      await this.prisma.$executeRaw`UPDATE profiles SET age = ${wantedAge} WHERE id = ${profileId}`;
+      const refetched = await this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
+      return refetched;
+    }
+
+    return updated;
   }
 
   async updateParent(userId: bigint, profileId: bigint, data: { childrenAges?: number[] | null; specialWishes?: string | null }) {
