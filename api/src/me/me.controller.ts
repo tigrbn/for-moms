@@ -14,7 +14,11 @@ export class MeController {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { profiles: true },
+      include: {
+        profiles: {
+          include: { specialistProfile: true },
+        },
+      },
     });
 
     if (!user) {
@@ -31,14 +35,22 @@ export class MeController {
         username: user.username,
         photoUrl: user.photoUrl,
       },
-      profiles: user.profiles.map((p) => ({
-        id: p.id.toString(),
-        type: p.type,
-        isActive: p.isActive,
-        displayName: p.displayName,
-        city: p.city,
-        district: p.district,
-      })),
+      profiles: user.profiles.map((p) => {
+        const base = {
+          id: p.id.toString(),
+          type: p.type,
+          isActive: p.isActive,
+          displayName: p.displayName,
+          city: p.city,
+          district: p.district,
+        };
+        if (p.type === "specialist" && p.specialistProfile) {
+          const skills = p.specialistProfile.skills;
+          const skillsArr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+          return { ...base, specialist: { skills: skillsArr, pricePerHour: p.specialistProfile.pricePerHour, about: p.specialistProfile.about } };
+        }
+        return base;
+      }),
       activeProfileId: user.activeProfileId ? user.activeProfileId.toString() : null,
     };
   }

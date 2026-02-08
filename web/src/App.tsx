@@ -5,7 +5,7 @@ import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
 import backgroundImg from "./assets/img/background.png";
-import logoImg from "./assets/img/logo.png";
+import mainLogoImg from "./assets/img/main_logo.png";
 import stubImg from "./assets/img/заглушка.png";
 import categoryNanny from "./assets/img/category/няня.png";
 import categoryTutor from "./assets/img/category/репетитор.png";
@@ -31,9 +31,12 @@ type MeResponse = {
     displayName?: string | null;
     city?: string | null;
     district?: string | null;
+    specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null };
   }>;
   activeProfileId: string | null;
 };
+
+const SPECIALIST_CATEGORIES = ["Няня", "Репетитор", "Досуг"] as const;
 
 type FeedResponse =
   | {
@@ -163,11 +166,15 @@ type PublicProfile = {
   parent: { childrenAges?: any; specialWishes?: string | null } | null;
 };
 
-function TopBar(props: { title?: string; sub?: React.ReactNode; right?: React.ReactNode; logo?: string }) {
+function TopBar(props: { title?: string; sub?: React.ReactNode; right?: React.ReactNode; logo?: string; logoSub?: React.ReactNode; rightNode?: React.ReactNode }) {
   if (props.logo) {
     return (
       <div className="topbar topbar--logo">
-        <img src={props.logo} alt="Для мам" className="topbar-logo" />
+        <div className="topbar-logo-wrap">
+          <img src={props.logo} alt="Для мам" className="topbar-logo" />
+          {props.logoSub != null && <div className="topbar-logo-sub">{props.logoSub}</div>}
+        </div>
+        {props.rightNode != null && <div className="topbar-right">{props.rightNode}</div>}
       </div>
     );
   }
@@ -458,11 +465,10 @@ export default function App() {
         {items && (
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             {items.map((r) => (
-              <div key={r.id} className="card" style={{ background: "var(--tg-bg)" }}>
+              <div key={r.id} className="card card--status-top" style={{ background: "var(--tg-bg)" }}>
+                <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
                 <div className="row">
                   <div style={{ fontWeight: 800 }}>{r.category}</div>
-                  <div className="spacer" />
-                  <div className="pill">{labelRequestStatus(r.status)}</div>
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>
                   Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · Откликов: {r.offersCount}
@@ -670,11 +676,10 @@ export default function App() {
 
     return (
       <div style={{ display: "grid", gap: 12 }}>
-        <div className="card">
+        <div className="card card--status-top">
+          <div className="pill pill--top-right">{labelRequestStatus(data.status)}</div>
           <div className="row">
             <div className="h2">{data.category}</div>
-            <div className="spacer" />
-            <div className="muted">{data.status}</div>
           </div>
           <div className="muted" style={{ marginTop: 6 }}>
             Район: {data.district ?? "—"} · Бюджет: {formatMoney(data.budget)} · Создано: {formatDate(data.createdAt)}
@@ -951,6 +956,7 @@ export default function App() {
 
     const [pricePerHour, setPricePerHour] = useState("");
     const [about, setAbout] = useState("");
+    const [specialistCategory, setSpecialistCategory] = useState("");
 
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
@@ -961,7 +967,12 @@ export default function App() {
       setDisplayName(activeProfile?.displayName ?? "");
       setCity(activeProfile?.city ?? "");
       setDistrict(activeProfile?.district ?? "");
-    }, [activeProfileId]);
+      if (activeProfile?.type === "specialist" && "specialist" in activeProfile && activeProfile.specialist) {
+        setPricePerHour(activeProfile.specialist.pricePerHour != null ? String(activeProfile.specialist.pricePerHour) : "");
+        setAbout(activeProfile.specialist.about ?? "");
+        setSpecialistCategory(activeProfile.specialist.skills?.[0] ?? "");
+      }
+    }, [activeProfileId, activeProfile]);
 
     useEffect(() => {
       const run = async () => {
@@ -1001,6 +1012,7 @@ export default function App() {
         }
         if (type === "specialist") {
           await authedPatch(`/profiles/${profileId}/specialist`, {
+            skills: specialistCategory ? [specialistCategory] : null,
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
@@ -1068,6 +1080,19 @@ export default function App() {
 
           {type === "specialist" && (
             <>
+              <div className="field">
+                <div className="label">Категория (в какой ленте показывать)</div>
+                <select
+                  className="input"
+                  value={specialistCategory}
+                  onChange={(e) => setSpecialistCategory(e.target.value)}
+                >
+                  <option value="">— выбрать —</option>
+                  {SPECIALIST_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
               <div className="field">
                 <div className="label">Цена за час (₽)</div>
                 <input className="input" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} inputMode="numeric" />
@@ -1232,7 +1257,8 @@ export default function App() {
               if (it.kind === "request") {
                 const r = it.request;
                 return (
-                  <div key={`r-${r.id}-${idx}`} className="card feed-card feed-card-request">
+                  <div key={`r-${r.id}-${idx}`} className="card feed-card feed-card-request card--status-top">
+                    <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
                     <div className="feed-card-request-category">{r.category}</div>
                     <div className="muted feed-card-meta" style={{ marginTop: 6 }}>
                       Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · {formatDate(r.createdAt)}
@@ -1242,7 +1268,6 @@ export default function App() {
                       <Link className="btn feed-card-btn" to={`/requests/${r.id}`}>
                         Открыть заявку
                       </Link>
-                      <div className="pill">{labelRequestStatus(r.status)}</div>
                     </div>
                   </div>
                 );
@@ -1387,11 +1412,11 @@ export default function App() {
 
         <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
           {roles.map((p) => (
-            <div key={p.id} className="card" style={{ background: "var(--tg-bg)" }}>
+            <div key={p.id} className="card card--status-top" style={{ background: "var(--tg-bg)" }}>
+              {p.id === me.activeProfileId && <span className="pill pill--top-right">Активна</span>}
               <div className="row">
                 <div style={{ fontWeight: 900 }}>{p.title}</div>
                 <div className="spacer" />
-                {p.id === me.activeProfileId && <span className="pill">Активная</span>}
                 <span className="pill" style={{ background: p.isActive ? undefined : "color-mix(in srgb, var(--tg-theme-hint-color, #999) 18%, var(--surface-2))" }}>
                   {p.isActive ? "Включена" : "Выключена"}
                 </span>
@@ -1446,8 +1471,32 @@ export default function App() {
     <div className="app safe" style={{ backgroundImage: `url(${backgroundImg})` }}>
       <div className="container">
         <TopBar
-          logo={logoImg}
-          right={undefined}
+          logo={mainLogoImg}
+          logoSub="мини-приложение"
+          rightNode={me && me.profiles.length > 1 ? (
+            <div className="topbar-role-switch">
+              {me.profiles
+                .slice()
+                .sort((a, b) => (a.type === "parent" ? -1 : 1) - (b.type === "parent" ? -1 : 1))
+                .map((p, i) => (
+                  <span key={p.id}>
+                    {i > 0 && <span className="topbar-role-sep"> · </span>}
+                    {p.id === me.activeProfileId ? (
+                      <span className="topbar-role-switch-item active">{p.type === "parent" ? "Мама" : "Специалист"}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="topbar-role-switch-btn"
+                        onClick={() => void ensureActiveProfile(p.id)}
+                      >
+                        {p.type === "parent" ? "Мама" : "Специалист"}
+                      </button>
+                    )}
+                  </span>
+                ))}
+              <Link to="/roles" className="topbar-role-switch-gear" title="Управление ролями">⚙</Link>
+            </div>
+          ) : undefined}
         />
 
         {error && <ErrorBox error={error} />}
