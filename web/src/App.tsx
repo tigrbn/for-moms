@@ -971,22 +971,22 @@ export default function App() {
     const [reviewsErr, setReviewsErr] = useState<string | null>(null);
 
     useEffect(() => {
-      if (!me || !activeProfileId) return;
-      const profile = me.profiles.find((pr) => pr.id === activeProfileId);
-      if (!profile) return;
-      setDisplayName(profile.displayName ?? "");
-      setCity(profile.city ?? "");
-      setDistrict(profile.district ?? "");
-      if (profile.type === "specialist") {
-        const spec = (profile as { specialist?: { skills?: string[]; pricePerHour?: number | null; about?: string | null } }).specialist;
+      if (!activeProfile) return;
+      setDisplayName(activeProfile.displayName ?? "");
+      setCity(activeProfile.city ?? "");
+      setDistrict(activeProfile.district ?? "");
+      if (activeProfile.type === "specialist") {
+        const spec = activeProfile.specialist;
         if (spec) {
           setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
           setAbout(spec.about ?? "");
           const firstSkill = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : "";
           setSpecialistCategory(firstSkill);
+        } else {
+          setSpecialistCategory("");
         }
       }
-    }, [activeProfileId, me]);
+    }, [activeProfile]);
 
     useEffect(() => {
       const run = async () => {

@@ -198,7 +198,7 @@ a {
 }
 
 .btn-primary,
-.btn:not(.btn-secondary):not(.btn-danger):not(.ghost) {
+.btn:not(.btn-secondary):not(.btn-danger):not(.danger):not(.ghost) {
   background: var(--primary);
   color: #ffffff;
   box-shadow: var(--shadow-btn);
