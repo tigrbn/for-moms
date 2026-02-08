@@ -48,7 +48,8 @@ export class MeController {
           let raw = p.specialistProfile.skills;
           if (typeof raw === "string") {
             try {
-              raw = JSON.parse(raw) as unknown;
+              const parsed = JSON.parse(raw) as unknown;
+              raw = Array.isArray(parsed) ? parsed : typeof parsed === "string" ? [parsed] : [];
             } catch {
               raw = raw ? [raw] : [];
             }
@@ -58,6 +59,8 @@ export class MeController {
             skillsArr = raw.filter((s): s is string => typeof s === "string");
           } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
             skillsArr = Object.values(raw).filter((s): s is string => typeof s === "string");
+          } else if (typeof raw === "string") {
+            skillsArr = raw ? [raw] : [];
           }
           return { ...base, specialist: { skills: skillsArr, pricePerHour: p.specialistProfile.pricePerHour, about: p.specialistProfile.about } };
         }

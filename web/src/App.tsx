@@ -1025,9 +1025,9 @@ export default function App() {
           });
         }
         if (type === "specialist") {
-          const payload = [specialistCategory || SPECIALIST_CATEGORIES[0]].filter(Boolean);
+          const payload = specialistCategory ? [specialistCategory] : [];
           const specRes = await authedPatch<{ skills?: string[] }>(`/profiles/${profileId}/specialist`, {
-            skills: payload.length ? payload : [],
+            skills: payload,
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
@@ -1102,9 +1102,10 @@ export default function App() {
                 <div className="label">Категория (в какой ленте показывать)</div>
                 <select
                   className="input"
-                  value={specialistCategory || SPECIALIST_CATEGORIES[0]}
+                  value={specialistCategory}
                   onChange={(e) => setSpecialistCategory(e.target.value)}
                 >
+                  <option value="">не выбрано</option>
                   {SPECIALIST_CATEGORIES.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -1514,12 +1515,7 @@ export default function App() {
             )}
 
             {me && me.profiles.length > 0 && !me.activeProfileId && (
-              <div className="card">
-                <div className="h2">Выберите активную роль</div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Нажмите на роль в шапке.
-                </div>
-              </div>
+              <RolesScreen />
             )}
 
             {me && me.activeProfileId && activeProfile && (
