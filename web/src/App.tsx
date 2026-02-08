@@ -36,7 +36,6 @@ type MeResponse = {
   activeProfileId: string | null;
 };
 
-const SPECIALIST_CATEGORIES = ["Няня", "Репетитор", "Досуг"] as const;
 
 type FeedResponse =
   | {
@@ -272,6 +271,9 @@ const FEED_CATEGORIES = [
   { id: "Досуг", label: "Досуг", icon: categoryLeisure },
 ];
 
+/** Категории специалиста для страницы Профиль (те же иконки, что в ленте) */
+const SPECIALIST_CATEGORY_OPTIONS = FEED_CATEGORIES.filter((c) => c.id !== "");
+
 export default function App() {
   const { token, clearToken, error } = useTelegramAuth();
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -366,6 +368,7 @@ export default function App() {
     if (!token) return;
     const created = await postJSON<{ id: string }>("/profiles", { type }, token);
     await ensureActiveProfile(created.id);
+    if (type === "specialist") navigate("/profile");
   };
 
   const allTypes = useMemo(() => new Set((me?.profiles ?? []).map((p) => p.type)), [me]);
@@ -1069,10 +1072,35 @@ export default function App() {
 
     return (
       <div className="card">
-        <div className="row">
-          <div className="h2">Профиль</div>
-          <div className="spacer" />
-          <div className="pill">{labelProfileType(type)}</div>
+        <div className="row profile-header-row">
+          {type === "specialist" ? (
+            <>
+              <div className="h2">Категория</div>
+              <div className="spacer" />
+              <div className="profile-category-pill">
+                {(() => {
+                  const opt = SPECIALIST_CATEGORY_OPTIONS.find((c) => c.id === specialistCategory);
+                  return opt?.icon ? <img src={opt.icon} alt="" className="profile-category-icon" /> : null;
+                })()}
+                <select
+                  className="profile-category-select"
+                  value={specialistCategory}
+                  onChange={(e) => setSpecialistCategory(e.target.value)}
+                >
+                  <option value="">не выбрано</option>
+                  {SPECIALIST_CATEGORY_OPTIONS.map((c) => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="h2">Профиль</div>
+              <div className="spacer" />
+              <div className="pill">{labelProfileType(type)}</div>
+            </>
+          )}
         </div>
         {(type === "parent" || type === "specialist") && (
           <div style={{ marginTop: 10 }}>
@@ -1121,19 +1149,6 @@ export default function App() {
 
           {type === "specialist" && (
             <>
-              <div className="field">
-                <div className="label">Категория (в какой ленте показывать)</div>
-                <select
-                  className="input"
-                  value={specialistCategory}
-                  onChange={(e) => setSpecialistCategory(e.target.value)}
-                >
-                  <option value="">не выбрано</option>
-                  {SPECIALIST_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
               <div className="field">
                 <div className="label">Цена за час (₽)</div>
                 <input className="input" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} inputMode="numeric" />

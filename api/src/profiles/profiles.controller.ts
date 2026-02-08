@@ -9,83 +9,6 @@ import { ProfilesService } from "./profiles.service";
 export class ProfilesController {
   constructor(private readonly profiles: ProfilesService) {}
 
-  // Более специфичные маршруты (:id/shop/..., :id/activate) — выше, иначе Nest отдаёт 404 на POST /profiles/:id/shop/promotions
-  @Post(":id/shop/promotions")
-  async createShopPromotion(
-    @Req() req: Request,
-    @Param("id") id: string,
-    @Body() body: { imageUrl: string; title?: string | null; text?: string | null },
-  ) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    const promo = await this.profiles.createShopPromotion(userId, BigInt(id), body ?? { imageUrl: "" });
-    return { id: promo.id.toString(), imageUrl: promo.imageUrl, title: promo.title, text: promo.text };
-  }
-
-  @Patch(":id/shop/promotions/:promoId")
-  async updateShopPromotion(
-    @Req() req: Request,
-    @Param("id") id: string,
-    @Param("promoId") promoId: string,
-    @Body() body: { imageUrl?: string; title?: string | null; text?: string | null },
-  ) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    const promo = await this.profiles.updateShopPromotion(userId, BigInt(id), BigInt(promoId), body ?? {});
-    return { id: promo.id.toString(), imageUrl: promo.imageUrl, title: promo.title, text: promo.text };
-  }
-
-  @Delete(":id/shop/promotions/:promoId")
-  async deleteShopPromotion(@Req() req: Request, @Param("id") id: string, @Param("promoId") promoId: string) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    await this.profiles.deleteShopPromotion(userId, BigInt(id), BigInt(promoId));
-    return { ok: true };
-  }
-
-  @Post(":id/shop/products")
-  async createShopProduct(
-    @Req() req: Request,
-    @Param("id") id: string,
-    @Body()
-    body: { title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: string[] | null },
-  ) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    const prod = await this.profiles.createShopProduct(userId, BigInt(id), body ?? { title: "" });
-    return {
-      id: prod.id.toString(),
-      title: prod.title,
-      description: prod.description,
-      price: prod.price,
-      category: prod.category,
-      imageUrls: prod.imageUrls,
-    };
-  }
-
-  @Patch(":id/shop/products/:productId")
-  async updateShopProduct(
-    @Req() req: Request,
-    @Param("id") id: string,
-    @Param("productId") productId: string,
-    @Body()
-    body: { title?: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: string[] | null },
-  ) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    const prod = await this.profiles.updateShopProduct(userId, BigInt(id), BigInt(productId), body ?? {});
-    return {
-      id: prod.id.toString(),
-      title: prod.title,
-      description: prod.description,
-      price: prod.price,
-      category: prod.category,
-      imageUrls: prod.imageUrls,
-    };
-  }
-
-  @Delete(":id/shop/products/:productId")
-  async deleteShopProduct(@Req() req: Request, @Param("id") id: string, @Param("productId") productId: string) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    await this.profiles.deleteShopProduct(userId, BigInt(id), BigInt(productId));
-    return { ok: true };
-  }
-
   @Post(":id/activate")
   async activate(@Req() req: Request, @Param("id") id: string) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
@@ -128,33 +51,6 @@ export class ProfilesController {
         ? {
             childrenAges: p.parentProfile?.childrenAges ?? null,
             specialWishes: p.parentProfile?.specialWishes ?? null,
-          }
-        : null,
-      shop: p.type === "shop" && p.shopProfile
-        ? {
-            shopName: p.shopProfile.shopName ?? null,
-            logoUrl: p.shopProfile.logoUrl ?? null,
-            description: p.shopProfile.description ?? null,
-            address: p.shopProfile.address ?? null,
-            workHours: p.shopProfile.workHours ?? null,
-            products: Array.isArray((p as { shopProducts?: unknown[] }).shopProducts)
-              ? (p as { shopProducts: { id: bigint; title: string; description: string | null; price: number | null; category: string | null; imageUrls: unknown }[] }).shopProducts.map((prod) => ({
-                  id: prod.id.toString(),
-                  title: prod.title,
-                  description: prod.description ?? null,
-                  price: prod.price ?? null,
-                  category: prod.category ?? null,
-                  imageUrls: prod.imageUrls ?? null,
-                }))
-              : [],
-            promotions: Array.isArray((p as { shopPromotions?: unknown[] }).shopPromotions)
-              ? (p as { shopPromotions: { id: bigint; imageUrl: string; title: string | null; text: string | null }[] }).shopPromotions.map((pr) => ({
-                  id: pr.id.toString(),
-                  imageUrl: pr.imageUrl,
-                  title: pr.title ?? null,
-                  text: pr.text ?? null,
-                }))
-              : [],
           }
         : null,
     };
@@ -225,24 +121,6 @@ export class ProfilesController {
       pricePerHour: specialist.pricePerHour,
       workDistricts: specialist.workDistricts,
       about: specialist.about,
-    };
-  }
-
-  @Patch(":id/shop")
-  async updateShop(
-    @Req() req: Request,
-    @Param("id") id: string,
-    @Body()
-    body: { shopName?: string | null; description?: string | null; address?: string | null; workHours?: string | null },
-  ) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    const shop = await this.profiles.updateShop(userId, BigInt(id), body ?? {});
-    return {
-      profileId: shop.profileId.toString(),
-      shopName: shop.shopName,
-      description: shop.description,
-      address: shop.address,
-      workHours: shop.workHours,
     };
   }
 

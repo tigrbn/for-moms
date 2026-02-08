@@ -777,3 +777,36 @@ a {
   font-size: 14px;
   line-height: 1.4;
 }
+
+/* Страница Профиль — заголовок «Категория» и выбор категории с иконкой */
+.profile-header-row {
+  align-items: center;
+}
+.profile-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: var(--tg-bg);
+}
+.profile-category-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.profile-category-select {
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 2px 4px;
+  min-width: 100px;
+}
+.profile-category-select:focus {
+  outline: none;
+}

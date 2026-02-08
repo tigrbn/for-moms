@@ -13,7 +13,7 @@ type SessionResponse = {
   };
   profiles: Array<{
     id: string;
-    type: "parent" | "specialist" | "shop";
+    type: "parent" | "specialist";
     isActive: boolean;
     displayName?: string | null;
     city?: string | null;
