@@ -286,7 +286,8 @@ export default function App() {
   // kept for upcoming screens (profile editing, role-aware UI)
   const activeProfile = useMemo(() => {
     if (!me?.activeProfileId) return null;
-    return me.profiles.find((p) => p.id === me.activeProfileId) ?? null;
+    const id = String(me.activeProfileId);
+    return me.profiles.find((p) => String(p.id) === id) ?? null;
   }, [me]);
 
   // Manual reset: open https://.../?reset=1
