@@ -75,11 +75,11 @@ export class ProfilesService {
     return this.prisma.profile.update({
       where: { id: profileId },
       data: {
-        displayName: data.displayName ?? undefined,
-        avatarUrl: data.avatarUrl ?? undefined,
-        age: data.age ?? undefined,
-        city: data.city ?? undefined,
-        district: data.district ?? undefined,
+        ...(data.displayName !== undefined && { displayName: data.displayName }),
+        ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
+        ...(data.age !== undefined && { age: data.age }),
+        ...(data.city !== undefined && { city: data.city }),
+        ...(data.district !== undefined && { district: data.district }),
       },
     });
   }
@@ -88,10 +88,13 @@ export class ProfilesService {
     const profile = await this.getOwnedProfileOrThrow(userId, profileId);
     if (profile.type !== "parent") throw new BadRequestException("Not a parent profile");
 
+    const childrenAges =
+      data.childrenAges === undefined ? undefined : (data.childrenAges === null ? Prisma.JsonNull : data.childrenAges) as Prisma.InputJsonValue | undefined;
+    const specialWishes = data.specialWishes !== undefined ? data.specialWishes : undefined;
     return this.prisma.parentProfile.upsert({
       where: { profileId },
-      create: { profileId, childrenAges: data.childrenAges ?? undefined, specialWishes: data.specialWishes ?? undefined },
-      update: { childrenAges: data.childrenAges ?? undefined, specialWishes: data.specialWishes ?? undefined },
+      create: { profileId, childrenAges, specialWishes },
+      update: { childrenAges, specialWishes },
     });
   }
 
@@ -112,30 +115,38 @@ export class ProfilesService {
 
     const skillsJson = (() => {
       const s = data.skills;
-      if (s == null) return undefined;
+      if (s === undefined) return undefined;
+      if (s === null) return Prisma.JsonNull;
       if (Array.isArray(s)) return s.filter((x): x is string => typeof x === "string") as unknown as Prisma.InputJsonValue;
       if (typeof s === "string") return [s] as unknown as Prisma.InputJsonValue;
       return undefined;
     })();
+    const experienceYears = data.experienceYears !== undefined ? data.experienceYears : undefined;
+    const ageGroups =
+      data.ageGroups === undefined ? undefined : (data.ageGroups === null ? Prisma.JsonNull : data.ageGroups) as Prisma.InputJsonValue | undefined;
+    const pricePerHour = data.pricePerHour !== undefined ? data.pricePerHour : undefined;
+    const workDistricts =
+      data.workDistricts === undefined ? undefined : (data.workDistricts === null ? Prisma.JsonNull : data.workDistricts) as Prisma.InputJsonValue | undefined;
+    const about = data.about !== undefined ? data.about : undefined;
 
     return this.prisma.specialistProfile.upsert({
       where: { profileId },
       create: {
         profileId,
-        skills: skillsJson ?? undefined,
-        experienceYears: data.experienceYears ?? undefined,
-        ageGroups: data.ageGroups ?? undefined,
-        pricePerHour: data.pricePerHour ?? undefined,
-        workDistricts: data.workDistricts ?? undefined,
-        about: data.about ?? undefined,
+        skills: skillsJson,
+        experienceYears,
+        ageGroups,
+        pricePerHour,
+        workDistricts,
+        about,
       },
       update: {
-        skills: skillsJson ?? undefined,
-        experienceYears: data.experienceYears ?? undefined,
-        ageGroups: data.ageGroups ?? undefined,
-        pricePerHour: data.pricePerHour ?? undefined,
-        workDistricts: data.workDistricts ?? undefined,
-        about: data.about ?? undefined,
+        skills: skillsJson,
+        experienceYears,
+        ageGroups,
+        pricePerHour,
+        workDistricts,
+        about,
       },
     });
   }

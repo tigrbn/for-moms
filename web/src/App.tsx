@@ -393,10 +393,6 @@ export default function App() {
         <img src={menuProfil} alt="" className="bottom-nav-icon-img" />
         <span>Профиль</span>
       </Link>
-      <Link className={`bottom-nav-item ${location.pathname === "/roles" ? "active" : ""}`} to="/roles">
-        <img src={menuSpecialist} alt="" className="bottom-nav-icon-img" />
-        <span>Роли</span>
-      </Link>
       <Link className={`bottom-nav-item ${location.pathname === "/requests/new" ? "active" : ""}`} to="/requests/new">
         <img src={menuCreate} alt="" className="bottom-nav-icon-img" />
         <span>Создать</span>
@@ -981,6 +977,7 @@ export default function App() {
     const [specialWishes, setSpecialWishes] = useState("");
     const [pricePerHour, setPricePerHour] = useState("");
     const [about, setAbout] = useState("");
+    const [specialistCategory, setSpecialistCategory] = useState("");
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
 
@@ -998,6 +995,9 @@ export default function App() {
         const spec = activeProfile.specialist;
         setPricePerHour(spec?.pricePerHour != null ? String(spec.pricePerHour) : "");
         setAbout(spec?.about ?? "");
+        const skills = spec?.skills;
+        const first = Array.isArray(skills) && skills.length > 0 ? skills[0] : typeof skills === "string" ? skills : "";
+        setSpecialistCategory(first || "");
       }
     }, [activeProfile]);
 
@@ -1024,6 +1024,7 @@ export default function App() {
         }
         if (type === "specialist") {
           await authedPatch(`/profiles/${profileId}/specialist`, {
+            skills: specialistCategory ? [specialistCategory] : [],
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
@@ -1077,6 +1078,19 @@ export default function App() {
           )}
           {type === "specialist" && (
             <>
+              <div className="field">
+                <div className="label">Категория</div>
+                <select
+                  className="input"
+                  value={specialistCategory}
+                  onChange={(e) => setSpecialistCategory(e.target.value)}
+                >
+                  <option value="">Не выбрано</option>
+                  {FEED_CATEGORIES.filter((c) => c.id).map((c) => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
               <div className="field">
                 <div className="label">Цена за час (₽)</div>
                 <input className="input" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} inputMode="numeric" />
