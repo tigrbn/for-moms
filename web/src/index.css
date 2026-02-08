@@ -135,6 +135,41 @@ a {
   font-weight: 600;
 }
 
+/* Страница Роли: два блока (название+описание слева, кнопка справа), уменьшенные кнопки */
+.roles-page .roles-page-desc {
+  margin-top: 6px;
+}
+.roles-page .roles-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+.roles-page .roles-page-btn {
+  font-size: 13px;
+  padding: 6px 12px;
+  min-height: 32px;
+}
+.roles-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.roles-card-left {
+  flex: 1;
+  min-width: 0;
+}
+.roles-card-title {
+  font-weight: 700;
+  font-size: 16px;
+}
+.roles-card-desc {
+  margin-top: 6px;
+  font-size: 13px;
+}
+.roles-card-right {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
 .roles-card-wrap {
   display: flex;
   flex-direction: column;
@@ -503,6 +538,21 @@ a {
   vertical-align: top;
 }
 
+.feed-header-card {
+  min-width: 0;
+  overflow: hidden;
+}
+.feed-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.feed-title-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
 .feed-categories-label {
   font-size: 12px;
   color: var(--text-secondary);
@@ -633,10 +683,30 @@ a {
 }
 
 .feed-card {
-  background: var(--tg-bg);
   border-radius: var(--radius);
   padding: 14px;
   border: 1px solid var(--border);
+}
+.feed-card-request {
+  background: var(--tg-bg);
+  padding-right: 72px;
+}
+.feed-card-request-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+.feed-card-request-time {
+  margin-left: auto;
+}
+.feed-card-request-actions {
+  margin-top: 12px;
+}
+.feed-card-specialist {
+  background: var(--tg-bg);
 }
 .feed-card-header {
   display: flex;
@@ -694,6 +764,13 @@ a {
 .feed-card-request-category {
   font-weight: 900;
   font-size: 16px;
+  line-height: 1.3;
+}
+.feed-card-request .feed-card-desc {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-primary);
 }
 .feed-card-desc {
   margin-top: 10px;

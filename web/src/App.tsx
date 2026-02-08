@@ -226,6 +226,21 @@ function formatDate(iso?: string | null) {
   return d.toLocaleString();
 }
 
+/** Для карточки заявки в ленте: до 30 мин — «Создана N минут назад», иначе дата без секунд */
+function formatRequestCreatedAt(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const now = Date.now();
+  const diffMs = now - d.getTime();
+  const diffMins = Math.floor(diffMs / 60_000);
+  if (diffMins < 1) return "Создана только что";
+  if (diffMins < 30) {
+    const word = diffMins === 1 || (diffMins > 20 && diffMins % 10 === 1) ? "минуту" : (diffMins >= 2 && diffMins <= 4) || (diffMins >= 22 && diffMins <= 24) ? "минуты" : "минут";
+    return `Создана ${diffMins} ${word} назад`;
+  }
+  return d.toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 function labelProfileType(t: "parent" | "specialist") {
   if (t === "parent") return "👩‍🍼 Мама";
   return "👩‍🏫 Специалист";
@@ -970,6 +985,13 @@ export default function App() {
     const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
     const [reviewsErr, setReviewsErr] = useState<string | null>(null);
 
+    // При открытии Профиля для специалиста всегда запрашиваем свежие /me (категория из skills)
+    useEffect(() => {
+      if (activeProfile?.type === "specialist") {
+        void refreshMe();
+      }
+    }, [activeProfile?.id, activeProfile?.type]);
+
     useEffect(() => {
       if (!activeProfile) return;
       setDisplayName(activeProfile.displayName ?? "");
@@ -980,7 +1002,8 @@ export default function App() {
         if (spec) {
           setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
           setAbout(spec.about ?? "");
-          const firstSkill = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : "";
+          const skills = spec.skills;
+          const firstSkill = Array.isArray(skills) && skills.length > 0 ? skills[0] : typeof skills === "string" && skills ? skills : "";
           setSpecialistCategory(firstSkill);
         } else {
           setSpecialistCategory("");
@@ -1171,9 +1194,12 @@ export default function App() {
           </div>
         )}
 
-        <div className="card">
+        <div className="card feed-header-card">
           <div className="row">
-            <div className="h2">Лента</div>
+            <div className="row feed-title-row">
+              <img src={menuLenta} alt="" className="feed-title-icon" />
+              <span className="h2">Лента</span>
+            </div>
             <div className="spacer" />
             <button
               type="button"
@@ -1278,11 +1304,13 @@ export default function App() {
                   <div key={`r-${r.id}-${idx}`} className="card feed-card feed-card-request card--status-top">
                     <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
                     <div className="feed-card-request-category">{r.category}</div>
-                    <div className="muted feed-card-meta" style={{ marginTop: 6 }}>
-                      Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · {formatDate(r.createdAt)}
+                    <div className="feed-card-request-meta">
+                      <span>Район: {r.district ?? "—"}</span>
+                      <span>Бюджет: {formatMoney(r.budget)}</span>
+                      <span className="feed-card-request-time">{formatRequestCreatedAt(r.createdAt)}</span>
                     </div>
                     {r.description && <div className="feed-card-desc">{r.description}</div>}
-                    <div className="row" style={{ marginTop: 12, alignItems: "center" }}>
+                    <div className="feed-card-request-actions">
                       <Link className="btn feed-card-btn" to={`/requests/${r.id}`}>
                         Открыть заявку
                       </Link>
@@ -1405,49 +1433,51 @@ export default function App() {
       }));
 
     return (
-      <div className="card">
+      <div className="card roles-page">
         <div className="row">
           <div className="h2">Роли</div>
           <div className="spacer" />
           {missingRole && (
-            <button className="btn" onClick={() => void addMissingRole()}>
+            <button className="btn roles-page-btn" onClick={() => void addMissingRole()}>
               + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
             </button>
           )}
         </div>
-        <div className="muted" style={{ marginTop: 6 }}>
+        <div className="muted roles-page-desc">
           Выберите активную роль или удалите ненужную.
         </div>
 
-        <div style={{ display: "grid", gap: 16, marginTop: 12 }}>
+        <div className="roles-list">
           {roles.map((p) => {
             const isActive = p.id === me.activeProfileId;
             return (
               <div key={p.id} className="roles-card-wrap">
                 <div className="card card--status-top roles-card" style={{ background: "var(--tg-bg)" }}>
-                  {isActive && <span className="pill pill--top-right pill--active-green">Активна</span>}
-                  <div className="row" style={{ paddingRight: isActive ? 72 : 0 }}>
-                    <div style={{ fontWeight: 900, fontSize: 18 }}>{p.title}</div>
-                  </div>
-                  <div className="muted" style={{ marginTop: 8 }}>
-                    {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
-                  </div>
-                  {!isActive && (
-                    <div className="row" style={{ marginTop: 12 }}>
-                      <div className="spacer" />
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => void ensureActiveProfile(p.id)}
-                      >
-                        Сделать активной
-                      </button>
+                  <div className="roles-card-inner">
+                    <div className="roles-card-left">
+                      <div className="roles-card-title">{p.title}</div>
+                      <div className="muted roles-card-desc">
+                        {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
+                      </div>
                     </div>
-                  )}
+                    <div className="roles-card-right">
+                      {isActive ? (
+                        <span className="pill pill--active-green">Активна</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn roles-page-btn"
+                          onClick={() => void ensureActiveProfile(p.id)}
+                        >
+                          Сделать активной
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <button
                   type="button"
-                  className="btn danger roles-delete-btn"
+                  className="btn danger roles-delete-btn roles-page-btn"
                   onClick={async () => {
                     const roleName = p.type === "parent" ? "Мама" : "Специалист";
                     if (!confirm(`Удалить аккаунт «${roleName}»? Все данные этой роли будут удалены безвозвратно.`)) return;
