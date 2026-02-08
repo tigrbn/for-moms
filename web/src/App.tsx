@@ -976,42 +976,24 @@ export default function App() {
     const [displayName, setDisplayName] = useState(activeProfile!.displayName ?? "");
     const [city, setCity] = useState(activeProfile!.city ?? "");
     const [district, setDistrict] = useState(activeProfile!.district ?? "");
-
     const [childrenAges, setChildrenAges] = useState("");
     const [specialWishes, setSpecialWishes] = useState("");
-
     const [pricePerHour, setPricePerHour] = useState("");
     const [about, setAbout] = useState("");
     const [specialistCategory, setSpecialistCategory] = useState("");
-
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-    const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
-    const [profileDataReady, setProfileDataReady] = useState(false);
     const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
     const [reviewsErr, setReviewsErr] = useState<string | null>(null);
 
-    // При открытии Профиля загружаем свежие /me, затем синхронизируем форму (без гонки)
+    // При открытии Профиля запрашиваем свежие данные с сервера (в фоне, не блокируем форму)
     useEffect(() => {
-      if (!activeProfile?.id || !token) return;
-      let cancelled = false;
-      setProfileDataReady(false);
-      setProfileLoadError(null);
-      refreshMe()
-        .then(() => {
-          if (!cancelled) setProfileDataReady(true);
-        })
-        .catch((e: unknown) => {
-          if (!cancelled) setProfileLoadError((e as Error)?.message ?? "Не удалось загрузить данные профиля");
-        });
-      return () => {
-        cancelled = true;
-      };
+      if (activeProfile?.id && token) void refreshMe();
     }, [activeProfile?.id, token]);
 
-    // Синхронизируем форму с данными из /me только после успешной загрузки
+    // Синхронизируем форму с текущим activeProfile (из me)
     useEffect(() => {
-      if (!activeProfile || !profileDataReady) return;
+      if (!activeProfile) return;
       setDisplayName(activeProfile.displayName ?? "");
       setCity(activeProfile.city ?? "");
       setDistrict(activeProfile.district ?? "");
@@ -1034,7 +1016,7 @@ export default function App() {
           setSpecialistCategory("");
         }
       }
-    }, [activeProfile, profileDataReady]);
+    }, [activeProfile]);
 
     useEffect(() => {
       let cancelled = false;
@@ -1158,12 +1140,7 @@ export default function App() {
             )}
           </div>
         )}
-        {(err || profileLoadError) && (
-          <div className="muted" style={{ marginTop: 8 }}>{profileLoadError ?? err}</div>
-        )}
-        {!profileDataReady && !profileLoadError && (
-          <div className="muted" style={{ marginTop: 8 }}>Загрузка данных профиля…</div>
-        )}
+        {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
           <div className="field">
             <div className="label">Имя для отображения</div>
@@ -1207,7 +1184,7 @@ export default function App() {
           )}
 
           <div className="row">
-            <button className="btn" disabled={saving || !profileDataReady} onClick={() => void save()}>
+            <button className="btn" disabled={saving} onClick={() => void save()}>
               {saving ? "Сохранение…" : "Сохранить"}
             </button>
           </div>
