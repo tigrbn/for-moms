@@ -45,13 +45,18 @@ export class MeController {
           district: p.district,
         };
         if (p.type === "specialist" && p.specialistProfile) {
-          const raw = p.specialistProfile.skills;
+          let raw = p.specialistProfile.skills;
+          if (typeof raw === "string") {
+            try {
+              raw = JSON.parse(raw) as unknown;
+            } catch {
+              raw = raw ? [raw] : [];
+            }
+          }
           let skillsArr: string[] = [];
           if (Array.isArray(raw)) {
             skillsArr = raw.filter((s): s is string => typeof s === "string");
-          } else if (typeof raw === "string") {
-            skillsArr = raw ? [raw] : [];
-          } else if (raw && typeof raw === "object") {
+          } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
             skillsArr = Object.values(raw).filter((s): s is string => typeof s === "string");
           }
           return { ...base, specialist: { skills: skillsArr, pricePerHour: p.specialistProfile.pricePerHour, about: p.specialistProfile.about } };

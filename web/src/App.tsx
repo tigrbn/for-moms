@@ -1025,11 +1025,15 @@ export default function App() {
           });
         }
         if (type === "specialist") {
-          await authedPatch(`/profiles/${profileId}/specialist`, {
-            skills: [specialistCategory || SPECIALIST_CATEGORIES[0]],
+          const payload = [specialistCategory || SPECIALIST_CATEGORIES[0]].filter(Boolean);
+          const specRes = await authedPatch<{ skills?: string[] }>(`/profiles/${profileId}/specialist`, {
+            skills: payload.length ? payload : [],
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
+          if (Array.isArray(specRes?.skills) && specRes.skills[0]) {
+            setSpecialistCategory(specRes.skills[0]);
+          }
         }
 
         await refreshMe();

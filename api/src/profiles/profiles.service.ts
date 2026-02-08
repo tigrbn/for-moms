@@ -106,11 +106,19 @@ export class ProfilesService {
     const profile = await this.getOwnedProfileOrThrow(userId, profileId);
     if (profile.type !== "specialist") throw new BadRequestException("Not a specialist profile");
 
+    const skillsJson = (() => {
+      const s = data.skills;
+      if (s == null) return undefined;
+      if (Array.isArray(s)) return s.filter((x): x is string => typeof x === "string") as unknown as Prisma.InputJsonValue;
+      if (typeof s === "string") return [s] as unknown as Prisma.InputJsonValue;
+      return undefined;
+    })();
+
     return this.prisma.specialistProfile.upsert({
       where: { profileId },
       create: {
         profileId,
-        skills: data.skills ?? undefined,
+        skills: skillsJson ?? undefined,
         experienceYears: data.experienceYears ?? undefined,
         ageGroups: data.ageGroups ?? undefined,
         pricePerHour: data.pricePerHour ?? undefined,
@@ -118,7 +126,7 @@ export class ProfilesService {
         about: data.about ?? undefined,
       },
       update: {
-        skills: data.skills ?? undefined,
+        skills: skillsJson ?? undefined,
         experienceYears: data.experienceYears ?? undefined,
         ageGroups: data.ageGroups ?? undefined,
         pricePerHour: data.pricePerHour ?? undefined,
