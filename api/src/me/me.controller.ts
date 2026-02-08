@@ -44,7 +44,10 @@ export class MeController {
           city: p.city,
           district: p.district,
         };
-        if (p.type === "specialist" && p.specialistProfile) {
+        if (p.type === "specialist") {
+          if (!p.specialistProfile) {
+            return { ...base, specialist: { skills: [], pricePerHour: null, about: null } };
+          }
           let raw = p.specialistProfile.skills;
           if (typeof raw === "string") {
             try {
