@@ -5,6 +5,7 @@ import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
 import bannerImg from "./assets/img/banner.png";
+import backgroundImg from "./assets/img/background.png";
 import categoryNanny from "./assets/img/category/няня.png";
 import categoryTutor from "./assets/img/category/репетитор.png";
 import categoryLeisure from "./assets/img/category/досуг.png";
@@ -231,7 +232,6 @@ export default function App() {
 
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [feedError, setFeedError] = useState<string | null>(null);
-  const [feedDistrict, setFeedDistrict] = useState("");
   const [feedCategory, setFeedCategory] = useState("");
   const [feedReloadKey, setFeedReloadKey] = useState(0);
   const location = useLocation();
@@ -284,7 +284,6 @@ export default function App() {
       setFeedError(null);
       try {
         const qs = new URLSearchParams();
-        if (feedDistrict.trim()) qs.set("district", feedDistrict.trim());
         if (feedCategory.trim()) qs.set("category", feedCategory.trim());
         const path = qs.toString() ? `/feed?${qs.toString()}` : "/feed";
         const data = await getJSON<FeedResponse>(path, token);
@@ -294,7 +293,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token, me?.activeProfileId, feedDistrict, feedCategory, feedReloadKey]);
+  }, [token, me?.activeProfileId, feedCategory, feedReloadKey]);
 
   const ensureActiveProfile = async (profileId: string) => {
     if (!token) return;
@@ -330,29 +329,24 @@ export default function App() {
   };
 
   const nav = (
-    <div className="card">
-      <div className="navtabs">
-        <Link className={`navtab ${location.pathname === "/" ? "active" : ""}`} to="/">
-          Лента
-        </Link>
-        <Link className={`navtab ${location.pathname.startsWith("/requests") ? "active" : ""}`} to="/requests">
-          Заявки
-        </Link>
-        <Link className={`navtab ${location.pathname.startsWith("/offers") ? "active" : ""}`} to="/offers">
-          Отклики
-        </Link>
-        <div className="spacer" />
-        {me && activeProfile && (
-          <Link
-            className="navtab role-link"
-            to="/roles"
-            title="Сменить роль"
-          >
-            {activeProfile.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
-          </Link>
-        )}
-      </div>
-    </div>
+    <nav className="bottom-nav">
+      <Link className={`bottom-nav-item ${location.pathname === "/" ? "active" : ""}`} to="/">
+        <span className="bottom-nav-icon">📋</span>
+        <span>Лента</span>
+      </Link>
+      <Link className={`bottom-nav-item ${location.pathname === "/profile" || location.pathname === "/roles" ? "active" : ""}`} to="/profile">
+        <span className="bottom-nav-icon">👤</span>
+        <span>Профиль</span>
+      </Link>
+      <Link className={`bottom-nav-item ${location.pathname === "/requests/new" ? "active" : ""}`} to="/requests/new">
+        <span className="bottom-nav-icon">➕</span>
+        <span>Создать заявку</span>
+      </Link>
+      <Link className={`bottom-nav-item ${location.pathname.startsWith("/requests") && location.pathname !== "/requests/new" ? "active" : ""}`} to="/requests">
+        <span className="bottom-nav-icon">📝</span>
+        <span>Все заявки</span>
+      </Link>
+    </nav>
   );
 
   const activeProfileId = me?.activeProfileId ?? null;
@@ -423,16 +417,17 @@ export default function App() {
         {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
         {items && items.length === 0 && (
-          <div className="card" style={{ background: "var(--tg-bg)", marginTop: 10 }}>
-            <div style={{ fontWeight: 900 }}>Пока нет заявок</div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Создайте первую — специалисты увидят её в своей ленте и смогут откликнуться.
+          <div className="card feed-empty" style={{ marginTop: 10 }}>
+            <div className="feed-empty-banner">
+              <img src={bannerImg} alt="" />
             </div>
-            <div className="row" style={{ marginTop: 10 }}>
-              <Link className="btn" to="/requests/new">
-                + Создать заявку
-              </Link>
+            <div className="feed-empty-title">💛 Заявок пока нет</div>
+            <div className="muted feed-empty-desc" style={{ marginTop: 8 }}>
+              Создайте первую — специалисты увидят её в ленте и смогут откликнуться.
             </div>
+            <Link className="btn btn-gradient" to="/requests/new" style={{ marginTop: 14 }}>
+              ➕ Создать заявку
+            </Link>
           </div>
         )}
         {items && (
@@ -517,7 +512,7 @@ export default function App() {
           </div>
           <div className="field">
             <div className="label">Район</div>
-            <input className="input" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Напр. Центральный" />
+            <input className="input" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Центральный" />
           </div>
           <div className="field">
             <div className="label">Бюджет (₽)</div>
@@ -879,16 +874,17 @@ export default function App() {
         {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
         {items && items.length === 0 && (
-          <div className="card" style={{ background: "var(--tg-bg)", marginTop: 10 }}>
-            <div style={{ fontWeight: 900 }}>Пока нет откликов</div>
-            <div className="muted" style={{ marginTop: 6 }}>
+          <div className="card feed-empty" style={{ marginTop: 10 }}>
+            <div className="feed-empty-banner">
+              <img src={bannerImg} alt="" />
+            </div>
+            <div className="feed-empty-title">💛 Откликов пока нет</div>
+            <div className="muted feed-empty-desc" style={{ marginTop: 8 }}>
               Откройте ленту, выберите подходящую заявку и отправьте отклик.
             </div>
-            <div className="row" style={{ marginTop: 10 }}>
-              <Link className="btn" to="/">
-                Перейти в ленту
-              </Link>
-            </div>
+            <Link className="btn btn-gradient" to="/" style={{ marginTop: 14 }}>
+              📋 Перейти в ленту
+            </Link>
           </div>
         )}
         {items && (
@@ -1094,7 +1090,6 @@ export default function App() {
 
   function FeedScreen() {
     const role = activeProfileType;
-    const banners = feed?.items.filter((it) => it.kind === "banner") ?? [];
     const contentItems = feed?.items.filter((it) => it.kind !== "banner") ?? [];
     const contentCount = contentItems.length;
 
@@ -1113,44 +1108,19 @@ export default function App() {
           </div>
         )}
 
-        {/* Баннер сверху: с сервера или локальный */}
-        {feed && (
-          <div className="feed-banners">
-            {banners.length > 0
-              ? banners.map((it, idx) =>
-                  it.kind === "banner" ? (
-                    <a
-                      key={`b-${it.id}-${idx}`}
-                      href={it.targetUrl ?? "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="feed-banner-link"
-                    >
-                      <img src={it.imageUrl} alt="" className="feed-banner-img" />
-                    </a>
-                  ) : null,
-                )
-              : (
-                <div className="feed-banner-link">
-                  <img src={bannerImg} alt="" className="feed-banner-img" />
-                </div>
-              )}
-          </div>
-        )}
-
         <div className="card">
           <div className="row">
             <div className="h2">Лента</div>
             <div className="spacer" />
             <button
-              className="btn secondary"
+              className="btn secondary btn-gradient"
               onClick={() => {
                 setFeed(null);
                 setFeedError(null);
                 setFeedReloadKey((x) => x + 1);
               }}
             >
-              Обновить
+              🔄 Обновить
             </button>
           </div>
 
@@ -1172,16 +1142,6 @@ export default function App() {
               </button>
             ))}
           </div>
-
-          <div className="feed-district-row">
-            <input
-              className="input feed-district-input"
-              value={feedDistrict}
-              onChange={(e) => setFeedDistrict(e.target.value)}
-              onBlur={() => setFeedReloadKey((x) => x + 1)}
-              placeholder="Район (напр. Центральный)"
-            />
-          </div>
         </div>
 
         {feedError && <div className="card"><div className="muted">{feedError}</div></div>}
@@ -1191,27 +1151,27 @@ export default function App() {
           <div className="feed-content">
             {contentCount === 0 && (
               <div className="card feed-empty">
-                <div className="feed-empty-title">
-                  {role === "specialist" ? "Пока нет заявок в этой категории" : "Пока нет специалистов"}
+                <div className="feed-empty-banner">
+                  <img src={bannerImg} alt="" />
                 </div>
-                <div className="muted" style={{ marginTop: 8 }}>
-                  {role === "specialist"
-                    ? "Попробуйте другую категорию или уберите фильтр по району."
-                    : "Попробуйте категорию «Все» или другой район."}
+                <div className="feed-empty-title">
+                  💛 {role === "specialist" ? "Заявок пока нет" : "Специалистов пока нет"}
+                </div>
+                <div className="muted feed-empty-desc">
+                  Но они появляются регулярно — попробуйте выбрать другую категорию.
                 </div>
                 <div className="row" style={{ marginTop: 14, flexWrap: "wrap", gap: 10 }}>
                   <button
-                    className="btn secondary"
+                    className="btn secondary btn-gradient"
                     onClick={() => {
-                      setFeedDistrict("");
                       setFeedCategory("");
                       setFeedReloadKey((x) => x + 1);
                     }}
                   >
-                    Сбросить фильтры
+                    🔄 Сбросить фильтры
                   </button>
                   {missingRole && (
-                    <button className="btn" onClick={() => void addMissingRole()}>
+                    <button className="btn btn-gradient" onClick={() => void addMissingRole()}>
                       + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
                     </button>
                   )}
@@ -1465,24 +1425,11 @@ export default function App() {
   }
 
   return (
-    <div className="app safe">
+    <div className="app safe" style={{ backgroundImage: `url(${backgroundImg})` }}>
       <div className="container">
         <TopBar
           title="Для мам"
-          right={
-            token ? (
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                {me?.activeProfileId && (
-                  <Link className="btn secondary" to="/profile">
-                    Личный кабинет
-                  </Link>
-                )}
-                <button type="button" className="btn secondary" onClick={() => { clearToken(); navigate("/", { replace: true }); }}>
-                  Выйти
-                </button>
-              </div>
-            ) : undefined
-          }
+          right={undefined}
           sub={
             loading
               ? "Авторизация…"
