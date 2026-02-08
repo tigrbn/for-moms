@@ -509,13 +509,18 @@ a {
   margin-top: 12px;
   margin-bottom: 8px;
 }
+.feed-categories-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  padding-bottom: 4px;
+}
 .feed-categories {
-  display: flex;
+  display: inline-flex;
   gap: 8px;
   flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
+  min-width: min-content;
 }
 .feed-category-chip {
   flex-shrink: 0;

@@ -980,10 +980,10 @@ export default function App() {
         if (spec) {
           setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
           setAbout(spec.about ?? "");
-          const firstSkill = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : "";
+          const firstSkill = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : SPECIALIST_CATEGORIES[0];
           setSpecialistCategory(firstSkill);
         } else {
-          setSpecialistCategory("");
+          setSpecialistCategory(SPECIALIST_CATEGORIES[0]);
         }
       }
     }, [activeProfile]);
@@ -1026,7 +1026,7 @@ export default function App() {
         }
         if (type === "specialist") {
           await authedPatch(`/profiles/${profileId}/specialist`, {
-            skills: specialistCategory ? [specialistCategory] : [],
+            skills: [specialistCategory || SPECIALIST_CATEGORIES[0]],
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
@@ -1098,10 +1098,9 @@ export default function App() {
                 <div className="label">Категория (в какой ленте показывать)</div>
                 <select
                   className="input"
-                  value={specialistCategory}
+                  value={specialistCategory || SPECIALIST_CATEGORIES[0]}
                   onChange={(e) => setSpecialistCategory(e.target.value)}
                 >
-                  <option value="">— выбрать —</option>
                   {SPECIALIST_CATEGORIES.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -1186,7 +1185,8 @@ export default function App() {
 
           {/* Категории — для всех ролей */}
           <div className="feed-categories-label">Категория</div>
-          <div className="feed-categories">
+          <div className="feed-categories-scroll">
+            <div className="feed-categories">
             {FEED_CATEGORIES.map((c) => (
               <button
                 key={c.id || "all"}
@@ -1201,6 +1201,7 @@ export default function App() {
                 {c.label}
               </button>
             ))}
+            </div>
           </div>
         </div>
 
