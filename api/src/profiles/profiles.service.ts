@@ -65,7 +65,11 @@ export class ProfilesService {
     return profile;
   }
 
-  async updateBase(userId: bigint, profileId: bigint, data: { displayName?: string | null; avatarUrl?: string | null; city?: string | null; district?: string | null }) {
+  async updateBase(
+    userId: bigint,
+    profileId: bigint,
+    data: { displayName?: string | null; avatarUrl?: string | null; age?: number | null; city?: string | null; district?: string | null },
+  ) {
     await this.getOwnedProfileOrThrow(userId, profileId);
 
     return this.prisma.profile.update({
@@ -73,6 +77,7 @@ export class ProfilesService {
       data: {
         displayName: data.displayName ?? undefined,
         avatarUrl: data.avatarUrl ?? undefined,
+        age: data.age ?? undefined,
         city: data.city ?? undefined,
         district: data.district ?? undefined,
       },

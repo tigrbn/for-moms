@@ -72,7 +72,11 @@ export class ProfilesController {
   }
 
   @Patch(":id")
-  async updateBase(@Req() req: Request, @Param("id") id: string, @Body() body: { displayName?: string | null; avatarUrl?: string | null; city?: string | null; district?: string | null }) {
+  async updateBase(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: { displayName?: string | null; avatarUrl?: string | null; age?: number | null; city?: string | null; district?: string | null },
+  ) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const profile = await this.profiles.updateBase(userId, BigInt(id), body ?? {});
     return {
@@ -81,6 +85,7 @@ export class ProfilesController {
       isActive: profile.isActive,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
+      age: profile.age,
       city: profile.city,
       district: profile.district,
     };

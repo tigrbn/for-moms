@@ -12,6 +12,7 @@ import categoryTutor from "./assets/img/category/репетитор.png";
 import categoryLeisure from "./assets/img/category/досуг.png";
 import menuLenta from "./assets/img/menu/лента.png";
 import menuProfil from "./assets/img/menu/профиль.png";
+import menuSpecialist from "./assets/img/menu/специалист.png";
 import menuCreate from "./assets/img/menu/создать заявку.png";
 import menuAll from "./assets/img/menu/все заявки.png";
 
@@ -29,6 +30,8 @@ type MeResponse = {
     type: "parent" | "specialist";
     isActive: boolean;
     displayName?: string | null;
+    avatarUrl?: string | null;
+    age?: number | null;
     city?: string | null;
     district?: string | null;
     specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null };
@@ -241,11 +244,6 @@ function formatRequestCreatedAt(iso?: string | null) {
   return d.toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-function labelProfileType(t: "parent" | "specialist") {
-  if (t === "parent") return "👩‍🍼 Мама";
-  return "👩‍🏫 Специалист";
-}
-
 function labelRequestStatus(s: "active" | "in_progress" | "done" | "cancelled") {
   if (s === "active") return "🟢 Активна";
   if (s === "in_progress") return "🟡 В работе";
@@ -271,9 +269,6 @@ const FEED_CATEGORIES = [
   { id: "Репетитор", label: "Репетитор", icon: categoryTutor },
   { id: "Досуг", label: "Досуг", icon: categoryLeisure },
 ];
-
-/** Категории специалиста для страницы Профиль (те же иконки, что в ленте) */
-const SPECIALIST_CATEGORY_OPTIONS = FEED_CATEGORIES.filter((c) => c.id !== "");
 
 export default function App() {
   const { token, clearToken, error } = useTelegramAuth();
@@ -394,9 +389,13 @@ export default function App() {
         <img src={menuLenta} alt="" className="bottom-nav-icon-img" />
         <span>Лента</span>
       </Link>
-      <Link className={`bottom-nav-item ${location.pathname === "/profile" || location.pathname === "/roles" ? "active" : ""}`} to="/profile">
+      <Link className={`bottom-nav-item ${location.pathname === "/profile" ? "active" : ""}`} to="/profile">
         <img src={menuProfil} alt="" className="bottom-nav-icon-img" />
         <span>Профиль</span>
+      </Link>
+      <Link className={`bottom-nav-item ${location.pathname === "/roles" ? "active" : ""}`} to="/roles">
+        <img src={menuSpecialist} alt="" className="bottom-nav-icon-img" />
+        <span>Роли</span>
       </Link>
       <Link className={`bottom-nav-item ${location.pathname === "/requests/new" ? "active" : ""}`} to="/requests/new">
         <img src={menuCreate} alt="" className="bottom-nav-icon-img" />
@@ -428,7 +427,6 @@ export default function App() {
     if (!token) throw new Error("No token");
     return patchJSON<T>(path, body, token);
   };
-
   const refreshMe = async () => {
     if (!token) return;
     const data = await getJSON<MeResponse>("/me", token);
@@ -972,31 +970,25 @@ export default function App() {
   function ProfileScreen() {
     const profileId = activeProfile!.id;
     const type = activeProfile!.type;
+    const telegramPhotoUrl = me?.user?.photoUrl ?? null;
+    const defaultAvatar = type === "parent" ? menuProfil : menuSpecialist;
+    const avatarSrc = activeProfile!.avatarUrl || telegramPhotoUrl || defaultAvatar;
 
     const [displayName, setDisplayName] = useState(activeProfile!.displayName ?? "");
+    const [age, setAge] = useState(activeProfile!.age != null ? String(activeProfile!.age) : "");
     const [city, setCity] = useState(activeProfile!.city ?? "");
-    const [district, setDistrict] = useState(activeProfile!.district ?? "");
     const [childrenAges, setChildrenAges] = useState("");
     const [specialWishes, setSpecialWishes] = useState("");
     const [pricePerHour, setPricePerHour] = useState("");
     const [about, setAbout] = useState("");
-    const [specialistCategory, setSpecialistCategory] = useState("");
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-    const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
-    const [reviewsErr, setReviewsErr] = useState<string | null>(null);
 
-    // При открытии Профиля запрашиваем свежие данные с сервера (в фоне, не блокируем форму)
-    useEffect(() => {
-      if (activeProfile?.id && token) void refreshMe();
-    }, [activeProfile?.id, token]);
-
-    // Синхронизируем форму с текущим activeProfile (из me)
     useEffect(() => {
       if (!activeProfile) return;
       setDisplayName(activeProfile.displayName ?? "");
+      setAge(activeProfile.age != null ? String(activeProfile.age) : "");
       setCity(activeProfile.city ?? "");
-      setDistrict(activeProfile.district ?? "");
       if (activeProfile.type === "parent") {
         const parent = activeProfile.parent;
         setChildrenAges(Array.isArray(parent?.childrenAges) ? parent.childrenAges.join(", ") : "");
@@ -1004,51 +996,10 @@ export default function App() {
       }
       if (activeProfile.type === "specialist") {
         const spec = activeProfile.specialist;
-        if (spec) {
-          setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
-          setAbout(spec.about ?? "");
-          const skills = spec.skills;
-          const firstSkill = Array.isArray(skills) && skills.length > 0 ? skills[0] : typeof skills === "string" && skills ? skills : "";
-          setSpecialistCategory(firstSkill);
-        } else {
-          setPricePerHour("");
-          setAbout("");
-          setSpecialistCategory("");
-        }
+        setPricePerHour(spec?.pricePerHour != null ? String(spec.pricePerHour) : "");
+        setAbout(spec?.about ?? "");
       }
     }, [activeProfile]);
-
-    useEffect(() => {
-      let cancelled = false;
-      setReviewsErr(null);
-      setReviews(null);
-      const run = async () => {
-        if (!token) {
-          setReviews([]);
-          setReviewsErr("Нет авторизации");
-          return;
-        }
-        try {
-          const timeout = new Promise<never>((_, rej) =>
-            setTimeout(() => rej(new Error("Таймаут загрузки отзывов")), 12000),
-          );
-          const items = await Promise.race([
-            authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`),
-            timeout,
-          ]);
-          if (cancelled) return;
-          setReviews(Array.isArray(items) ? items : []);
-        } catch (e: any) {
-          if (cancelled) return;
-          setReviewsErr(e?.message ?? "Не удалось загрузить отзывы");
-          setReviews([]);
-        }
-      };
-      void run();
-      return () => {
-        cancelled = true;
-      };
-    }, [profileId, token]);
 
     const save = async () => {
       setErr(null);
@@ -1056,10 +1007,9 @@ export default function App() {
       try {
         await authedPatch(`/profiles/${profileId}`, {
           displayName: displayName || null,
+          age: age ? Number(age) : null,
           city: city || null,
-          district: district || null,
         });
-
         if (type === "parent") {
           const ages = childrenAges
             .split(",")
@@ -1073,21 +1023,14 @@ export default function App() {
           });
         }
         if (type === "specialist") {
-          const payload = specialistCategory ? [specialistCategory] : [];
-          const specRes = await authedPatch<{ skills?: string[]; pricePerHour?: number | null; about?: string | null }>(`/profiles/${profileId}/specialist`, {
-            skills: payload,
+          await authedPatch(`/profiles/${profileId}/specialist`, {
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
-          const firstSkill = Array.isArray(specRes?.skills) && specRes.skills.length > 0 ? specRes.skills[0] : "";
-          setSpecialistCategory(firstSkill);
-          if (specRes?.pricePerHour != null) setPricePerHour(String(specRes.pricePerHour));
-          if (specRes?.about !== undefined) setAbout(specRes.about ?? "");
         }
-
         await refreshMe();
-      } catch (e: any) {
-        setErr(e?.message ?? "Failed to save profile");
+      } catch (e: unknown) {
+        setErr(e instanceof Error ? e.message : "Не удалось сохранить");
       } finally {
         setSaving(false);
       }
@@ -1095,68 +1038,31 @@ export default function App() {
 
     return (
       <div className="card">
-        <div className="row profile-header-row">
-          {type === "specialist" ? (
-            <>
-              <div className="h2">Категория</div>
-              <div className="spacer" />
-              <div className="profile-category-pill">
-                {(() => {
-                  const opt = SPECIALIST_CATEGORY_OPTIONS.find((c) => c.id === specialistCategory);
-                  return opt?.icon ? <img src={opt.icon} alt="" className="profile-category-icon" /> : null;
-                })()}
-                <select
-                  className="profile-category-select"
-                  value={specialistCategory}
-                  onChange={(e) => setSpecialistCategory(e.target.value)}
-                >
-                  <option value="">не выбрано</option>
-                  {SPECIALIST_CATEGORY_OPTIONS.map((c) => (
-                    <option key={c.id} value={c.id}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="h2">Профиль</div>
-              <div className="spacer" />
-              <div className="pill">{labelProfileType(type)}</div>
-            </>
-          )}
-        </div>
-        {(type === "parent" || type === "specialist") && (
-          <div style={{ marginTop: 10 }}>
-            <div className="h2">Роли</div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Можно быть и “Мамой”, и “Специалистом” в одном аккаунте — переключатель сверху.
-            </div>
-            {missingRole && (
-              <div className="row" style={{ marginTop: 10 }}>
-                <button className="btn" onClick={() => void addMissingRole()}>
-                  + Добавить роль: {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
-                </button>
-              </div>
-            )}
+        <div className="row" style={{ alignItems: "center", gap: 16, marginBottom: 16 }}>
+          <img
+            src={avatarSrc}
+            alt=""
+            style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }}
+          />
+          <div>
+            <div className="h2">Профиль</div>
+            <div className="muted">{type === "parent" ? "👩‍🍼 Родитель" : "👩‍🏫 Специалист"}</div>
           </div>
-        )}
-        {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
-        <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+        </div>
+        {err && <div className="muted" style={{ marginBottom: 8 }}>{err}</div>}
+        <div style={{ display: "grid", gap: 12 }}>
           <div className="field">
             <div className="label">Имя для отображения</div>
             <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           </div>
-          <div className="row">
-            <div className="field" style={{ flex: 1, minWidth: 160 }}>
-              <div className="label">Город</div>
-              <input className="input" value={city} onChange={(e) => setCity(e.target.value)} />
-            </div>
-            <div className="field" style={{ flex: 1, minWidth: 160 }}>
-              <div className="label">Район</div>
-              <input className="input" value={district} onChange={(e) => setDistrict(e.target.value)} />
-            </div>
+          <div className="field">
+            <div className="label">Возраст</div>
+            <input className="input" value={age} onChange={(e) => setAge(e.target.value)} inputMode="numeric" placeholder="25" />
           </div>
-
+          <div className="field">
+            <div className="label">Город</div>
+            <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Москва" />
+          </div>
           {type === "parent" && (
             <>
               <div className="field">
@@ -1169,7 +1075,6 @@ export default function App() {
               </div>
             </>
           )}
-
           {type === "specialist" && (
             <>
               <div className="field">
@@ -1182,34 +1087,11 @@ export default function App() {
               </div>
             </>
           )}
-
           <div className="row">
             <button className="btn" disabled={saving} onClick={() => void save()}>
               {saving ? "Сохранение…" : "Сохранить"}
             </button>
           </div>
-        </div>
-
-        <div style={{ marginTop: 18 }}>
-          <div className="h2">Отзывы</div>
-          {reviewsErr && <div className="muted" style={{ marginTop: 8 }}>{reviewsErr}</div>}
-          {!reviews && !reviewsErr && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
-          {reviews && reviews.length === 0 && <div className="muted" style={{ marginTop: 8 }}>Пока нет отзывов.</div>}
-          {reviews && reviews.length > 0 && (
-            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-              {reviews.map((r) => (
-                <div key={r.id} className="card" style={{ background: "var(--tg-bg)" }}>
-                  <div className="row">
-                    <div style={{ fontWeight: 900 }}>★ {r.rating}</div>
-                    <div className="spacer" />
-                    <div className="muted">{formatDate(r.createdAt)}</div>
-                  </div>
-                  {r.text && <div style={{ marginTop: 8 }}>{r.text}</div>}
-                  <div className="muted" style={{ marginTop: 8 }}>От: {labelProfileType(r.fromProfile.type)}</div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     );
@@ -1630,7 +1512,13 @@ export default function App() {
 
                   <Route
                     path="/profile"
-                    element={<ProfileScreen />}
+                    element={
+                      activeProfile?.type === "parent" || activeProfile?.type === "specialist" ? (
+                        <ProfileScreen />
+                      ) : (
+                        <Navigate to="/roles" replace />
+                      )
+                    }
                   />
 
                   <Route path="/profiles/:id" element={<PublicProfileScreen />} />

@@ -41,6 +41,8 @@ export class MeController {
           type: p.type,
           isActive: p.isActive,
           displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
+          age: p.age,
           city: p.city,
           district: p.district,
         };

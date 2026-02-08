@@ -54,6 +54,7 @@ model Profile {
   isActive      Boolean     @default(true) @map("is_active")
   displayName   String?     @map("display_name")
   avatarUrl     String?     @map("avatar_url")
+  age           Int?
   city          String?
   district      String?
   ratingAvg     Decimal     @default(0.0) @db.Decimal(2, 1) @map("rating_avg")
