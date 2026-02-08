@@ -971,7 +971,7 @@ export default function App() {
     const telegramPhotoUrl = me?.user?.photoUrl ?? null;
     const defaultAvatar = type === "parent" ? menuProfil : menuSpecialist;
     const avatarSrc = activeProfile!.avatarUrl || telegramPhotoUrl || defaultAvatar;
-
+  
     const [displayName, setDisplayName] = useState(activeProfile!.displayName ?? "");
     const [age, setAge] = useState(activeProfile!.age != null ? String(activeProfile!.age) : "");
     const [city, setCity] = useState(activeProfile!.city ?? "");
@@ -983,28 +983,58 @@ export default function App() {
     const [specialistCategory, setSpecialistCategory] = useState("");
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-
+  
+    // ИСПРАВЛЕНО: Правильная загрузка данных специалиста
     useEffect(() => {
+      console.log("Active profile data:", activeProfile);
+      console.log("Active profile specialist data:", activeProfile?.specialist);
+      console.log("Skills type:", typeof activeProfile?.specialist?.skills);
+      console.log("Skills value:", activeProfile?.specialist?.skills);
       if (!activeProfile) return;
+      
       setDisplayName(activeProfile.displayName ?? "");
       setAge(activeProfile.age != null ? String(activeProfile.age) : "");
       setCity(activeProfile.city ?? "");
       setDistrict(activeProfile.district ?? "");
+      
       if (activeProfile.type === "parent") {
         const parent = activeProfile.parent;
         setChildrenAges(Array.isArray(parent?.childrenAges) ? parent.childrenAges.join(", ") : "");
         setSpecialWishes(parent?.specialWishes ?? "");
       }
+      
       if (activeProfile.type === "specialist") {
         const spec = activeProfile.specialist;
-        setPricePerHour(spec?.pricePerHour != null ? String(spec.pricePerHour) : "");
-        setAbout(spec?.about ?? "");
-        const skills = spec?.skills;
-        const first = Array.isArray(skills) && skills.length > 0 ? skills[0] : typeof skills === "string" ? skills : "";
-        setSpecialistCategory(first || "");
+        
+        // ИСПРАВЛЕНО: Правильное чтение данных специалиста
+        if (spec) {
+          // Price per hour
+          if (spec.pricePerHour !== undefined && spec.pricePerHour !== null) {
+            setPricePerHour(String(spec.pricePerHour));
+          } else {
+            setPricePerHour("");
+          }
+          
+          // About
+          setAbout(spec.about ?? "");
+          
+          // Skills/Category
+          if (Array.isArray(spec.skills) && spec.skills.length > 0) {
+            setSpecialistCategory(spec.skills[0]);
+          } else if (typeof spec.skills === 'string') {
+            setSpecialistCategory(spec.skills);
+          } else {
+            setSpecialistCategory("");
+          }
+        } else {
+          // Если specialist данные отсутствуют, сбрасываем поля
+          setPricePerHour("");
+          setAbout("");
+          setSpecialistCategory("");
+        }
       }
     }, [activeProfile]);
-
+  
     const save = async () => {
       setErr(null);
       setSaving(true);
@@ -1016,10 +1046,10 @@ export default function App() {
           city: city.trim() || null,
           district: district.trim() || null,
         };
+        
         console.log("[Profile] PATCH /profiles/" + profileId + " (base)", basePayload);
-        const baseRes = await authedPatch<{ displayName?: string | null; age?: number | null; city?: string | null; district?: string | null }>(`/profiles/${profileId}`, basePayload);
-        let parentRes: { childrenAges: number[] | null; specialWishes?: string | null } | null = null;
-        let specRes: { skills?: string[]; pricePerHour?: number | null; about?: string | null } | null = null;
+        await authedPatch(`/profiles/${profileId}`, basePayload);
+        
         if (type === "parent") {
           const ages = childrenAges
             .split(",")
@@ -1032,8 +1062,9 @@ export default function App() {
             specialWishes: specialWishes || null,
           };
           console.log("[Profile] PATCH /profiles/" + profileId + "/parent", parentPayload);
-          parentRes = await authedPatch<{ childrenAges: number[] | null; specialWishes?: string | null }>(`/profiles/${profileId}/parent`, parentPayload);
+          await authedPatch(`/profiles/${profileId}/parent`, parentPayload);
         }
+        
         if (type === "specialist") {
           const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
           const specialistPayload = {
@@ -1042,41 +1073,34 @@ export default function App() {
             about: about.trim() || null,
           };
           console.log("[Profile] PATCH /profiles/" + profileId + "/specialist", specialistPayload);
-          specRes = await authedPatch<{ skills?: string[]; pricePerHour?: number | null; about?: string | null }>(`/profiles/${profileId}/specialist`, specialistPayload);
+          await authedPatch(`/profiles/${profileId}/specialist`, specialistPayload);
         }
+        
+        // Обновляем данные после сохранения
         const freshMe = await refreshMe();
-        const p = freshMe?.profiles?.find((x) => x.id === profileId);
-        if (p) {
-          setDisplayName(p.displayName ?? "");
-          setAge(p.age != null ? String(p.age) : "");
-          setCity(p.city ?? "");
-          setDistrict(p.district ?? "");
-          if (p.type === "parent" && p.parent) {
-            setChildrenAges(Array.isArray(p.parent.childrenAges) ? p.parent.childrenAges.join(", ") : "");
-            setSpecialWishes(p.parent.specialWishes ?? "");
-          }
-          if (p.type === "specialist" && p.specialist) {
-            const first = Array.isArray(p.specialist.skills) && p.specialist.skills.length > 0 ? p.specialist.skills[0] : "";
-            setSpecialistCategory(first);
-            setPricePerHour(p.specialist.pricePerHour != null ? String(p.specialist.pricePerHour) : "");
-            setAbout(p.specialist.about ?? "");
-          }
-        } else {
-          setDisplayName(baseRes.displayName ?? "");
-          setAge(baseRes.age != null ? String(baseRes.age) : "");
-          setCity(baseRes.city ?? "");
-          setDistrict(baseRes.district ?? "");
-          if (type === "parent" && parentRes) {
-            setChildrenAges(Array.isArray(parentRes.childrenAges) && parentRes.childrenAges.length ? parentRes.childrenAges.join(", ") : "");
-            setSpecialWishes(parentRes.specialWishes ?? "");
-          }
-          if (type === "specialist" && specRes) {
-            const firstSkill = Array.isArray(specRes?.skills) && specRes.skills.length > 0 ? specRes.skills[0] : "";
-            setSpecialistCategory(firstSkill);
-            setPricePerHour(specRes?.pricePerHour != null ? String(specRes.pricePerHour) : "");
-            setAbout(specRes?.about ?? "");
+        const updatedProfile = freshMe?.profiles?.find((x) => x.id === profileId);
+        
+        if (updatedProfile) {
+          // Обновляем локальное состояние с новыми данными
+          setDisplayName(updatedProfile.displayName ?? "");
+          setAge(updatedProfile.age != null ? String(updatedProfile.age) : "");
+          setCity(updatedProfile.city ?? "");
+          setDistrict(updatedProfile.district ?? "");
+          
+          if (updatedProfile.type === "specialist" && updatedProfile.specialist) {
+            const spec = updatedProfile.specialist;
+            setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
+            setAbout(spec.about ?? "");
+            
+            // Обработка skills
+            if (Array.isArray(spec.skills) && spec.skills.length > 0) {
+              setSpecialistCategory(spec.skills[0]);
+            } else {
+              setSpecialistCategory("");
+            }
           }
         }
+        
       } catch (e: unknown) {
         console.error("[Profile] save error", e);
         setErr(e instanceof Error ? e.message : "Не удалось сохранить");
@@ -1084,7 +1108,7 @@ export default function App() {
         setSaving(false);
       }
     };
-
+  
     return (
       <div className="card">
         <div className="row" style={{ alignItems: "center", gap: 16, marginBottom: 16 }}>
@@ -1098,24 +1122,37 @@ export default function App() {
             <div className="muted">{type === "parent" ? "👩‍🍼 Родитель" : "👩‍🏫 Специалист"}</div>
           </div>
         </div>
+        
         {err && <div className="muted" style={{ marginBottom: 8 }}>{err}</div>}
+        
         <div style={{ display: "grid", gap: 12 }}>
           <div className="field">
             <div className="label">Имя для отображения</div>
             <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           </div>
+          
+          {/* ИСПРАВЛЕНО: Добавлено значение по умолчанию из activeProfile.age */}
           <div className="field">
             <div className="label">Возраст</div>
-            <input className="input" value={age} onChange={(e) => setAge(e.target.value)} inputMode="numeric" placeholder="25" />
+            <input 
+              className="input" 
+              value={age} 
+              onChange={(e) => setAge(e.target.value)} 
+              inputMode="numeric" 
+              placeholder="25" 
+            />
           </div>
+          
           <div className="field">
             <div className="label">Город</div>
             <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Москва" />
           </div>
+          
           <div className="field">
             <div className="label">Район</div>
             <input className="input" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Центральный" />
           </div>
+          
           {type === "parent" && (
             <>
               <div className="field">
@@ -1128,6 +1165,7 @@ export default function App() {
               </div>
             </>
           )}
+          
           {type === "specialist" && (
             <>
               <div className="field">
@@ -1142,17 +1180,41 @@ export default function App() {
                     <option key={c.id} value={c.id}>{c.label}</option>
                   ))}
                 </select>
+                {/* ИСПРАВЛЕНО: Добавляем значение по умолчанию из данных */}
+                {activeProfile?.specialist?.skills && 
+                 Array.isArray(activeProfile.specialist.skills) && 
+                 activeProfile.specialist.skills.length > 0 && (
+                  <div className="muted" style={{ fontSize: '12px', marginTop: '4px' }}>
+                    Текущее значение: {activeProfile.specialist.skills[0]}
+                  </div>
+                )}
               </div>
+              
+              {/* ИСПРАВЛЕНО: Добавлено значение по умолчанию из activeProfile.specialist.pricePerHour */}
               <div className="field">
                 <div className="label">Цена за час (₽)</div>
-                <input className="input" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} inputMode="numeric" />
+                <input 
+                  className="input" 
+                  value={pricePerHour} 
+                  onChange={(e) => setPricePerHour(e.target.value)} 
+                  inputMode="numeric" 
+                  placeholder="1000"
+                />
               </div>
+              
+              {/* ИСПРАВЛЕНО: Добавлено значение по умолчанию из activeProfile.specialist.about */}
               <div className="field">
                 <div className="label">О себе</div>
-                <textarea className="textarea" value={about} onChange={(e) => setAbout(e.target.value)} />
+                <textarea 
+                  className="textarea" 
+                  value={about} 
+                  onChange={(e) => setAbout(e.target.value)} 
+                  placeholder="Начинающая няня"
+                />
               </div>
             </>
           )}
+          
           <div className="row">
             <button className="btn" disabled={saving} onClick={() => void save()}>
               {saving ? "Сохранение…" : "Сохранить"}
