@@ -423,10 +423,11 @@ export default function App() {
     if (!token) throw new Error("No token");
     return patchJSON<T>(path, body, token);
   };
-  const refreshMe = async () => {
-    if (!token) return;
+  const refreshMe = async (): Promise<MeResponse | null> => {
+    if (!token) return null;
     const data = await getJSON<MeResponse>("/me", token);
     setMe(data);
+    return data;
   };
 
   function RequestsScreen() {
@@ -1037,19 +1038,36 @@ export default function App() {
           console.log("[Profile] PATCH /profiles/" + profileId + "/specialist", specialistPayload);
           specRes = await authedPatch<{ skills?: string[]; pricePerHour?: number | null; about?: string | null }>(`/profiles/${profileId}/specialist`, specialistPayload);
         }
-        await refreshMe();
-        setDisplayName(baseRes.displayName ?? "");
-        setAge(baseRes.age != null ? String(baseRes.age) : "");
-        setCity(baseRes.city ?? "");
-        if (type === "parent" && parentRes) {
-          setChildrenAges(Array.isArray(parentRes.childrenAges) && parentRes.childrenAges.length ? parentRes.childrenAges.join(", ") : "");
-          setSpecialWishes(parentRes.specialWishes ?? "");
-        }
-        if (type === "specialist" && specRes) {
-          const firstSkill = Array.isArray(specRes?.skills) && specRes.skills.length > 0 ? specRes.skills[0] : "";
-          setSpecialistCategory(firstSkill);
-          setPricePerHour(specRes?.pricePerHour != null ? String(specRes.pricePerHour) : "");
-          setAbout(specRes?.about ?? "");
+        const freshMe = await refreshMe();
+        const p = freshMe?.profiles?.find((x) => x.id === profileId);
+        if (p) {
+          setDisplayName(p.displayName ?? "");
+          setAge(p.age != null ? String(p.age) : "");
+          setCity(p.city ?? "");
+          if (p.type === "parent" && p.parent) {
+            setChildrenAges(Array.isArray(p.parent.childrenAges) ? p.parent.childrenAges.join(", ") : "");
+            setSpecialWishes(p.parent.specialWishes ?? "");
+          }
+          if (p.type === "specialist" && p.specialist) {
+            const first = Array.isArray(p.specialist.skills) && p.specialist.skills.length > 0 ? p.specialist.skills[0] : "";
+            setSpecialistCategory(first);
+            setPricePerHour(p.specialist.pricePerHour != null ? String(p.specialist.pricePerHour) : "");
+            setAbout(p.specialist.about ?? "");
+          }
+        } else {
+          setDisplayName(baseRes.displayName ?? "");
+          setAge(baseRes.age != null ? String(baseRes.age) : "");
+          setCity(baseRes.city ?? "");
+          if (type === "parent" && parentRes) {
+            setChildrenAges(Array.isArray(parentRes.childrenAges) && parentRes.childrenAges.length ? parentRes.childrenAges.join(", ") : "");
+            setSpecialWishes(parentRes.specialWishes ?? "");
+          }
+          if (type === "specialist" && specRes) {
+            const firstSkill = Array.isArray(specRes?.skills) && specRes.skills.length > 0 ? specRes.skills[0] : "";
+            setSpecialistCategory(firstSkill);
+            setPricePerHour(specRes?.pricePerHour != null ? String(specRes.pricePerHour) : "");
+            setAbout(specRes?.about ?? "");
+          }
         }
       } catch (e: unknown) {
         console.error("[Profile] save error", e);
