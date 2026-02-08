@@ -234,8 +234,7 @@ export class ProfilesService {
   }
 
   async deleteProfile(userId: bigint, profileId: bigint) {
-    const profile = await this.getOwnedProfileOrThrow(userId, profileId);
-    if (profile.type !== "shop") throw new BadRequestException("Only shop profile can be deleted via this endpoint");
+    await this.getOwnedProfileOrThrow(userId, profileId);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.user.updateMany({

@@ -1,0 +1,251 @@
+{
+  "info": {
+    "name": "For Moms API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "profileId", "value": "2" },
+    { "key": "requestId", "value": "1" },
+    { "key": "offerId", "value": "1" },
+    { "key": "promoId", "value": "1" },
+    { "key": "productId", "value": "1" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [ { "key": "token", "value": "{{token}}", "type": "string" } ]
+  },
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Session (получить токен)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"initData\": \"ВСТАВЬТЕ_СЮДА_initData_ИЗ_Telegram_WebApp\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/session",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "var j = pm.response.json();",
+                    "if (j.accessToken) { pm.collectionVariables.set('token', j.accessToken); }"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Me",
+      "item": [
+        { "name": "GET me", "request": { "method": "GET", "url": "{{baseUrl}}/me" } },
+        {
+          "name": "POST active-profile",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"profileId\": \"{{profileId}}\"\n}" },
+            "url": "{{baseUrl}}/me/active-profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Profiles",
+      "item": [
+        {
+          "name": "POST create profile",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"shop\"\n}" },
+            "url": "{{baseUrl}}/profiles"
+          }
+        },
+        { "name": "GET profile by id", "request": { "method": "GET", "url": "{{baseUrl}}/profiles/{{profileId}}" } },
+        {
+          "name": "PATCH profile (базовые поля)",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Тест\",\n  \"city\": \"Москва\",\n  \"district\": \"ЦАО\"\n}"
+            },
+            "url": "{{baseUrl}}/profiles/{{profileId}}"
+          }
+        },
+        {
+          "name": "PATCH profile parent",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"childrenAges\": [2, 5],\n  \"specialWishes\": \"Пожелания\"\n}" },
+            "url": "{{baseUrl}}/profiles/{{profileId}}/parent"
+          }
+        },
+        {
+          "name": "PATCH profile specialist",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"pricePerHour\": 500,\n  \"about\": \"О себе\"\n}" },
+            "url": "{{baseUrl}}/profiles/{{profileId}}/specialist"
+          }
+        },
+        {
+          "name": "PATCH profile shop",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shopName\": \"Мой магазин\",\n  \"address\": \"ул. Ленина 1\",\n  \"workHours\": \"9-18\",\n  \"description\": \"Описание\"\n}"
+            },
+            "url": "{{baseUrl}}/profiles/{{profileId}}/shop"
+          }
+        },
+        {
+          "name": "POST activate",
+          "request": { "method": "POST", "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/profiles/{{profileId}}/activate" }
+        },
+        {
+          "name": "POST deactivate",
+          "request": { "method": "POST", "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/profiles/{{profileId}}/deactivate" }
+        },
+        { "name": "DELETE profile", "request": { "method": "DELETE", "url": "{{baseUrl}}/profiles/{{profileId}}" } }
+      ]
+    },
+    {
+      "name": "4. Shop promotions & products",
+      "item": [
+        {
+          "name": "POST shop promotion",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageUrl\": \"https://example.com/banner.jpg\",\n  \"title\": \"Акция\",\n  \"text\": \"Текст акции\"\n}"
+            },
+            "url": "{{baseUrl}}/profiles/{{profileId}}/shop/promotions"
+          }
+        },
+        {
+          "name": "PATCH shop promotion",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Новый заголовок\"\n}" },
+            "url": "{{baseUrl}}/profiles/{{profileId}}/shop/promotions/{{promoId}}"
+          }
+        },
+        {
+          "name": "DELETE shop promotion",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/profiles/{{profileId}}/shop/promotions/{{promoId}}" }
+        },
+        {
+          "name": "POST shop product",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Товар\",\n  \"description\": \"Описание\",\n  \"price\": 1000,\n  \"category\": \"Одежда\",\n  \"imageUrls\": [\"https://example.com/1.jpg\"]\n}"
+            },
+            "url": "{{baseUrl}}/profiles/{{profileId}}/shop/products"
+          }
+        },
+        {
+          "name": "PATCH shop product",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Название\",\n  \"price\": 500\n}" },
+            "url": "{{baseUrl}}/profiles/{{profileId}}/shop/products/{{productId}}"
+          }
+        },
+        {
+          "name": "DELETE shop product",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/profiles/{{profileId}}/shop/products/{{productId}}" }
+        }
+      ]
+    },
+    {
+      "name": "5. Upload",
+      "item": [
+        {
+          "name": "POST upload file",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [ { "key": "file", "type": "file", "src": "" } ]
+            },
+            "url": "{{baseUrl}}/upload"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Requests",
+      "item": [
+        {
+          "name": "POST create request",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Няня\",\n  \"childAge\": 3,\n  \"description\": \"Нужна няня\",\n  \"budget\": 500,\n  \"district\": \"САО\"\n}"
+            },
+            "url": "{{baseUrl}}/requests"
+          }
+        },
+        { "name": "GET my requests", "request": { "method": "GET", "url": "{{baseUrl}}/requests/mine" } },
+        { "name": "GET request by id", "request": { "method": "GET", "url": "{{baseUrl}}/requests/{{requestId}}" } },
+        { "name": "DELETE request", "request": { "method": "DELETE", "url": "{{baseUrl}}/requests/{{requestId}}" } },
+        {
+          "name": "POST create offer",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"priceOffer\": 400,\n  \"comment\": \"Готова\"\n}" },
+            "url": "{{baseUrl}}/requests/{{requestId}}/offers"
+          }
+        },
+        {
+          "name": "POST complete request",
+          "request": { "method": "POST", "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/requests/{{requestId}}/complete" }
+        }
+      ]
+    },
+    {
+      "name": "7. Offers",
+      "item": [
+        { "name": "GET my offers", "request": { "method": "GET", "url": "{{baseUrl}}/offers/mine" } },
+        { "name": "POST accept offer", "request": { "method": "POST", "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/offers/{{offerId}}/accept" } },
+        { "name": "POST reject offer", "request": { "method": "POST", "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/offers/{{offerId}}/reject" } }
+      ]
+    },
+    {
+      "name": "8. Health (no auth)",
+      "item": [
+        { "name": "GET health", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/health" } },
+        { "name": "GET health/db", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/health/db" } }
+      ]
+    }
+  ]
+}

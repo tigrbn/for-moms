@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import { deleteJSON, getJSON, patchJSON, postJSON, uploadFile } from "./shared/api";
+import { deleteJSON, getJSON, patchJSON, postJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
+
+import bannerImg from "./assets/img/banner.png";
+import categoryNanny from "./assets/img/category/няня.png";
+import categoryTutor from "./assets/img/category/репетитор.png";
+import categoryLeisure from "./assets/img/category/досуг.png";
 
 type MeResponse = {
   user: {
@@ -15,7 +20,7 @@ type MeResponse = {
   };
   profiles: Array<{
     id: string;
-    type: "parent" | "specialist" | "shop";
+    type: "parent" | "specialist";
     isActive: boolean;
     displayName?: string | null;
     city?: string | null;
@@ -33,10 +38,6 @@ type FeedResponse =
             kind: "specialist_profile";
             isPromoted: boolean;
             profile: { id: string; displayName?: string | null; avatarUrl?: string | null; city?: string | null; district?: string | null; ratingAvg: string; ratingCount: number; pricePerHour?: number | null };
-          }
-        | {
-            kind: "shop_profile";
-            profile: { id: string; displayName?: string | null; shopName?: string | null; address?: string | null; district?: string | null };
           }
       >;
     }
@@ -58,10 +59,6 @@ type FeedResponse =
               status: "active" | "in_progress" | "done" | "cancelled";
               createdAt: string;
             };
-          }
-        | {
-            kind: "shop_profile";
-            profile: { id: string; displayName?: string | null; shopName?: string | null; address?: string | null; district?: string | null };
           }
       >;
     };
@@ -142,12 +139,12 @@ type ReviewListItem = {
   rating: number;
   text?: string | null;
   createdAt: string;
-  fromProfile: { id: string; type: "parent" | "specialist" | "shop" };
+  fromProfile: { id: string; type: "parent" | "specialist" };
 };
 
 type PublicProfile = {
   id: string;
-  type: "parent" | "specialist" | "shop";
+  type: "parent" | "specialist";
   isActive: boolean;
   displayName?: string | null;
   avatarUrl?: string | null;
@@ -158,15 +155,6 @@ type PublicProfile = {
   user: { username?: string | null; firstName?: string | null; lastName?: string | null };
   specialist: { pricePerHour?: number | null; about?: string | null } | null;
   parent: { childrenAges?: any; specialWishes?: string | null } | null;
-  shop: {
-    shopName?: string | null;
-    logoUrl?: string | null;
-    description?: string | null;
-    address?: string | null;
-    workHours?: string | null;
-    products?: Array<{ id: string; title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: unknown }>;
-    promotions?: Array<{ id: string; imageUrl: string; title?: string | null; text?: string | null }>;
-  } | null;
 };
 
 function TopBar(props: { title: string; right?: React.ReactNode; sub?: React.ReactNode }) {
@@ -204,10 +192,9 @@ function formatDate(iso?: string | null) {
   return d.toLocaleString();
 }
 
-function labelProfileType(t: "parent" | "specialist" | "shop") {
+function labelProfileType(t: "parent" | "specialist") {
   if (t === "parent") return "👩‍🍼 Мама";
-  if (t === "specialist") return "👩‍🏫 Специалист";
-  return "🏪 Магазин";
+  return "👩‍🏫 Специалист";
 }
 
 function labelRequestStatus(s: "active" | "in_progress" | "done" | "cancelled") {
@@ -224,131 +211,16 @@ function labelOfferStatus(s: "pending" | "accepted" | "rejected" | "cancelled") 
   return "🚫 Отменён";
 }
 
-function ShopPromoEditInline(props: {
-  imageUrl: string;
-  title: string;
-  text: string;
-  saving: boolean;
-  onSave: (imageUrl: string, title: string, text: string) => Promise<void>;
-  onCancel: () => void;
-  onUpload?: (file: File) => Promise<string>;
-}) {
-  const [imageUrl, setImageUrl] = useState(props.imageUrl);
-  const [title, setTitle] = useState(props.title);
-  const [text, setText] = useState(props.text);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    setImageUrl(props.imageUrl);
-    setTitle(props.title);
-    setText(props.text);
-  }, [props.imageUrl, props.title, props.text]);
-  return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-        <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
-        {props.onUpload && (
-          <>
-            <input type="file" accept="image/*" ref={fileRef} style={{ display: "none" }} onChange={async (e) => {
-              const f = e.target.files?.[0];
-              if (!f || !props.onUpload) return;
-              setUploading(true);
-              try {
-                const url = await props.onUpload(f);
-                setImageUrl(url);
-              } finally {
-                setUploading(false);
-                e.target.value = "";
-              }
-            }} />
-            <button type="button" className="btn secondary" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? "Загрузка…" : "Загрузить фото"}</button>
-          </>
-        )}
-      </div>
-      <input className="input" placeholder="Заголовок" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <input className="input" placeholder="Текст" value={text} onChange={(e) => setText(e.target.value)} />
-      <div className="row" style={{ gap: 8 }}>
-        <button type="button" className="btn" disabled={props.saving || !imageUrl.trim()} onClick={() => void props.onSave(imageUrl, title, text)}>{props.saving ? "Сохранение…" : "Сохранить"}</button>
-        <button type="button" className="btn secondary" onClick={props.onCancel}>Отмена</button>
-      </div>
-    </div>
-  );
-}
-
-function ShopProductEditInline(props: {
-  title: string;
-  description: string;
-  price: string | number;
-  category: string;
-  imageUrl: string;
-  saving: boolean;
-  onSave: (title: string, description: string, price: string, category: string, imageUrl: string) => Promise<void>;
-  onCancel: () => void;
-  onUpload?: (file: File) => Promise<string>;
-}) {
-  const [title, setTitle] = useState(props.title);
-  const [description, setDescription] = useState(props.description);
-  const [price, setPrice] = useState(String(props.price ?? ""));
-  const [category, setCategory] = useState(props.category);
-  const [imageUrl, setImageUrl] = useState(props.imageUrl);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    setTitle(props.title);
-    setDescription(props.description);
-    setPrice(String(props.price ?? ""));
-    setCategory(props.category);
-    setImageUrl(props.imageUrl);
-  }, [props.title, props.description, props.price, props.category, props.imageUrl]);
-  return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <input className="input" placeholder="Название" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <input className="input" placeholder="Описание" value={description} onChange={(e) => setDescription(e.target.value)} />
-      <input className="input" placeholder="Цена (₽)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-      <input className="input" placeholder="Категория" value={category} onChange={(e) => setCategory(e.target.value)} />
-      <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-        <input className="input" placeholder="URL картинки" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
-        {props.onUpload && (
-          <>
-            <input type="file" accept="image/*" ref={fileRef} style={{ display: "none" }} onChange={async (e) => {
-              const f = e.target.files?.[0];
-              if (!f || !props.onUpload) return;
-              setUploading(true);
-              try {
-                const url = await props.onUpload(f);
-                setImageUrl(url);
-              } finally {
-                setUploading(false);
-                e.target.value = "";
-              }
-            }} />
-            <button type="button" className="btn secondary" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? "Загрузка…" : "Загрузить фото"}</button>
-          </>
-        )}
-      </div>
-      <div className="row" style={{ gap: 8 }}>
-        <button type="button" className="btn" disabled={props.saving || !title.trim()} onClick={() => void props.onSave(title, description, price, category, imageUrl)}>{props.saving ? "Сохранение…" : "Сохранить"}</button>
-        <button type="button" className="btn secondary" onClick={props.onCancel}>Отмена</button>
-      </div>
-    </div>
-  );
-}
-
 function hoursBetween(a: Date, b: Date) {
   return Math.abs(a.getTime() - b.getTime()) / (1000 * 60 * 60);
 }
 
-/** Категории ленты: для мамы — специалисты по категории, для специалиста — заявки по категории */
+/** Категории ленты: Няня, Репетитор, Досуг */
 const FEED_CATEGORIES = [
-  { id: "", label: "Все" },
-  { id: "Няня", label: "👶 Няня" },
-  { id: "Репетитор", label: "📚 Репетитор" },
-  { id: "Гувернантка", label: "👩‍🏫 Гувернантка" },
-  { id: "Психолог", label: "🧠 Психолог" },
-  { id: "Логопед", label: "🗣 Логопед" },
-  { id: "Массажист", label: "💆 Массажист" },
-  { id: "Магазины", label: "🏪 Магазины" },
-  { id: "Другое", label: "✨ Другое" },
+  { id: "", label: "Все", icon: null },
+  { id: "Няня", label: "Няня", icon: categoryNanny },
+  { id: "Репетитор", label: "Репетитор", icon: categoryTutor },
+  { id: "Досуг", label: "Досуг", icon: categoryLeisure },
 ];
 
 export default function App() {
@@ -435,7 +307,7 @@ export default function App() {
     setMe(data);
   };
 
-  const createRole = async (type: "parent" | "specialist" | "shop") => {
+  const createRole = async (type: "parent" | "specialist") => {
     if (!token) return;
     const created = await postJSON<{ id: string }>("/profiles", { type }, token);
     await ensureActiveProfile(created.id);
@@ -443,7 +315,6 @@ export default function App() {
 
   const allTypes = useMemo(() => new Set((me?.profiles ?? []).map((p) => p.type)), [me]);
   const missingRole = useMemo(() => {
-    // MVP: only parent + specialist
     if (!allTypes.has("parent")) return "parent" as const;
     if (!allTypes.has("specialist")) return "specialist" as const;
     return null;
@@ -477,7 +348,7 @@ export default function App() {
             to="/roles"
             title="Сменить роль"
           >
-            {activeProfile.type === "parent" ? "👩‍🍼 Мама" : activeProfile.type === "specialist" ? "👩‍🏫 Специалист" : "🏪 Магазин"}
+            {activeProfile.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
           </Link>
         )}
       </div>
@@ -583,7 +454,7 @@ export default function App() {
                   </Link>
                   <button
                     type="button"
-                    className="btn secondary"
+                    className="btn danger"
                     onClick={async () => {
                       if (!confirm("Удалить заявку?")) return;
                       try {
@@ -793,7 +664,7 @@ export default function App() {
             <div className="row" style={{ marginTop: 12 }}>
               <button
                 type="button"
-                className="btn secondary"
+                className="btn danger"
                 onClick={async () => {
                   if (!confirm("Удалить заявку? Отклики тоже будут удалены.")) return;
                   try {
@@ -1062,29 +933,6 @@ export default function App() {
     const [pricePerHour, setPricePerHour] = useState("");
     const [about, setAbout] = useState("");
 
-    const [shopName, setShopName] = useState("");
-    const [shopAddress, setShopAddress] = useState("");
-    const [shopWorkHours, setShopWorkHours] = useState("");
-    const [shopDescription, setShopDescription] = useState("");
-    const [shopPromotions, setShopPromotions] = useState<Array<{ id: string; imageUrl: string; title?: string | null; text?: string | null }>>([]);
-    const [shopProducts, setShopProducts] = useState<Array<{ id: string; title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: unknown }>>([]);
-    const [shopContentErr, setShopContentErr] = useState<string | null>(null);
-    const [editingPromoId, setEditingPromoId] = useState<string | null>(null);
-    const [editingProductId, setEditingProductId] = useState<string | null>(null);
-    const [newPromoImageUrl, setNewPromoImageUrl] = useState("");
-    const [newPromoTitle, setNewPromoTitle] = useState("");
-    const [newPromoText, setNewPromoText] = useState("");
-    const [newProductTitle, setNewProductTitle] = useState("");
-    const [newProductDesc, setNewProductDesc] = useState("");
-    const [newProductPrice, setNewProductPrice] = useState("");
-    const [newProductCategory, setNewProductCategory] = useState("");
-    const [newProductImageUrl, setNewProductImageUrl] = useState("");
-    const [savingPromo, setSavingPromo] = useState(false);
-    const [savingProduct, setSavingProduct] = useState(false);
-    const [uploadingPhoto, setUploadingPhoto] = useState(false);
-    const promoFileRef = useRef<HTMLInputElement>(null);
-    const productFileRef = useRef<HTMLInputElement>(null);
-
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
     const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
@@ -1095,29 +943,6 @@ export default function App() {
       setCity(activeProfile?.city ?? "");
       setDistrict(activeProfile?.district ?? "");
     }, [activeProfileId]);
-
-    const loadShopProfile = async () => {
-      if (type !== "shop") return;
-      setShopContentErr(null);
-      try {
-        const p = await authedGet<PublicProfile>(`/profiles/${profileId}`);
-        if (p.shop) {
-          setShopName(p.shop.shopName ?? "");
-          setShopAddress(p.shop.address ?? "");
-          setShopWorkHours(p.shop.workHours ?? "");
-          setShopDescription(p.shop.description ?? "");
-          setShopPromotions((p.shop.promotions ?? []) as Array<{ id: string; imageUrl: string; title?: string | null; text?: string | null }>);
-          setShopProducts((p.shop.products ?? []) as Array<{ id: string; title: string; description?: string | null; price?: number | null; category?: string | null; imageUrls?: unknown }>);
-        }
-      } catch (e: any) {
-        setShopContentErr(e?.message ?? "Ошибка загрузки");
-      }
-    };
-
-    useEffect(() => {
-      if (type !== "shop") return;
-      void loadShopProfile();
-    }, [profileId, type]);
 
     useEffect(() => {
       const run = async () => {
@@ -1137,7 +962,7 @@ export default function App() {
       setErr(null);
       setSaving(true);
       try {
-        await authedPost(`/profiles/${profileId}`, {
+        await authedPatch(`/profiles/${profileId}`, {
           displayName: displayName || null,
           city: city || null,
           district: district || null,
@@ -1150,23 +975,15 @@ export default function App() {
             .filter(Boolean)
             .map((s) => Number(s))
             .filter((n) => Number.isFinite(n));
-          await authedPost(`/profiles/${profileId}/parent`, {
+          await authedPatch(`/profiles/${profileId}/parent`, {
             childrenAges: ages.length ? ages : null,
             specialWishes: specialWishes || null,
           });
         }
         if (type === "specialist") {
-          await authedPost(`/profiles/${profileId}/specialist`, {
+          await authedPatch(`/profiles/${profileId}/specialist`, {
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
-          });
-        }
-        if (type === "shop") {
-          await authedPatch(`/profiles/${profileId}/shop`, {
-            shopName: shopName || null,
-            address: shopAddress || null,
-            workHours: shopWorkHours || null,
-            description: shopDescription || null,
           });
         }
 
@@ -1243,239 +1060,6 @@ export default function App() {
             </>
           )}
 
-          {type === "shop" && (
-            <>
-              <div className="field">
-                <div className="label">Название магазина</div>
-                <input className="input" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Напр. Детский мир" />
-              </div>
-              <div className="field">
-                <div className="label">Адрес</div>
-                <input className="input" value={shopAddress} onChange={(e) => setShopAddress(e.target.value)} />
-              </div>
-              <div className="field">
-                <div className="label">Часы работы</div>
-                <input className="input" value={shopWorkHours} onChange={(e) => setShopWorkHours(e.target.value)} placeholder="Пн–Пт 10:00–19:00" />
-              </div>
-              <div className="field">
-                <div className="label">Описание</div>
-                <textarea className="textarea" value={shopDescription} onChange={(e) => setShopDescription(e.target.value)} />
-              </div>
-
-              <div style={{ marginTop: 16 }}>
-                <div className="h2">Акции (баннеры)</div>
-                {shopContentErr && <div className="muted" style={{ marginTop: 6 }}>{shopContentErr}</div>}
-                {shopPromotions.length > 0 && (
-                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-                    {shopPromotions.map((pr) => (
-                      <div key={pr.id} className="card" style={{ background: "var(--tg-bg)" }}>
-                        {editingPromoId === pr.id ? (
-                          <ShopPromoEditInline
-                            imageUrl={pr.imageUrl}
-                            title={pr.title ?? ""}
-                            text={pr.text ?? ""}
-                            saving={savingPromo}
-                            onSave={async (imageUrl, title, text) => {
-                              setSavingPromo(true);
-                              try {
-                                await authedPatch(`/profiles/${profileId}/shop/promotions/${pr.id}`, { imageUrl: imageUrl || null, title: title || null, text: text || null });
-                                setEditingPromoId(null);
-                                await loadShopProfile();
-                              } catch (e: any) {
-                                setShopContentErr(e?.message ?? "Ошибка");
-                              } finally {
-                                setSavingPromo(false);
-                              }
-                            }}
-                            onCancel={() => setEditingPromoId(null)}
-                            onUpload={token ? async (file) => { const { url } = await uploadFile("/upload", file, token); return url; } : undefined}
-                          />
-                        ) : (
-                          <>
-                            {pr.imageUrl && <img src={pr.imageUrl} alt="" style={{ width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8 }} />}
-                            {pr.title && <div className="h3" style={{ marginTop: 8 }}>{pr.title}</div>}
-                            {pr.text && <div className="muted" style={{ marginTop: 4 }}>{pr.text}</div>}
-                            <div className="row" style={{ marginTop: 8, flexWrap: "wrap", gap: 8 }}>
-                              <button type="button" className="btn secondary" onClick={() => setEditingPromoId(pr.id)}>Изменить</button>
-                              <button type="button" className="btn secondary" onClick={async () => {
-                                if (!confirm("Удалить акцию?")) return;
-                                try {
-                                  await authedDelete(`/profiles/${profileId}/shop/promotions/${pr.id}`);
-                                  await loadShopProfile();
-                                } catch (e: any) {
-                                  setShopContentErr(e?.message ?? "Ошибка");
-                                }
-                              }}>Удалить</button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="card" style={{ marginTop: 10, background: "var(--tg-bg)" }}>
-                  <div className="muted" style={{ marginBottom: 8 }}>Добавить акцию (картинка + текст)</div>
-                  <div style={{ display: "grid", gap: 8 }}>
-                    <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-                      <input className="input" placeholder="URL картинки" value={newPromoImageUrl} onChange={(e) => setNewPromoImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
-                      <input type="file" accept="image/*" ref={promoFileRef} style={{ display: "none" }} onChange={async (e) => {
-                        const f = e.target.files?.[0];
-                        if (!f || !token) return;
-                        setUploadingPhoto(true);
-                        setShopContentErr(null);
-                        try {
-                          const { url } = await uploadFile("/upload", f, token);
-                          setNewPromoImageUrl(url);
-                        } catch (err: any) {
-                          setShopContentErr(err?.message ?? "Ошибка загрузки");
-                        } finally {
-                          setUploadingPhoto(false);
-                          e.target.value = "";
-                        }
-                      }} />
-                      <button type="button" className="btn secondary" disabled={uploadingPhoto} onClick={() => promoFileRef.current?.click()}>
-                        {uploadingPhoto ? "Загрузка…" : "Загрузить фото"}
-                      </button>
-                    </div>
-                    <input className="input" placeholder="Заголовок" value={newPromoTitle} onChange={(e) => setNewPromoTitle(e.target.value)} />
-                    <input className="input" placeholder="Текст" value={newPromoText} onChange={(e) => setNewPromoText(e.target.value)} />
-                  </div>
-                  <button type="button" className="btn" style={{ marginTop: 8 }} disabled={savingPromo || !newPromoImageUrl.trim()} onClick={async () => {
-                    setSavingPromo(true);
-                    try {
-                      await authedPost(`/profiles/${profileId}/shop/promotions`, { imageUrl: newPromoImageUrl.trim(), title: newPromoTitle.trim() || null, text: newPromoText.trim() || null });
-                      setNewPromoImageUrl("");
-                      setNewPromoTitle("");
-                      setNewPromoText("");
-                      await loadShopProfile();
-                    } catch (e: any) {
-                      setShopContentErr(e?.message ?? "Ошибка");
-                    } finally {
-                      setSavingPromo(false);
-                    }
-                  }}>{savingPromo ? "Сохранение…" : "Добавить акцию"}</button>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 20 }}>
-                <div className="h2">Товары (до 6)</div>
-                {shopProducts.length > 0 && (
-                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-                    {shopProducts.map((prod) => (
-                      <div key={prod.id} className="card" style={{ background: "var(--tg-bg)" }}>
-                        {editingProductId === prod.id ? (
-                          <ShopProductEditInline
-                            title={prod.title}
-                            description={prod.description ?? ""}
-                            price={prod.price ?? ""}
-                            category={prod.category ?? ""}
-                            imageUrl={Array.isArray(prod.imageUrls) && prod.imageUrls[0] ? String(prod.imageUrls[0]) : ""}
-                            saving={savingProduct}
-                            onSave={async (title, description, price, category, imageUrl) => {
-                              setSavingProduct(true);
-                              try {
-                                await authedPatch(`/profiles/${profileId}/shop/products/${prod.id}`, {
-                                  title: title || prod.title,
-                                  description: description || null,
-                                  price: price ? Number(price) : null,
-                                  category: category || null,
-                                  imageUrls: imageUrl ? [imageUrl] : null,
-                                });
-                                setEditingProductId(null);
-                                await loadShopProfile();
-                              } catch (e: any) {
-                                setShopContentErr(e?.message ?? "Ошибка");
-                              } finally {
-                                setSavingProduct(false);
-                              }
-                            }}
-                            onCancel={() => setEditingProductId(null)}
-                            onUpload={token ? async (file) => { const { url } = await uploadFile("/upload", file, token); return url; } : undefined}
-                          />
-                        ) : (
-                          <>
-                            {Array.isArray(prod.imageUrls) && prod.imageUrls[0] && (
-                              <img src={String(prod.imageUrls[0])} alt="" style={{ width: "100%", maxHeight: 100, objectFit: "cover", borderRadius: 8 }} />
-                            )}
-                            <div className="h3" style={{ marginTop: 8 }}>{prod.title}</div>
-                            {prod.description && <div className="muted" style={{ marginTop: 4 }}>{prod.description}</div>}
-                            {prod.price != null && <div style={{ marginTop: 4 }}>{formatMoney(prod.price)}</div>}
-                            <div className="row" style={{ marginTop: 8, flexWrap: "wrap", gap: 8 }}>
-                              <button type="button" className="btn secondary" onClick={() => setEditingProductId(prod.id)}>Изменить</button>
-                              <button type="button" className="btn secondary" onClick={async () => {
-                                if (!confirm("Удалить товар?")) return;
-                                try {
-                                  await authedDelete(`/profiles/${profileId}/shop/products/${prod.id}`);
-                                  await loadShopProfile();
-                                } catch (e: any) {
-                                  setShopContentErr(e?.message ?? "Ошибка");
-                                }
-                              }}>Удалить</button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {shopProducts.length < 6 && (
-                  <div className="card" style={{ marginTop: 10, background: "var(--tg-bg)" }}>
-                    <div className="muted" style={{ marginBottom: 8 }}>Добавить товар</div>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <input className="input" placeholder="Название" value={newProductTitle} onChange={(e) => setNewProductTitle(e.target.value)} />
-                      <input className="input" placeholder="Описание" value={newProductDesc} onChange={(e) => setNewProductDesc(e.target.value)} />
-                      <input className="input" placeholder="Цена (₽)" type="number" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
-                      <input className="input" placeholder="Категория" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)} />
-                      <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-                        <input className="input" placeholder="URL картинки" value={newProductImageUrl} onChange={(e) => setNewProductImageUrl(e.target.value)} style={{ flex: 1, minWidth: 120 }} />
-                        <input type="file" accept="image/*" ref={productFileRef} style={{ display: "none" }} onChange={async (e) => {
-                          const f = e.target.files?.[0];
-                          if (!f || !token) return;
-                          setUploadingPhoto(true);
-                          setShopContentErr(null);
-                          try {
-                            const { url } = await uploadFile("/upload", f, token);
-                            setNewProductImageUrl(url);
-                          } catch (err: any) {
-                            setShopContentErr(err?.message ?? "Ошибка загрузки");
-                          } finally {
-                            setUploadingPhoto(false);
-                            e.target.value = "";
-                          }
-                        }} />
-                        <button type="button" className="btn secondary" disabled={uploadingPhoto} onClick={() => productFileRef.current?.click()}>
-                          {uploadingPhoto ? "Загрузка…" : "Загрузить фото"}
-                        </button>
-                      </div>
-                    </div>
-                    <button type="button" className="btn" style={{ marginTop: 8 }} disabled={savingProduct || !newProductTitle.trim()} onClick={async () => {
-                      setSavingProduct(true);
-                      try {
-                        await authedPost(`/profiles/${profileId}/shop/products`, {
-                          title: newProductTitle.trim(),
-                          description: newProductDesc.trim() || null,
-                          price: newProductPrice ? Number(newProductPrice) : null,
-                          category: newProductCategory.trim() || null,
-                          imageUrls: newProductImageUrl.trim() ? [newProductImageUrl.trim()] : null,
-                        });
-                        setNewProductTitle("");
-                        setNewProductDesc("");
-                        setNewProductPrice("");
-                        setNewProductCategory("");
-                        setNewProductImageUrl("");
-                        await loadShopProfile();
-                      } catch (e: any) {
-                        setShopContentErr(e?.message ?? "Ошибка");
-                      } finally {
-                        setSavingProduct(false);
-                      }
-                    }}>{savingProduct ? "Сохранение…" : "Добавить товар"}</button>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
           <div className="row">
             <button className="btn" disabled={saving} onClick={() => void save()}>
               {saving ? "Сохранение…" : "Сохранить"}
@@ -1516,22 +1100,41 @@ export default function App() {
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {/* Баннер(ы) сверху */}
-        {feed && banners.length > 0 && (
+        {/* Статус для специалиста: онлайн + личный кабинет */}
+        {activeProfileType === "specialist" && (
+          <div className="status-block">
+            <div className="status-block-inner">
+              <span className="status-avatar">👤</span>
+              <span className="status-text">Вы онлайн — родители могут видеть вас</span>
+            </div>
+            <Link className="btn secondary status-cabinet" to="/profile">
+              Личный кабинет
+            </Link>
+          </div>
+        )}
+
+        {/* Баннер сверху: с сервера или локальный */}
+        {feed && (
           <div className="feed-banners">
-            {banners.map((it, idx) =>
-              it.kind === "banner" ? (
-                <a
-                  key={`b-${it.id}-${idx}`}
-                  href={it.targetUrl ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="feed-banner-link"
-                >
-                  <img src={it.imageUrl} alt="" className="feed-banner-img" />
-                </a>
-              ) : null,
-            )}
+            {banners.length > 0
+              ? banners.map((it, idx) =>
+                  it.kind === "banner" ? (
+                    <a
+                      key={`b-${it.id}-${idx}`}
+                      href={it.targetUrl ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="feed-banner-link"
+                    >
+                      <img src={it.imageUrl} alt="" className="feed-banner-img" />
+                    </a>
+                  ) : null,
+                )
+              : (
+                <div className="feed-banner-link">
+                  <img src={bannerImg} alt="" className="feed-banner-img" />
+                </div>
+              )}
           </div>
         )}
 
@@ -1564,6 +1167,7 @@ export default function App() {
                   setFeedReloadKey((x) => x + 1);
                 }}
               >
+                {c.icon ? <img src={c.icon} alt="" className="feed-category-icon" /> : null}
                 {c.label}
               </button>
             ))}
@@ -1666,27 +1270,6 @@ export default function App() {
                 );
               }
 
-              if (it.kind === "shop_profile") {
-                const sp = it.profile;
-                return (
-                  <div key={`shop-${sp.id}-${idx}`} className="card feed-card feed-card-specialist">
-                    <div className="feed-card-header">
-                      <div className="feed-card-avatar">
-                        <span className="feed-card-avatar-placeholder">🏪</span>
-                      </div>
-                      <div className="feed-card-title-block">
-                        <div className="feed-card-title">{sp.shopName ?? sp.displayName ?? "Магазин"}</div>
-                        <div className="muted feed-card-meta">
-                          {sp.address ?? "—"} · {sp.district ?? "—"}
-                        </div>
-                      </div>
-                    </div>
-                    <Link className="btn feed-card-btn" to={`/profiles/${sp.id}`}>
-                      Открыть магазин
-                    </Link>
-                  </div>
-                );
-              }
               return null;
             })}
           </div>
@@ -1754,44 +1337,6 @@ export default function App() {
             </div>
           )}
           {p.specialist?.about && <div style={{ marginTop: 10 }}>{p.specialist.about}</div>}
-          {p.type === "shop" && p.shop && (
-            <div style={{ marginTop: 12 }}>
-              <div className="h3">{p.shop.shopName ?? p.displayName ?? "Магазин"}</div>
-              {p.shop.address && <div className="muted">{p.shop.address}</div>}
-              {p.shop.workHours && <div className="muted">{p.shop.workHours}</div>}
-              {p.shop.description && <div style={{ marginTop: 8 }}>{p.shop.description}</div>}
-              {p.shop.promotions && p.shop.promotions.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div className="h2" style={{ marginBottom: 10 }}>Акции</div>
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {p.shop.promotions.map((pr) => (
-                      <div key={pr.id} className="card" style={{ background: "var(--tg-bg)", padding: 0, overflow: "hidden" }}>
-                        <img src={pr.imageUrl} alt="" style={{ width: "100%", display: "block" }} />
-                        <div style={{ padding: 12 }}>
-                          {pr.title && <div style={{ fontWeight: 800 }}>{pr.title}</div>}
-                          {pr.text && <div className="muted" style={{ marginTop: 6 }}>{pr.text}</div>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {p.shop.products && p.shop.products.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div className="h2" style={{ marginBottom: 10 }}>Каталог</div>
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {p.shop.products.map((prod) => (
-                      <div key={prod.id} className="card" style={{ background: "var(--tg-bg)" }}>
-                        <div style={{ fontWeight: 800 }}>{prod.title}</div>
-                        {prod.description && <div className="muted" style={{ marginTop: 6 }}>{prod.description}</div>}
-                        {prod.price != null && <div style={{ marginTop: 6 }}>{prod.price} ₽</div>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
           <div className="row" style={{ marginTop: 12 }}>
             {tg && (
               <a className="btn" href={tg} target="_blank" rel="noreferrer">
@@ -1832,10 +1377,10 @@ export default function App() {
     if (!me) return <div className="card">Загрузка…</div>;
 
     const roles = me.profiles
-      .filter((p) => p.type === "parent" || p.type === "specialist" || p.type === "shop")
+      .filter((p) => p.type === "parent" || p.type === "specialist")
       .map((p) => ({
         ...p,
-        title: p.type === "parent" ? "👩‍🍼 Мама" : p.type === "specialist" ? "👩‍🏫 Специалист" : "🏪 Магазин",
+        title: p.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист",
       }));
 
     const toggle = async (profileId: string, nextActive: boolean) => {
@@ -1852,22 +1397,10 @@ export default function App() {
         <div className="row">
           <div className="h2">Роли</div>
           <div className="spacer" />
-          {(missingRole || !me.profiles.some((p) => p.type === "shop")) && (
-            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-              {missingRole && (
-                <button className="btn" onClick={() => void addMissingRole()}>
-                  + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
-                </button>
-              )}
-              {!me.profiles.some((p) => p.type === "shop") && (
-                <button
-                  className="btn"
-                  onClick={() => void createRole("shop").catch((e: any) => setMeError(e?.message ?? "Не удалось создать роль"))}
-                >
-                  + 🏪 Магазин
-                </button>
-              )}
-            </div>
+          {missingRole && (
+            <button className="btn" onClick={() => void addMissingRole()}>
+              + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+            </button>
           )}
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
@@ -1907,24 +1440,22 @@ export default function App() {
                 >
                   Сделать активной
                 </button>
-                {p.type === "shop" && (
-                  <button
-                    className="btn secondary"
-                    style={{ color: "var(--tg-hint)" }}
-                    onClick={async () => {
-                      if (!confirm("Удалить аккаунт магазина? Все данные магазина будут удалены.")) return;
-                      try {
-                        await authedDelete(`/profiles/${p.id}`);
-                        await refreshMe();
-                        navigate("/", { replace: true });
-                      } catch (e: any) {
-                        setMeError(e?.message ?? "Не удалось удалить");
-                      }
-                    }}
-                  >
-                    Удалить аккаунт
-                  </button>
-                )}
+                <button
+                  className="btn danger"
+                  onClick={async () => {
+                    const roleName = p.type === "parent" ? "Мама" : "Специалист";
+                    if (!confirm(`Удалить аккаунт «${roleName}»? Все данные этой роли будут удалены безвозвратно.`)) return;
+                    try {
+                      await authedDelete(`/profiles/${p.id}`);
+                      await refreshMe();
+                      if (me?.activeProfileId === p.id) navigate("/", { replace: true });
+                    } catch (e: any) {
+                      setMeError(e?.message ?? "Не удалось удалить");
+                    }
+                  }}
+                >
+                  Удалить аккаунт
+                </button>
               </div>
             </div>
           ))}
@@ -1939,17 +1470,24 @@ export default function App() {
         <TopBar
           title="Для мам"
           right={
-            token && me?.activeProfileId ? (
-              <Link className="btn secondary" to="/profile">
-                Личный кабинет
-              </Link>
+            token ? (
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                {me?.activeProfileId && (
+                  <Link className="btn secondary" to="/profile">
+                    Личный кабинет
+                  </Link>
+                )}
+                <button type="button" className="btn secondary" onClick={() => { clearToken(); navigate("/", { replace: true }); }}>
+                  Выйти
+                </button>
+              </div>
             ) : undefined
           }
           sub={
             loading
               ? "Авторизация…"
               : token
-                ? "✅ Онлайн"
+                ? "мини-приложение"
                 : "Откройте внутри Telegram Mini App"
           }
         />
@@ -1979,9 +1517,6 @@ export default function App() {
                   </button>
                   <button className="btn" onClick={() => void createRole("specialist").catch((e: any) => setMeError(e?.message ?? "Не удалось создать роль"))}>
                     👩‍🏫 Специалист
-                  </button>
-                  <button className="btn" onClick={() => void createRole("shop").catch((e: any) => setMeError(e?.message ?? "Не удалось создать роль"))}>
-                    🏪 Магазин
                   </button>
                 </div>
               </div>
