@@ -980,10 +980,10 @@ export default function App() {
         if (spec) {
           setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
           setAbout(spec.about ?? "");
-          const firstSkill = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : SPECIALIST_CATEGORIES[0];
+          const firstSkill = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : "";
           setSpecialistCategory(firstSkill);
         } else {
-          setSpecialistCategory(SPECIALIST_CATEGORIES[0]);
+          setSpecialistCategory("");
         }
       }
     }, [activeProfile]);
@@ -1428,7 +1428,8 @@ export default function App() {
                     {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
                   </div>
                   {!isActive && (
-                    <div style={{ marginTop: 12 }}>
+                    <div className="row" style={{ marginTop: 12 }}>
+                      <div className="spacer" />
                       <button
                         type="button"
                         className="btn"

@@ -510,17 +510,31 @@ a {
   margin-bottom: 8px;
 }
 .feed-categories-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  max-width: 100%;
   padding-bottom: 4px;
+  margin-left: -2px;
+  margin-right: -2px;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+.feed-categories-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.feed-categories-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
 }
 .feed-categories {
   display: inline-flex;
   gap: 8px;
   flex-wrap: nowrap;
   min-width: min-content;
+  width: max-content;
 }
 .feed-category-chip {
   flex-shrink: 0;
