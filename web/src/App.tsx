@@ -1011,7 +1011,9 @@ export default function App() {
           city: city || null,
         };
         console.log("[Profile] PATCH /profiles/" + profileId + " (base)", basePayload);
-        await authedPatch(`/profiles/${profileId}`, basePayload);
+        const baseRes = await authedPatch<{ displayName?: string | null; age?: number | null; city?: string | null }>(`/profiles/${profileId}`, basePayload);
+        let parentRes: { childrenAges: number[] | null; specialWishes?: string | null } | null = null;
+        let specRes: { skills?: string[]; pricePerHour?: number | null; about?: string | null } | null = null;
         if (type === "parent") {
           const ages = childrenAges
             .split(",")
@@ -1024,7 +1026,7 @@ export default function App() {
             specialWishes: specialWishes || null,
           };
           console.log("[Profile] PATCH /profiles/" + profileId + "/parent", parentPayload);
-          await authedPatch(`/profiles/${profileId}/parent`, parentPayload);
+          parentRes = await authedPatch<{ childrenAges: number[] | null; specialWishes?: string | null }>(`/profiles/${profileId}/parent`, parentPayload);
         }
         if (type === "specialist") {
           const specialistPayload = {
@@ -1033,9 +1035,22 @@ export default function App() {
             about: about || null,
           };
           console.log("[Profile] PATCH /profiles/" + profileId + "/specialist", specialistPayload);
-          await authedPatch(`/profiles/${profileId}/specialist`, specialistPayload);
+          specRes = await authedPatch<{ skills?: string[]; pricePerHour?: number | null; about?: string | null }>(`/profiles/${profileId}/specialist`, specialistPayload);
         }
         await refreshMe();
+        setDisplayName(baseRes.displayName ?? "");
+        setAge(baseRes.age != null ? String(baseRes.age) : "");
+        setCity(baseRes.city ?? "");
+        if (type === "parent" && parentRes) {
+          setChildrenAges(Array.isArray(parentRes.childrenAges) && parentRes.childrenAges.length ? parentRes.childrenAges.join(", ") : "");
+          setSpecialWishes(parentRes.specialWishes ?? "");
+        }
+        if (type === "specialist" && specRes) {
+          const firstSkill = Array.isArray(specRes?.skills) && specRes.skills.length > 0 ? specRes.skills[0] : "";
+          setSpecialistCategory(firstSkill);
+          setPricePerHour(specRes?.pricePerHour != null ? String(specRes.pricePerHour) : "");
+          setAbout(specRes?.about ?? "");
+        }
       } catch (e: unknown) {
         console.error("[Profile] save error", e);
         setErr(e instanceof Error ? e.message : "Не удалось сохранить");
