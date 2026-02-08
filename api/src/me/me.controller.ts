@@ -45,25 +45,27 @@ export class MeController {
     >`SELECT id, type, is_active, display_name, avatar_url, age, city, district FROM profiles WHERE user_id = ${userId}`;
 
     const profileIds = profilesRaw.map((r) => r.id);
+    // Числа для IN: BigInt в raw-запросах Prisma может ломать привязку параметров
+    const profileIdsNum = profileIds.map((id) => Number(id));
 
     type SpecialistRow = { profile_id: bigint; skills: unknown; price_per_hour: number | null; about: string | null };
     type ParentRow = { profile_id: bigint; children_ages: unknown; special_wishes: string | null };
 
     const specialists: SpecialistRow[] =
-      profileIds.length > 0
+      profileIdsNum.length > 0
         ? await this.prisma.$queryRaw<SpecialistRow[]>(
-            Prisma.sql`SELECT profile_id, skills, price_per_hour, about FROM specialist_profiles WHERE profile_id IN (${Prisma.join(profileIds)})`,
+            Prisma.sql`SELECT profile_id, skills, price_per_hour, about FROM specialist_profiles WHERE profile_id IN (${Prisma.join(profileIdsNum)})`,
           )
         : [];
     const parents: ParentRow[] =
-      profileIds.length > 0
+      profileIdsNum.length > 0
         ? await this.prisma.$queryRaw<ParentRow[]>(
-            Prisma.sql`SELECT profile_id, children_ages, special_wishes FROM parent_profiles WHERE profile_id IN (${Prisma.join(profileIds)})`,
+            Prisma.sql`SELECT profile_id, children_ages, special_wishes FROM parent_profiles WHERE profile_id IN (${Prisma.join(profileIdsNum)})`,
           )
         : [];
 
-    const specialistByProfileId = new Map(specialists.map((s) => [s.profile_id.toString(), s]));
-    const parentByProfileId = new Map(parents.map((p) => [p.profile_id.toString(), p]));
+    const specialistByProfileId = new Map(specialists.map((s) => [String(Number(s.profile_id)), s]));
+    const parentByProfileId = new Map(parents.map((p) => [String(Number(p.profile_id)), p]));
 
     function parseSkills(raw: unknown): string[] {
       if (raw == null) return [];
@@ -83,9 +85,10 @@ export class MeController {
     }
 
     const profiles = profilesRaw.map((p) => {
+      const profileType = (typeof p.type === "string" ? p.type.toLowerCase() : String(p.type)) as "parent" | "specialist" | "shop";
       const base = {
         id: p.id.toString(),
-        type: p.type as "parent" | "specialist",
+        type: profileType,
         isActive: p.is_active,
         displayName: p.display_name,
         avatarUrl: p.avatar_url,
@@ -93,8 +96,9 @@ export class MeController {
         city: p.city,
         district: p.district,
       };
-      if (p.type === "specialist") {
-        const spec = specialistByProfileId.get(base.id);
+      const profileIdKey = base.id;
+      if (profileType === "specialist") {
+        const spec = specialistByProfileId.get(profileIdKey);
         return {
           ...base,
           specialist: {
@@ -104,8 +108,8 @@ export class MeController {
           },
         };
       }
-      if (p.type === "parent") {
-        const par = parentByProfileId.get(base.id);
+      if (profileType === "parent") {
+        const par = parentByProfileId.get(profileIdKey);
         const childrenAges = par?.children_ages;
         const arr = Array.isArray(childrenAges) ? childrenAges : childrenAges != null && typeof childrenAges === "object" ? Object.values(childrenAges) : null;
         return {

@@ -984,12 +984,7 @@ export default function App() {
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
   
-    // ИСПРАВЛЕНО: Правильная загрузка данных специалиста
     useEffect(() => {
-      console.log("Active profile data:", activeProfile);
-      console.log("Active profile specialist data:", activeProfile?.specialist);
-      console.log("Skills type:", typeof activeProfile?.specialist?.skills);
-      console.log("Skills value:", activeProfile?.specialist?.skills);
       if (!activeProfile) return;
       
       setDisplayName(activeProfile.displayName ?? "");
