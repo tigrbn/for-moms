@@ -974,6 +974,7 @@ export default function App() {
     const [displayName, setDisplayName] = useState(activeProfile!.displayName ?? "");
     const [age, setAge] = useState(activeProfile!.age != null ? String(activeProfile!.age) : "");
     const [city, setCity] = useState(activeProfile!.city ?? "");
+    const [district, setDistrict] = useState(activeProfile!.district ?? "");
     const [childrenAges, setChildrenAges] = useState("");
     const [specialWishes, setSpecialWishes] = useState("");
     const [pricePerHour, setPricePerHour] = useState("");
@@ -987,6 +988,7 @@ export default function App() {
       setDisplayName(activeProfile.displayName ?? "");
       setAge(activeProfile.age != null ? String(activeProfile.age) : "");
       setCity(activeProfile.city ?? "");
+      setDistrict(activeProfile.district ?? "");
       if (activeProfile.type === "parent") {
         const parent = activeProfile.parent;
         setChildrenAges(Array.isArray(parent?.childrenAges) ? parent.childrenAges.join(", ") : "");
@@ -1006,13 +1008,15 @@ export default function App() {
       setErr(null);
       setSaving(true);
       try {
+        const ageNum = age.trim() === "" ? null : Number(age);
         const basePayload = {
-          displayName: displayName || null,
-          age: age.trim() === "" ? null : Number(age),
-          city: city || null,
+          displayName: displayName.trim() || null,
+          age: ageNum != null && Number.isFinite(ageNum) ? ageNum : null,
+          city: city.trim() || null,
+          district: district.trim() || null,
         };
         console.log("[Profile] PATCH /profiles/" + profileId + " (base)", basePayload);
-        const baseRes = await authedPatch<{ displayName?: string | null; age?: number | null; city?: string | null }>(`/profiles/${profileId}`, basePayload);
+        const baseRes = await authedPatch<{ displayName?: string | null; age?: number | null; city?: string | null; district?: string | null }>(`/profiles/${profileId}`, basePayload);
         let parentRes: { childrenAges: number[] | null; specialWishes?: string | null } | null = null;
         let specRes: { skills?: string[]; pricePerHour?: number | null; about?: string | null } | null = null;
         if (type === "parent") {
@@ -1030,10 +1034,11 @@ export default function App() {
           parentRes = await authedPatch<{ childrenAges: number[] | null; specialWishes?: string | null }>(`/profiles/${profileId}/parent`, parentPayload);
         }
         if (type === "specialist") {
+          const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
           const specialistPayload = {
             skills: specialistCategory ? [specialistCategory] : [],
-            pricePerHour: pricePerHour.trim() === "" ? null : Number(pricePerHour),
-            about: about || null,
+            pricePerHour: priceNum != null && Number.isFinite(priceNum) ? priceNum : null,
+            about: about.trim() || null,
           };
           console.log("[Profile] PATCH /profiles/" + profileId + "/specialist", specialistPayload);
           specRes = await authedPatch<{ skills?: string[]; pricePerHour?: number | null; about?: string | null }>(`/profiles/${profileId}/specialist`, specialistPayload);
@@ -1044,6 +1049,7 @@ export default function App() {
           setDisplayName(p.displayName ?? "");
           setAge(p.age != null ? String(p.age) : "");
           setCity(p.city ?? "");
+          setDistrict(p.district ?? "");
           if (p.type === "parent" && p.parent) {
             setChildrenAges(Array.isArray(p.parent.childrenAges) ? p.parent.childrenAges.join(", ") : "");
             setSpecialWishes(p.parent.specialWishes ?? "");
@@ -1058,6 +1064,7 @@ export default function App() {
           setDisplayName(baseRes.displayName ?? "");
           setAge(baseRes.age != null ? String(baseRes.age) : "");
           setCity(baseRes.city ?? "");
+          setDistrict(baseRes.district ?? "");
           if (type === "parent" && parentRes) {
             setChildrenAges(Array.isArray(parentRes.childrenAges) && parentRes.childrenAges.length ? parentRes.childrenAges.join(", ") : "");
             setSpecialWishes(parentRes.specialWishes ?? "");
@@ -1103,6 +1110,10 @@ export default function App() {
           <div className="field">
             <div className="label">Город</div>
             <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Москва" />
+          </div>
+          <div className="field">
+            <div className="label">Район</div>
+            <input className="input" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Центральный" />
           </div>
           {type === "parent" && (
             <>

@@ -74,33 +74,42 @@ export class ProfilesService {
   ) {
     await this.getOwnedProfileOrThrow(userId, profileId);
 
-    const updateData: Prisma.ProfileUpdateInput & { age?: number | null } = {};
-    if ("displayName" in data) updateData.displayName = data.displayName;
-    if ("avatarUrl" in data) updateData.avatarUrl = data.avatarUrl;
-    if ("age" in data) (updateData as { age?: number | null }).age = data.age;
-    if ("city" in data) updateData.city = data.city;
-    if ("district" in data) updateData.district = data.district;
+    const setClauses: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 0;
+    if ("displayName" in data) {
+      setClauses.push(`display_name = $${++paramIndex}`);
+      values.push(data.displayName);
+    }
+    if ("avatarUrl" in data) {
+      setClauses.push(`avatar_url = $${++paramIndex}`);
+      values.push(data.avatarUrl);
+    }
+    if ("age" in data) {
+      setClauses.push(`age = $${++paramIndex}`);
+      values.push(data.age);
+    }
+    if ("city" in data) {
+      setClauses.push(`city = $${++paramIndex}`);
+      values.push(data.city);
+    }
+    if ("district" in data) {
+      setClauses.push(`district = $${++paramIndex}`);
+      values.push(data.district);
+    }
 
-    this.logger.log(`updateBase profileId=${profileId} data keys=${Object.keys(data).join(",")} updateData=${JSON.stringify(updateData)}`);
+    this.logger.log(`updateBase profileId=${profileId} data keys=${Object.keys(data).join(",")}`);
 
-    if (Object.keys(updateData).length === 0) {
+    if (setClauses.length === 0) {
       return this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
     }
 
-    const updated = await this.prisma.profile.update({
-      where: { id: profileId },
-      data: updateData,
-    });
+    values.push(profileId);
+    const whereParam = paramIndex + 1;
+    const sql = `UPDATE profiles SET ${setClauses.join(", ")} WHERE id = $${whereParam}`;
+    await this.prisma.$executeRawUnsafe(sql, ...values);
 
-    const wantedAge = (updateData as { age?: number | null }).age;
-    const gotAge = (updated as { age?: number | null }).age;
-    if (wantedAge !== undefined && gotAge !== wantedAge) {
-      this.logger.warn(`updateBase age mismatch: wanted ${String(wantedAge)}, got ${String(gotAge)}; applying raw UPDATE`);
-      await this.prisma.$executeRaw`UPDATE profiles SET age = ${wantedAge} WHERE id = ${profileId}`;
-      const refetched = await this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
-      return refetched;
-    }
-
+    const updated = await this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
     return updated;
   }
 

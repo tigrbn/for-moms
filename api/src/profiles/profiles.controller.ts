@@ -82,7 +82,7 @@ export class ProfilesController {
     this.logger.log(`PATCH /profiles/${id} (base) body=${JSON.stringify(body)}`);
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const profile = await this.profiles.updateBase(userId, BigInt(id), body ?? {});
-    this.logger.log(`PATCH /profiles/${id} (base) result age=${profile.age} displayName=${profile.displayName} city=${profile.city}`);
+    this.logger.log(`PATCH /profiles/${id} (base) result age=${profile.age} displayName=${profile.displayName} city=${profile.city} district=${profile.district ?? "null"}`);
     return {
       id: profile.id.toString(),
       type: profile.type,
