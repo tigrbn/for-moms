@@ -1,39 +1,40 @@
 :root {
-  /* Telegram WebApp theme fallbacks */
-  --tg-bg: var(--tg-theme-bg-color, #ffffff);
-  --tg-text: var(--tg-theme-text-color, #111111);
-  --tg-hint: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.55));
-  --tg-link: var(--tg-theme-link-color, #2e7af6);
-  --tg-button: var(--tg-theme-button-color, #2e7af6);
-  --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
-  --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f2f3f5);
+  /* Design tokens — единый светлый дизайн */
+  --primary: #7b7cff;
+  --secondary-bg: #f4efff;
+  --bg: #fff9f6;
+  --text-primary: #3a3a3a;
+  --text-secondary: #8e8e93;
+  --success: #6ed3b5;
+  --warning: #ffb7a5;
+  --border-color: #e9e6f2;
+  --disabled-bg: #eceaf5;
+  --disabled-text: #b5b2c7;
 
-  /* Softer “mom & kids” palette (keeps Telegram theme compatibility) */
-  --radius: 18px;
-  --radius-sm: 14px;
-  --shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
-  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.10);
+  --tg-bg: var(--bg);
+  --tg-text: var(--text-primary);
+  --tg-hint: var(--text-secondary);
+  --tg-link: var(--primary);
+  --tg-button: var(--primary);
+  --tg-button-text: #ffffff;
+  --tg-secondary-bg: var(--secondary-bg);
+  --surface: var(--secondary-bg);
+  --surface-2: #ffffff;
+  --field: var(--secondary-bg);
+  --border: var(--border-color);
 
-  /* IMPORTANT: iOS Telegram WebView may not support color-mix().
-     Keep safe defaults, then enhance in @supports below. */
-  --surface: var(--tg-secondary-bg);
-  --surface-2: var(--tg-bg);
-  --field: var(--tg-secondary-bg);
-  --border: rgba(0, 0, 0, 0.08);
+  --radius: 20px;
+  --radius-sm: 16px;
+  --radius-btn: 18px;
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-btn: 0 6px 16px rgba(123, 124, 255, 0.25);
 
-  /* playful accents */
-  --accent-pink: #ff5ea8;
-  --accent-mint: #3ddc97;
-  --accent-sun: #ffb020;
-  --accent-lav: #7b7cff;
-
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  line-height: 1.35;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
   font-weight: 400;
-
-  color: var(--tg-text);
-  background: var(--tg-bg);
-
+  color: var(--text-primary);
+  background: var(--bg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -51,25 +52,13 @@ body {
   color: var(--tg-text);
 }
 
-/* Фиксированный светлый дизайн: не зависящий от темы ОС */
 .app {
   color-scheme: light;
-  --tg-bg: #faf8fb;
-  --tg-text: #1a1a1a;
-  --tg-hint: rgba(0, 0, 0, 0.55);
-  --tg-link: #6b4c9a;
-  --tg-button: #7b7cff;
-  --tg-button-text: #ffffff;
-  --tg-secondary-bg: #f3eef8;
-  --surface: #f3eef8;
-  --surface-2: #ffffff;
-  --border: rgba(0, 0, 0, 0.08);
-  --shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
-  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: var(--bg) !important;
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-  padding-bottom: 80px;
+  padding-bottom: 88px;
 }
 
 a {
@@ -103,27 +92,35 @@ a {
 }
 
 .card {
-  background: var(--surface, var(--tg-secondary-bg));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  padding: 14px;
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
+  padding: 16px;
   border: 1px solid var(--border);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.card:active {
+  transform: scale(0.99);
 }
 
 .muted {
-  color: var(--tg-hint);
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .h1 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 600;
   margin: 0;
+  color: var(--text-primary);
 }
 
 .h2 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
   margin: 0;
+  color: var(--text-primary);
 }
 
 .row {
@@ -140,34 +137,43 @@ a {
 .btn {
   appearance: none;
   border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
-  font-size: 14px;
+  border-radius: var(--radius-btn);
+  padding: 14px 20px;
+  min-height: 48px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tg-button) 90%, white 10%), var(--tg-button));
-  color: var(--tg-button-text);
-  box-shadow: var(--shadow-soft);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease-out, box-shadow 0.15s ease-out;
 }
 
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn-primary,
+.btn:not(.btn-secondary):not(.btn-danger):not(.ghost) {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: var(--shadow-btn);
+}
+
+.btn-secondary,
 .btn.secondary {
-  background: var(--surface-2, var(--tg-bg));
-  color: var(--tg-text);
+  background: var(--secondary-bg);
+  color: var(--primary);
   box-shadow: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
 }
 
-.btn-gradient,
-.btn.btn-gradient {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 232, 240, 0.9) 100%);
-  color: #5a4a6a;
-  border: 1px solid rgba(123, 124, 255, 0.25);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-}
-.btn.btn-gradient:not(.secondary) {
-  background: linear-gradient(135deg, rgba(123, 124, 255, 0.9) 0%, rgba(107, 76, 154, 0.85) 100%);
-  color: #fff;
-  border-color: rgba(123, 124, 255, 0.4);
+.btn:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn.danger {
@@ -177,24 +183,12 @@ a {
   box-shadow: 0 2px 8px rgba(198, 40, 40, 0.25);
 }
 
-.btn.danger:hover:not(:disabled) {
-  background: #b71c1c;
-}
-
 .btn.ghost {
   background: transparent;
-  color: var(--tg-link);
-  padding: 8px 10px;
+  color: var(--primary);
+  padding: 8px 12px;
+  min-height: auto;
   box-shadow: none;
-}
-
-.btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .segmented {
@@ -219,7 +213,7 @@ a {
 
 .segmented button.active {
   background: var(--tg-bg);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-card);
 }
 
 .input,
@@ -228,12 +222,12 @@ a {
   width: 100%;
   border: 0;
   border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  background: var(--surface-2, var(--tg-bg));
-  color: var(--tg-text);
+  padding: 12px 14px;
+  background: #ffffff;
+  color: var(--text-primary);
   outline: none;
-  font-size: 14px;
-  border: 1px solid var(--border);
+  font-size: 15px;
+  border: 1px solid var(--border-color);
 }
 
 .textarea {
@@ -247,8 +241,9 @@ a {
 }
 
 .label {
-  font-size: 12px;
-  color: var(--tg-hint);
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* cute pills */
@@ -282,6 +277,22 @@ a {
   }
 }
 
+/* Шапка с логотипом */
+.topbar.topbar--logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.topbar-logo {
+  max-width: 160px;
+  height: auto;
+  display: block;
+}
+
 /* Нижнее меню */
 .bottom-nav {
   position: fixed;
@@ -293,8 +304,8 @@ a {
   align-items: center;
   gap: 4px;
   padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 245, 252, 0.98) 100%);
-  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid var(--border-color);
   box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.06);
   z-index: 100;
 }
@@ -305,9 +316,9 @@ a {
   gap: 4px;
   padding: 8px 6px;
   border-radius: var(--radius-sm);
-  color: var(--tg-hint);
-  font-size: 11px;
-  font-weight: 600;
+  color: var(--disabled-text);
+  font-size: 12px;
+  font-weight: 500;
   min-width: 0;
   flex: 1;
   text-align: center;
@@ -315,16 +326,23 @@ a {
   background: transparent;
   border: none;
   cursor: pointer;
+  transition: color 0.15s ease-out, background 0.15s ease-out;
 }
 .bottom-nav-item:hover {
-  color: var(--tg-text);
+  color: var(--text-primary);
 }
 .bottom-nav-item.active {
-  color: var(--tg-button);
-  background: linear-gradient(135deg, rgba(123, 124, 255, 0.15) 0%, rgba(248, 232, 240, 0.4) 100%);
+  color: var(--primary);
+  background: var(--secondary-bg);
+}
+.bottom-nav-icon-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
 }
 .bottom-nav-icon {
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1;
 }
 
@@ -357,17 +375,17 @@ a {
   justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-card);
 }
 .status-text {
-  font-size: 13px;
-  color: var(--tg-text);
+  font-size: 15px;
+  color: var(--text-primary);
 }
 .status-cabinet {
   flex-shrink: 0;
-  background: var(--surface-2, #fff) !important;
-  color: var(--tg-text) !important;
-  border: 1px solid var(--border);
+  background: #fff !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color);
 }
 
 /* Feed: баннер, категории, карточки */
@@ -380,7 +398,7 @@ a {
   display: block;
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-card);
   border: 1px solid var(--border);
 }
 .feed-banner-img {
@@ -391,7 +409,7 @@ a {
 
 .feed-categories-label {
   font-size: 12px;
-  color: var(--tg-hint);
+  color: var(--text-secondary);
   margin-top: 12px;
   margin-bottom: 8px;
 }
@@ -405,18 +423,21 @@ a {
 }
 .feed-category-chip {
   flex-shrink: 0;
-  border: 1px solid var(--border);
-  background: var(--surface-2, var(--tg-bg));
-  color: var(--tg-text);
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 13px;
+  height: 38px;
+  min-height: 38px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-primary);
+  padding: 0 16px;
+  border-radius: 20px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: background 0.2s ease-out, color 0.2s ease-out, border-color 0.2s ease-out;
 }
 .feed-category-icon {
   width: 22px;
@@ -425,9 +446,9 @@ a {
   vertical-align: middle;
 }
 .feed-category-chip.active {
-  background: var(--tg-button);
-  color: var(--tg-button-text);
-  border-color: var(--tg-button);
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
 }
 
 .feed-content {
@@ -436,27 +457,64 @@ a {
 }
 
 .feed-empty {
-  background: rgba(255, 255, 255, 0.95);
+  background: #fff;
   overflow: hidden;
+  padding: 0;
+  border-radius: 22px;
 }
-.feed-empty-banner {
+.feed-empty-banner--stub {
+  position: relative;
   width: 100%;
-  border-radius: var(--radius-sm);
+  border-radius: 22px;
   overflow: hidden;
-  margin: -14px -14px 12px -14px;
+  margin: 0;
 }
-.feed-empty-banner img {
+.feed-empty-banner--stub > img {
   width: 100%;
   display: block;
   vertical-align: top;
 }
+.feed-empty-text-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px 16px 20px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: var(--text-primary);
+}
+.feed-empty-text-overlay .feed-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--text-primary);
+}
+.feed-empty-text-overlay .feed-empty-desc {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  margin: 0 0 14px;
+}
+.feed-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.feed-empty-row {
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .feed-empty-title {
-  font-weight: 900;
-  font-size: 17px;
+  font-weight: 600;
+  font-size: 18px;
 }
 .feed-empty-desc {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.4;
+  color: var(--text-secondary);
 }
 
 .feed-card {

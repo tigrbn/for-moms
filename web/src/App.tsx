@@ -4,11 +4,16 @@ import { deleteJSON, getJSON, patchJSON, postJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
-import bannerImg from "./assets/img/banner.png";
 import backgroundImg from "./assets/img/background.png";
+import logoImg from "./assets/img/logo.png";
+import stubImg from "./assets/img/заглушка.png";
 import categoryNanny from "./assets/img/category/няня.png";
 import categoryTutor from "./assets/img/category/репетитор.png";
 import categoryLeisure from "./assets/img/category/досуг.png";
+import menuLenta from "./assets/img/menu/лента.png";
+import menuProfil from "./assets/img/menu/профиль.png";
+import menuCreate from "./assets/img/menu/создать заявку.png";
+import menuAll from "./assets/img/menu/все заявки.png";
 
 type MeResponse = {
   user: {
@@ -158,16 +163,38 @@ type PublicProfile = {
   parent: { childrenAges?: any; specialWishes?: string | null } | null;
 };
 
-function TopBar(props: { title: string; right?: React.ReactNode; sub?: React.ReactNode }) {
+function TopBar(props: { title?: string; sub?: React.ReactNode; right?: React.ReactNode; logo?: string }) {
+  if (props.logo) {
+    return (
+      <div className="topbar topbar--logo">
+        <img src={props.logo} alt="Для мам" className="topbar-logo" />
+      </div>
+    );
+  }
   return (
-    <div className="card">
+    <div className="card topbar">
       <div className="row">
         <div>
-          <div className="h1">{props.title}</div>
+          {props.title && <div className="h1">{props.title}</div>}
           {props.sub && <div className="muted" style={{ marginTop: 4 }}>{props.sub}</div>}
         </div>
         <div className="spacer" />
         {props.right}
+      </div>
+    </div>
+  );
+}
+
+function StubCard(props: { title: string; desc: string; children: React.ReactNode }) {
+  return (
+    <div className="card feed-empty">
+      <div className="feed-empty-banner feed-empty-banner--stub">
+        <img src={stubImg} alt="" />
+        <div className="feed-empty-text-overlay">
+          <div className="feed-empty-title">{props.title}</div>
+          <div className="feed-empty-desc">{props.desc}</div>
+          <div className="feed-empty-actions">{props.children}</div>
+        </div>
       </div>
     </div>
   );
@@ -331,19 +358,19 @@ export default function App() {
   const nav = (
     <nav className="bottom-nav">
       <Link className={`bottom-nav-item ${location.pathname === "/" ? "active" : ""}`} to="/">
-        <span className="bottom-nav-icon">📋</span>
+        <img src={menuLenta} alt="" className="bottom-nav-icon-img" />
         <span>Лента</span>
       </Link>
       <Link className={`bottom-nav-item ${location.pathname === "/profile" || location.pathname === "/roles" ? "active" : ""}`} to="/profile">
-        <span className="bottom-nav-icon">👤</span>
+        <img src={menuProfil} alt="" className="bottom-nav-icon-img" />
         <span>Профиль</span>
       </Link>
       <Link className={`bottom-nav-item ${location.pathname === "/requests/new" ? "active" : ""}`} to="/requests/new">
-        <span className="bottom-nav-icon">➕</span>
+        <img src={menuCreate} alt="" className="bottom-nav-icon-img" />
         <span>Создать заявку</span>
       </Link>
       <Link className={`bottom-nav-item ${location.pathname.startsWith("/requests") && location.pathname !== "/requests/new" ? "active" : ""}`} to="/requests">
-        <span className="bottom-nav-icon">📝</span>
+        <img src={menuAll} alt="" className="bottom-nav-icon-img" />
         <span>Все заявки</span>
       </Link>
     </nav>
@@ -417,17 +444,15 @@ export default function App() {
         {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
         {items && items.length === 0 && (
-          <div className="card feed-empty" style={{ marginTop: 10 }}>
-            <div className="feed-empty-banner">
-              <img src={bannerImg} alt="" />
-            </div>
-            <div className="feed-empty-title">💛 Заявок пока нет</div>
-            <div className="muted feed-empty-desc" style={{ marginTop: 8 }}>
-              Создайте первую — специалисты увидят её в ленте и смогут откликнуться.
-            </div>
-            <Link className="btn btn-gradient" to="/requests/new" style={{ marginTop: 14 }}>
-              ➕ Создать заявку
-            </Link>
+          <div style={{ marginTop: 10 }}>
+            <StubCard
+              title="💛 Заявок пока нет"
+              desc="Создайте первую — специалисты увидят её в ленте и смогут откликнуться."
+            >
+              <Link className="btn btn-primary" to="/requests/new">
+                Создать заявку
+              </Link>
+            </StubCard>
           </div>
         )}
         {items && (
@@ -874,17 +899,15 @@ export default function App() {
         {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
         {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
         {items && items.length === 0 && (
-          <div className="card feed-empty" style={{ marginTop: 10 }}>
-            <div className="feed-empty-banner">
-              <img src={bannerImg} alt="" />
-            </div>
-            <div className="feed-empty-title">💛 Откликов пока нет</div>
-            <div className="muted feed-empty-desc" style={{ marginTop: 8 }}>
-              Откройте ленту, выберите подходящую заявку и отправьте отклик.
-            </div>
-            <Link className="btn btn-gradient" to="/" style={{ marginTop: 14 }}>
-              📋 Перейти в ленту
-            </Link>
+          <div style={{ marginTop: 10 }}>
+            <StubCard
+              title="💛 Откликов пока нет"
+              desc="Откройте ленту, выберите подходящую заявку и отправьте отклик."
+            >
+              <Link className="btn btn-primary" to="/">
+                Перейти в ленту
+              </Link>
+            </StubCard>
           </div>
         )}
         {items && (
@@ -1113,7 +1136,7 @@ export default function App() {
             <div className="h2">Лента</div>
             <div className="spacer" />
             <button
-              className="btn secondary btn-gradient"
+              className="btn btn-secondary"
               onClick={() => {
                 setFeed(null);
                 setFeedError(null);
@@ -1150,33 +1173,28 @@ export default function App() {
         {feed && (
           <div className="feed-content">
             {contentCount === 0 && (
-              <div className="card feed-empty">
-                <div className="feed-empty-banner">
-                  <img src={bannerImg} alt="" />
-                </div>
-                <div className="feed-empty-title">
-                  💛 {role === "specialist" ? "Заявок пока нет" : "Специалистов пока нет"}
-                </div>
-                <div className="muted feed-empty-desc">
-                  Но они появляются регулярно — попробуйте выбрать другую категорию.
-                </div>
-                <div className="row" style={{ marginTop: 14, flexWrap: "wrap", gap: 10 }}>
+              <StubCard
+                title={role === "specialist" ? "💛 Заявок пока нет" : "💛 Специалистов пока нет"}
+                desc="Но они появляются регулярно — попробуйте выбрать другую категорию."
+              >
+                <div className="row feed-empty-row">
                   <button
-                    className="btn secondary btn-gradient"
+                    type="button"
+                    className="btn btn-secondary"
                     onClick={() => {
                       setFeedCategory("");
                       setFeedReloadKey((x) => x + 1);
                     }}
                   >
-                    🔄 Сбросить фильтры
+                    Сбросить фильтры
                   </button>
                   {missingRole && (
-                    <button className="btn btn-gradient" onClick={() => void addMissingRole()}>
-                      + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+                    <button type="button" className="btn btn-primary" onClick={() => void addMissingRole()}>
+                      + {missingRole === "parent" ? "Мама" : "Специалист"}
                     </button>
                   )}
                 </div>
-              </div>
+              </StubCard>
             )}
             {contentItems.map((it, idx) => {
               if (it.kind === "specialist_profile") {
@@ -1428,15 +1446,8 @@ export default function App() {
     <div className="app safe" style={{ backgroundImage: `url(${backgroundImg})` }}>
       <div className="container">
         <TopBar
-          title="Для мам"
+          logo={logoImg}
           right={undefined}
-          sub={
-            loading
-              ? "Авторизация…"
-              : token
-                ? "мини-приложение"
-                : "Откройте внутри Telegram Mini App"
-          }
         />
 
         {error && <ErrorBox error={error} />}
