@@ -252,7 +252,7 @@ const FEED_CATEGORIES = [
 ];
 
 export default function App() {
-  const { token, clearToken, loading, error } = useTelegramAuth();
+  const { token, clearToken, error } = useTelegramAuth();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
   const [meError, setMeError] = useState<string | null>(null);
