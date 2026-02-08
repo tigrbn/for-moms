@@ -129,6 +129,23 @@ a {
   top: 10px;
   right: 12px;
 }
+.pill--active-green {
+  background: #e8f5e9 !important;
+  color: #2e7d32 !important;
+  font-weight: 600;
+}
+
+.roles-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.roles-card-wrap .roles-card {
+  margin: 0;
+}
+.roles-delete-btn {
+  align-self: flex-start;
+}
 
 .muted {
   color: var(--text-secondary);

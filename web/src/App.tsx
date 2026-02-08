@@ -971,11 +971,14 @@ export default function App() {
     const [reviewsErr, setReviewsErr] = useState<string | null>(null);
 
     useEffect(() => {
-      setDisplayName(activeProfile?.displayName ?? "");
-      setCity(activeProfile?.city ?? "");
-      setDistrict(activeProfile?.district ?? "");
-      if (activeProfile?.type === "specialist") {
-        const spec = (activeProfile as { specialist?: { skills?: string[]; pricePerHour?: number | null; about?: string | null } }).specialist;
+      if (!me || !activeProfileId) return;
+      const profile = me.profiles.find((pr) => pr.id === activeProfileId);
+      if (!profile) return;
+      setDisplayName(profile.displayName ?? "");
+      setCity(profile.city ?? "");
+      setDistrict(profile.district ?? "");
+      if (profile.type === "specialist") {
+        const spec = (profile as { specialist?: { skills?: string[]; pricePerHour?: number | null; about?: string | null } }).specialist;
         if (spec) {
           setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
           setAbout(spec.about ?? "");
@@ -983,7 +986,7 @@ export default function App() {
           setSpecialistCategory(firstSkill);
         }
       }
-    }, [activeProfileId, activeProfile]);
+    }, [activeProfileId, me]);
 
     useEffect(() => {
       const run = async () => {
@@ -1395,15 +1398,6 @@ export default function App() {
         title: p.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист",
       }));
 
-    const toggle = async (profileId: string, nextActive: boolean) => {
-      try {
-        await authedPost(`/profiles/${profileId}/${nextActive ? "activate" : "deactivate"}`, {});
-        await refreshMe();
-      } catch (e: any) {
-        setMeError(e?.message ?? "Не удалось изменить роль");
-      }
-    };
-
     return (
       <div className="card">
         <div className="row">
@@ -1416,45 +1410,37 @@ export default function App() {
           )}
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Здесь можно включать/выключать роли и выбирать активную.
+          Выберите активную роль или удалите ненужную.
         </div>
 
-        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-          {roles.map((p) => (
-            <div key={p.id} className="card card--status-top" style={{ background: "var(--tg-bg)" }}>
-              {p.id === me.activeProfileId && <span className="pill pill--top-right">Активна</span>}
-              <div className="row" style={{ paddingRight: 72 }}>
-                <div style={{ fontWeight: 900 }}>{p.title}</div>
-              </div>
-              <div style={{ marginTop: 6 }}>
-                <span className="pill pill--role-status" style={{ background: p.isActive ? "var(--secondary-bg)" : "var(--disabled-bg)", color: p.isActive ? "var(--primary)" : "var(--disabled-text)" }}>
-                  {p.isActive ? "Включена" : "Выключена"}
-                </span>
-              </div>
-
-              <div className="muted" style={{ marginTop: 8 }}>
-                {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
-              </div>
-
-              <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
-                {p.isActive ? (
-                  <button className="btn secondary" onClick={() => void toggle(p.id, false)}>
-                    Выключить
-                  </button>
-                ) : (
-                  <button className="btn secondary" onClick={() => void toggle(p.id, true)}>
-                    Включить
-                  </button>
-                )}
+        <div style={{ display: "grid", gap: 16, marginTop: 12 }}>
+          {roles.map((p) => {
+            const isActive = p.id === me.activeProfileId;
+            return (
+              <div key={p.id} className="roles-card-wrap">
+                <div className="card card--status-top roles-card" style={{ background: "var(--tg-bg)" }}>
+                  {isActive && <span className="pill pill--top-right pill--active-green">Активна</span>}
+                  <div className="row" style={{ paddingRight: isActive ? 72 : 0 }}>
+                    <div style={{ fontWeight: 900, fontSize: 18 }}>{p.title}</div>
+                  </div>
+                  <div className="muted" style={{ marginTop: 8 }}>
+                    {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
+                  </div>
+                  {!isActive && (
+                    <div style={{ marginTop: 12 }}>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => void ensureActiveProfile(p.id)}
+                      >
+                        Сделать активной
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
-                  className="btn"
-                  disabled={!p.isActive}
-                  onClick={() => void ensureActiveProfile(p.id)}
-                >
-                  Сделать активной
-                </button>
-                <button
-                  className="btn danger"
+                  type="button"
+                  className="btn danger roles-delete-btn"
                   onClick={async () => {
                     const roleName = p.type === "parent" ? "Мама" : "Специалист";
                     if (!confirm(`Удалить аккаунт «${roleName}»? Все данные этой роли будут удалены безвозвратно.`)) return;
@@ -1470,8 +1456,8 @@ export default function App() {
                   Удалить аккаунт
                 </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
