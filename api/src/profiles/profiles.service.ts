@@ -1,9 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Prisma, ProfileType } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class ProfilesService {
+  private readonly logger = new Logger(ProfilesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async createProfile(userId: bigint, type: ProfileType) {
@@ -72,15 +74,18 @@ export class ProfilesService {
   ) {
     await this.getOwnedProfileOrThrow(userId, profileId);
 
+    const updateData = {
+      ...(data.displayName !== undefined && { displayName: data.displayName }),
+      ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
+      ...(data.age !== undefined && { age: data.age }),
+      ...(data.city !== undefined && { city: data.city }),
+      ...(data.district !== undefined && { district: data.district }),
+    };
+    this.logger.log(`updateBase profileId=${profileId} data keys=${Object.keys(data).join(",")} updateData=${JSON.stringify(updateData)}`);
+
     return this.prisma.profile.update({
       where: { id: profileId },
-      data: {
-        ...(data.displayName !== undefined && { displayName: data.displayName }),
-        ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
-        ...(data.age !== undefined && { age: data.age }),
-        ...(data.city !== undefined && { city: data.city }),
-        ...(data.district !== undefined && { district: data.district }),
-      },
+      data: updateData,
     });
   }
 

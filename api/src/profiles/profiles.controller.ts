@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { ProfileType } from "@prisma/client";
 import type { Request } from "express";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -7,6 +7,8 @@ import { ProfilesService } from "./profiles.service";
 @UseGuards(JwtAuthGuard)
 @Controller("profiles")
 export class ProfilesController {
+  private readonly logger = new Logger(ProfilesController.name);
+
   constructor(private readonly profiles: ProfilesService) {}
 
   @Post(":id/activate")
@@ -77,8 +79,10 @@ export class ProfilesController {
     @Param("id") id: string,
     @Body() body: { displayName?: string | null; avatarUrl?: string | null; age?: number | null; city?: string | null; district?: string | null },
   ) {
+    this.logger.log(`PATCH /profiles/${id} (base) body=${JSON.stringify(body)}`);
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const profile = await this.profiles.updateBase(userId, BigInt(id), body ?? {});
+    this.logger.log(`PATCH /profiles/${id} (base) result age=${profile.age} displayName=${profile.displayName} city=${profile.city}`);
     return {
       id: profile.id.toString(),
       type: profile.type,
@@ -93,8 +97,10 @@ export class ProfilesController {
 
   @Patch(":id/parent")
   async updateParent(@Req() req: Request, @Param("id") id: string, @Body() body: { childrenAges?: number[] | null; specialWishes?: string | null }) {
+    this.logger.log(`PATCH /profiles/${id}/parent body=${JSON.stringify(body)}`);
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const parent = await this.profiles.updateParent(userId, BigInt(id), body ?? {});
+    this.logger.log(`PATCH /profiles/${id}/parent result childrenAges=${JSON.stringify(parent.childrenAges)} specialWishes=${parent.specialWishes != null ? "set" : "null"}`);
     return {
       profileId: parent.profileId.toString(),
       childrenAges: parent.childrenAges,
@@ -116,8 +122,10 @@ export class ProfilesController {
       about?: string | null;
     },
   ) {
+    this.logger.log(`PATCH /profiles/${id}/specialist body=${JSON.stringify(body)}`);
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const specialist = await this.profiles.updateSpecialist(userId, BigInt(id), body ?? {});
+    this.logger.log(`PATCH /profiles/${id}/specialist result pricePerHour=${specialist.pricePerHour} about=${specialist.about != null ? "set" : "null"} skills=${JSON.stringify(specialist.skills)}`);
     return {
       profileId: specialist.profileId.toString(),
       skills: specialist.skills,

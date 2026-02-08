@@ -1005,11 +1005,13 @@ export default function App() {
       setErr(null);
       setSaving(true);
       try {
-        await authedPatch(`/profiles/${profileId}`, {
+        const basePayload = {
           displayName: displayName || null,
-          age: age ? Number(age) : null,
+          age: age.trim() === "" ? null : Number(age),
           city: city || null,
-        });
+        };
+        console.log("[Profile] PATCH /profiles/" + profileId + " (base)", basePayload);
+        await authedPatch(`/profiles/${profileId}`, basePayload);
         if (type === "parent") {
           const ages = childrenAges
             .split(",")
@@ -1017,20 +1019,25 @@ export default function App() {
             .filter(Boolean)
             .map((s) => Number(s))
             .filter((n) => Number.isFinite(n));
-          await authedPatch(`/profiles/${profileId}/parent`, {
+          const parentPayload = {
             childrenAges: ages.length ? ages : null,
             specialWishes: specialWishes || null,
-          });
+          };
+          console.log("[Profile] PATCH /profiles/" + profileId + "/parent", parentPayload);
+          await authedPatch(`/profiles/${profileId}/parent`, parentPayload);
         }
         if (type === "specialist") {
-          await authedPatch(`/profiles/${profileId}/specialist`, {
+          const specialistPayload = {
             skills: specialistCategory ? [specialistCategory] : [],
-            pricePerHour: pricePerHour ? Number(pricePerHour) : null,
+            pricePerHour: pricePerHour.trim() === "" ? null : Number(pricePerHour),
             about: about || null,
-          });
+          };
+          console.log("[Profile] PATCH /profiles/" + profileId + "/specialist", specialistPayload);
+          await authedPatch(`/profiles/${profileId}/specialist`, specialistPayload);
         }
         await refreshMe();
       } catch (e: unknown) {
+        console.error("[Profile] save error", e);
         setErr(e instanceof Error ? e.message : "Не удалось сохранить");
       } finally {
         setSaving(false);
