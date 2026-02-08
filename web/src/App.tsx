@@ -166,13 +166,12 @@ type PublicProfile = {
   parent: { childrenAges?: any; specialWishes?: string | null } | null;
 };
 
-function TopBar(props: { title?: string; sub?: React.ReactNode; right?: React.ReactNode; logo?: string; logoSub?: React.ReactNode; rightNode?: React.ReactNode }) {
+function TopBar(props: { title?: string; sub?: React.ReactNode; right?: React.ReactNode; logo?: string; rightNode?: React.ReactNode }) {
   if (props.logo) {
     return (
       <div className="topbar topbar--logo">
         <div className="topbar-logo-wrap">
           <img src={props.logo} alt="Для мам" className="topbar-logo" />
-          {props.logoSub != null && <div className="topbar-logo-sub">{props.logoSub}</div>}
         </div>
         {props.rightNode != null && <div className="topbar-right">{props.rightNode}</div>}
       </div>
@@ -374,7 +373,7 @@ export default function App() {
       </Link>
       <Link className={`bottom-nav-item ${location.pathname === "/requests/new" ? "active" : ""}`} to="/requests/new">
         <img src={menuCreate} alt="" className="bottom-nav-icon-img" />
-        <span>Создать заявку</span>
+        <span>Создать</span>
       </Link>
       <Link className={`bottom-nav-item ${location.pathname.startsWith("/requests") && location.pathname !== "/requests/new" ? "active" : ""}`} to="/requests">
         <img src={menuAll} alt="" className="bottom-nav-icon-img" />
@@ -1012,7 +1011,7 @@ export default function App() {
         }
         if (type === "specialist") {
           await authedPatch(`/profiles/${profileId}/specialist`, {
-            skills: specialistCategory ? [specialistCategory] : null,
+            skills: specialistCategory ? [specialistCategory] : [],
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
@@ -1414,30 +1413,31 @@ export default function App() {
           {roles.map((p) => (
             <div key={p.id} className="card card--status-top" style={{ background: "var(--tg-bg)" }}>
               {p.id === me.activeProfileId && <span className="pill pill--top-right">Активна</span>}
-              <div className="row">
+              <div className="row" style={{ paddingRight: 72 }}>
                 <div style={{ fontWeight: 900 }}>{p.title}</div>
-                <div className="spacer" />
-                <span className="pill" style={{ background: p.isActive ? undefined : "color-mix(in srgb, var(--tg-theme-hint-color, #999) 18%, var(--surface-2))" }}>
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <span className="pill pill--role-status" style={{ background: p.isActive ? "var(--secondary-bg)" : "var(--disabled-bg)", color: p.isActive ? "var(--primary)" : "var(--disabled-text)" }}>
                   {p.isActive ? "Включена" : "Выключена"}
                 </span>
               </div>
 
-              <div className="muted" style={{ marginTop: 6 }}>
+              <div className="muted" style={{ marginTop: 8 }}>
                 {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
               </div>
 
-              <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
+              <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
                 {p.isActive ? (
                   <button className="btn secondary" onClick={() => void toggle(p.id, false)}>
                     Выключить
                   </button>
                 ) : (
-                  <button className="btn" onClick={() => void toggle(p.id, true)}>
+                  <button className="btn secondary" onClick={() => void toggle(p.id, true)}>
                     Включить
                   </button>
                 )}
                 <button
-                  className="btn secondary"
+                  className="btn"
                   disabled={!p.isActive}
                   onClick={() => void ensureActiveProfile(p.id)}
                 >
@@ -1472,30 +1472,13 @@ export default function App() {
       <div className="container">
         <TopBar
           logo={mainLogoImg}
-          logoSub="мини-приложение"
-          rightNode={me && me.profiles.length > 1 ? (
-            <div className="topbar-role-switch">
-              {me.profiles
-                .slice()
-                .sort((a, b) => (a.type === "parent" ? -1 : 1) - (b.type === "parent" ? -1 : 1))
-                .map((p, i) => (
-                  <span key={p.id}>
-                    {i > 0 && <span className="topbar-role-sep"> · </span>}
-                    {p.id === me.activeProfileId ? (
-                      <span className="topbar-role-switch-item active">{p.type === "parent" ? "Мама" : "Специалист"}</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="topbar-role-switch-btn"
-                        onClick={() => void ensureActiveProfile(p.id)}
-                      >
-                        {p.type === "parent" ? "Мама" : "Специалист"}
-                      </button>
-                    )}
-                  </span>
-                ))}
-              <Link to="/roles" className="topbar-role-switch-gear" title="Управление ролями">⚙</Link>
-            </div>
+          rightNode={me && activeProfile ? (
+            <>
+              <span className="topbar-role-label">{activeProfile.type === "parent" ? "Мама" : "Специалист"}</span>
+              <Link to="/roles" className="topbar-settings-link" title="Роли и настройки" aria-label="Настройки">
+                ⚙
+              </Link>
+            </>
           ) : undefined}
         />
 
