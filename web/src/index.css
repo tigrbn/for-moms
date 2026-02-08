@@ -327,28 +327,33 @@ a {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-shrink: 0;
+}
+.topbar-role-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+.topbar-role-link:hover {
+  background: rgba(123, 124, 255, 0.1);
+  color: #7b7cff;
+}
+.topbar-role-emoji {
+  font-size: 18px;
+  line-height: 1;
 }
 .topbar-role-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
 }
-.topbar-settings-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: 10px;
-  transition: color 0.15s, background 0.15s;
-}
-.topbar-settings-link:hover {
-  color: #7b7cff;
-  background: rgba(123, 124, 255, 0.1);
+.topbar-role-gear {
+  font-size: 14px;
+  opacity: 0.8;
 }
 
 /* Нижнее меню */
@@ -361,7 +366,7 @@ a {
   justify-content: space-around;
   align-items: center;
   gap: 4px;
-  padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
+  padding: 10px 8px calc(12px + env(safe-area-inset-bottom));
   background: #ffffff;
   border-top: 1px solid var(--border-color);
   box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
@@ -371,11 +376,11 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 4px;
-  border-radius: 14px;
-  color: #8e8e93;
-  font-size: 11px;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 16px;
+  color: #b5b2c7;
+  font-size: 12px;
   font-weight: 500;
   min-width: 0;
   flex: 1;
@@ -384,33 +389,39 @@ a {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.15s ease-out, background 0.15s ease-out, box-shadow 0.15s ease-out;
+  transition: color 0.15s ease-out, background 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.12s ease-out;
 }
 .bottom-nav-item:hover {
   color: var(--text-primary);
 }
+.bottom-nav-item:active {
+  transform: scale(0.95);
+}
 .bottom-nav-item.active {
   color: #7b7cff;
   background: #f4efff;
-  border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(123, 124, 255, 0.2);
+  border-radius: 15px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 12px rgba(123, 124, 255, 0.25);
 }
-.bottom-nav-item.active .bottom-nav-icon-img {
-  filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(226deg);
+.bottom-nav-item.active:active {
+  transform: scale(0.95);
 }
+/* Иконки с прозрачным фоном — активность только подложка + цвет текста, иконку не красим чтобы не было сплошного квадрата */
 .bottom-nav-icon-img {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
+  transition: width 0.15s ease-out, height 0.15s ease-out;
 }
 .bottom-nav-item.active .bottom-nav-icon-img {
-  width: 26px;
-  height: 26px;
+  width: 29px;
+  height: 29px;
 }
 .bottom-nav-icon {
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1;
 }
 

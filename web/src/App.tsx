@@ -322,7 +322,15 @@ export default function App() {
         const data = await getJSON<FeedResponse>(path, token);
         setFeed(data);
       } catch (e: any) {
-        setFeedError(e?.message ?? "Failed to load feed");
+        const msg = e?.message ?? "Failed to load feed";
+        if (typeof msg === "string" && msg.includes("401")) {
+          clearToken();
+          setMe(null);
+          setFeed(null);
+          setFeedError(null);
+        } else {
+          setFeedError(msg);
+        }
       }
     };
     void run();
@@ -966,10 +974,14 @@ export default function App() {
       setDisplayName(activeProfile?.displayName ?? "");
       setCity(activeProfile?.city ?? "");
       setDistrict(activeProfile?.district ?? "");
-      if (activeProfile?.type === "specialist" && "specialist" in activeProfile && activeProfile.specialist) {
-        setPricePerHour(activeProfile.specialist.pricePerHour != null ? String(activeProfile.specialist.pricePerHour) : "");
-        setAbout(activeProfile.specialist.about ?? "");
-        setSpecialistCategory(activeProfile.specialist.skills?.[0] ?? "");
+      if (activeProfile?.type === "specialist") {
+        const spec = (activeProfile as { specialist?: { skills?: string[]; pricePerHour?: number | null; about?: string | null } }).specialist;
+        if (spec) {
+          setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
+          setAbout(spec.about ?? "");
+          const firstSkill = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : "";
+          setSpecialistCategory(firstSkill);
+        }
       }
     }, [activeProfileId, activeProfile]);
 
@@ -1149,9 +1161,6 @@ export default function App() {
               <span className="status-avatar">👤</span>
               <span className="status-text">Вы онлайн — родители могут видеть вас</span>
             </div>
-            <Link className="btn secondary status-cabinet" to="/profile">
-              Личный кабинет
-            </Link>
           </div>
         )}
 
@@ -1160,7 +1169,8 @@ export default function App() {
             <div className="h2">Лента</div>
             <div className="spacer" />
             <button
-              className="btn btn-secondary"
+              type="button"
+              className="btn secondary"
               onClick={() => {
                 setFeed(null);
                 setFeedError(null);
@@ -1204,16 +1214,16 @@ export default function App() {
                 <div className="row feed-empty-row">
                   <button
                     type="button"
-                    className="btn btn-secondary"
+                    className="btn secondary"
                     onClick={() => {
+                      setFeedError(null);
                       setFeedCategory("");
-                      setFeedReloadKey((x) => x + 1);
                     }}
                   >
-                    Сбросить фильтры
+                    Показать все
                   </button>
                   {missingRole && (
-                    <button type="button" className="btn btn-primary" onClick={() => void addMissingRole()}>
+                    <button type="button" className="btn" onClick={() => void addMissingRole()}>
                       + {missingRole === "parent" ? "Мама" : "Специалист"}
                     </button>
                   )}
@@ -1473,12 +1483,11 @@ export default function App() {
         <TopBar
           logo={mainLogoImg}
           rightNode={me && activeProfile ? (
-            <>
+            <Link to="/roles" className="topbar-role-link" title="Роли — переключить или настроить">
+              <span className="topbar-role-emoji">{activeProfile.type === "parent" ? "👩‍🍼" : "👩‍🏫"}</span>
               <span className="topbar-role-label">{activeProfile.type === "parent" ? "Мама" : "Специалист"}</span>
-              <Link to="/roles" className="topbar-settings-link" title="Роли и настройки" aria-label="Настройки">
-                ⚙
-              </Link>
-            </>
+              <span className="topbar-role-gear">⚙</span>
+            </Link>
           ) : undefined}
         />
 
