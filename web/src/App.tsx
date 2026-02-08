@@ -12,7 +12,6 @@ import categoryTutor from "./assets/img/category/репетитор.png";
 import categoryLeisure from "./assets/img/category/досуг.png";
 import menuLenta from "./assets/img/menu/лента.png";
 import menuProfil from "./assets/img/menu/профиль.png";
-import menuSpecialist from "./assets/img/menu/специалист.png";
 import menuCreate from "./assets/img/menu/создать заявку.png";
 import menuAll from "./assets/img/menu/все заявки.png";
 
@@ -160,13 +159,14 @@ type PublicProfile = {
   isActive: boolean;
   displayName?: string | null;
   avatarUrl?: string | null;
+  age?: number | null;
   city?: string | null;
   district?: string | null;
   ratingAvg: string;
   ratingCount: number;
-  user: { username?: string | null; firstName?: string | null; lastName?: string | null };
+  user: { username?: string | null; firstName?: string | null; lastName?: string | null; photoUrl?: string | null };
   specialist: { pricePerHour?: number | null; about?: string | null } | null;
-  parent: { childrenAges?: any; specialWishes?: string | null } | null;
+  parent: { childrenAges?: number[] | null; specialWishes?: string | null } | null;
 };
 
 function TopBar(props: { title?: string; sub?: React.ReactNode; right?: React.ReactNode; logo?: string; rightNode?: React.ReactNode }) {
@@ -969,9 +969,9 @@ export default function App() {
     const profileId = activeProfile!.id;
     const type = activeProfile!.type;
     const telegramPhotoUrl = me?.user?.photoUrl ?? null;
-    const defaultAvatar = type === "parent" ? menuProfil : menuSpecialist;
-    const avatarSrc = activeProfile!.avatarUrl || telegramPhotoUrl || defaultAvatar;
-  
+    const avatarEmoji = type === "parent" ? "👩‍🍼" : "👩‍🏫";
+
+    const [isEditing, setIsEditing] = useState(false);
     const [displayName, setDisplayName] = useState(activeProfile!.displayName ?? "");
     const [age, setAge] = useState(activeProfile!.age != null ? String(activeProfile!.age) : "");
     const [city, setCity] = useState(activeProfile!.city ?? "");
@@ -983,238 +983,213 @@ export default function App() {
     const [specialistCategory, setSpecialistCategory] = useState("");
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-  
+
     useEffect(() => {
       if (!activeProfile) return;
-      
       setDisplayName(activeProfile.displayName ?? "");
       setAge(activeProfile.age != null ? String(activeProfile.age) : "");
       setCity(activeProfile.city ?? "");
       setDistrict(activeProfile.district ?? "");
-      
       if (activeProfile.type === "parent") {
         const parent = activeProfile.parent;
         setChildrenAges(Array.isArray(parent?.childrenAges) ? parent.childrenAges.join(", ") : "");
         setSpecialWishes(parent?.specialWishes ?? "");
       }
-      
       if (activeProfile.type === "specialist") {
         const spec = activeProfile.specialist;
-        
-        // ИСПРАВЛЕНО: Правильное чтение данных специалиста
         if (spec) {
-          // Price per hour
-          if (spec.pricePerHour !== undefined && spec.pricePerHour !== null) {
-            setPricePerHour(String(spec.pricePerHour));
-          } else {
-            setPricePerHour("");
-          }
-          
-          // About
+          setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
           setAbout(spec.about ?? "");
-          
-          // Skills/Category
-          if (Array.isArray(spec.skills) && spec.skills.length > 0) {
-            setSpecialistCategory(spec.skills[0]);
-          } else if (typeof spec.skills === 'string') {
-            setSpecialistCategory(spec.skills);
-          } else {
-            setSpecialistCategory("");
-          }
+          const first = Array.isArray(spec.skills) && spec.skills.length > 0 ? spec.skills[0] : typeof spec.skills === "string" ? spec.skills : "";
+          setSpecialistCategory(first || "");
         } else {
-          // Если specialist данные отсутствуют, сбрасываем поля
           setPricePerHour("");
           setAbout("");
           setSpecialistCategory("");
         }
       }
     }, [activeProfile]);
-  
+
     const save = async () => {
       setErr(null);
       setSaving(true);
       try {
         const ageNum = age.trim() === "" ? null : Number(age);
-        const basePayload = {
+        await authedPatch(`/profiles/${profileId}`, {
           displayName: displayName.trim() || null,
           age: ageNum != null && Number.isFinite(ageNum) ? ageNum : null,
           city: city.trim() || null,
           district: district.trim() || null,
-        };
-        
-        console.log("[Profile] PATCH /profiles/" + profileId + " (base)", basePayload);
-        await authedPatch(`/profiles/${profileId}`, basePayload);
-        
+        });
         if (type === "parent") {
-          const ages = childrenAges
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-            .map((s) => Number(s))
-            .filter((n) => Number.isFinite(n));
-          const parentPayload = {
-            childrenAges: ages.length ? ages : null,
-            specialWishes: specialWishes || null,
-          };
-          console.log("[Profile] PATCH /profiles/" + profileId + "/parent", parentPayload);
-          await authedPatch(`/profiles/${profileId}/parent`, parentPayload);
+          const ages = childrenAges.split(",").map((s) => s.trim()).filter(Boolean).map((s) => Number(s)).filter((n) => Number.isFinite(n));
+          await authedPatch(`/profiles/${profileId}/parent`, { childrenAges: ages.length ? ages : null, specialWishes: specialWishes || null });
         }
-        
         if (type === "specialist") {
           const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
-          const specialistPayload = {
+          await authedPatch(`/profiles/${profileId}/specialist`, {
             skills: specialistCategory ? [specialistCategory] : [],
             pricePerHour: priceNum != null && Number.isFinite(priceNum) ? priceNum : null,
             about: about.trim() || null,
-          };
-          console.log("[Profile] PATCH /profiles/" + profileId + "/specialist", specialistPayload);
-          await authedPatch(`/profiles/${profileId}/specialist`, specialistPayload);
+          });
         }
-        
-        // Обновляем данные после сохранения
-        const freshMe = await refreshMe();
-        const updatedProfile = freshMe?.profiles?.find((x) => x.id === profileId);
-        
-        if (updatedProfile) {
-          // Обновляем локальное состояние с новыми данными
-          setDisplayName(updatedProfile.displayName ?? "");
-          setAge(updatedProfile.age != null ? String(updatedProfile.age) : "");
-          setCity(updatedProfile.city ?? "");
-          setDistrict(updatedProfile.district ?? "");
-          
-          if (updatedProfile.type === "specialist" && updatedProfile.specialist) {
-            const spec = updatedProfile.specialist;
-            setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
-            setAbout(spec.about ?? "");
-            
-            // Обработка skills
-            if (Array.isArray(spec.skills) && spec.skills.length > 0) {
-              setSpecialistCategory(spec.skills[0]);
-            } else {
-              setSpecialistCategory("");
-            }
-          }
-        }
-        
+        await refreshMe();
+        setIsEditing(false);
       } catch (e: unknown) {
-        console.error("[Profile] save error", e);
         setErr(e instanceof Error ? e.message : "Не удалось сохранить");
       } finally {
         setSaving(false);
       }
     };
-  
-    return (
-      <div className="card">
-        <div className="row" style={{ alignItems: "center", gap: 16, marginBottom: 16 }}>
-          <img
-            src={avatarSrc}
-            alt=""
-            style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }}
-          />
-          <div>
-            <div className="h2">Профиль</div>
-            <div className="muted">{type === "parent" ? "👩‍🍼 Родитель" : "👩‍🏫 Специалист"}</div>
+
+    // Режим просмотра
+    if (!isEditing) {
+      return (
+        <div className="card profile-view-card">
+          <div className="profile-view-header">
+            <div
+              className="profile-view-avatar"
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                overflow: "hidden",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "var(--tg-theme-secondary-bg-color, #eee)",
+                fontSize: 36,
+              }}
+            >
+              {(activeProfile!.avatarUrl || telegramPhotoUrl) ? (
+                <img src={activeProfile!.avatarUrl || telegramPhotoUrl || ""} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span aria-hidden>{avatarEmoji}</span>
+              )}
+            </div>
+            <div className="profile-view-title-wrap" style={{ flex: 1, minWidth: 0 }}>
+              <h2 className="h2" style={{ margin: 0 }}>{activeProfile!.displayName || "—"}</h2>
+              <p className="muted" style={{ margin: "4px 0 0" }}>{type === "parent" ? "👩‍🍼 Родитель" : "👩‍🏫 Специалист"}</p>
+            </div>
+          </div>
+          <dl className="profile-view-dl">
+            <div className="profile-view-row">
+              <dt className="muted">Возраст</dt>
+              <dd>{activeProfile!.age != null ? `${activeProfile!.age} лет` : "—"}</dd>
+            </div>
+            <div className="profile-view-row">
+              <dt className="muted">Город</dt>
+              <dd>{activeProfile!.city || "—"}</dd>
+            </div>
+            <div className="profile-view-row">
+              <dt className="muted">Район</dt>
+              <dd>{activeProfile!.district || "—"}</dd>
+            </div>
+            {type === "parent" && (
+              <>
+                <div className="profile-view-row">
+                  <dt className="muted">Возраст детей</dt>
+                  <dd>{(activeProfile!.parent?.childrenAges ?? []).length > 0 ? (activeProfile!.parent?.childrenAges ?? []).join(", ") : "—"}</dd>
+                </div>
+                <div className="profile-view-row">
+                  <dt className="muted">Пожелания</dt>
+                  <dd>{activeProfile!.parent?.specialWishes || "—"}</dd>
+                </div>
+              </>
+            )}
+            {type === "specialist" && (
+              <>
+                <div className="profile-view-row">
+                  <dt className="muted">Категория</dt>
+                  <dd>{(activeProfile!.specialist?.skills ?? []).length > 0 ? (activeProfile!.specialist?.skills ?? [])[0] : "—"}</dd>
+                </div>
+                <div className="profile-view-row">
+                  <dt className="muted">Цена за час</dt>
+                  <dd>{activeProfile!.specialist?.pricePerHour != null ? `${activeProfile!.specialist!.pricePerHour} ₽` : "—"}</dd>
+                </div>
+                <div className="profile-view-row">
+                  <dt className="muted">О себе</dt>
+                  <dd style={{ whiteSpace: "pre-wrap" }}>{(activeProfile!.specialist?.about ?? "").trim() || "—"}</dd>
+                </div>
+              </>
+            )}
+          </dl>
+          <div className="profile-view-actions">
+            <button type="button" className="btn btn-primary" onClick={() => setIsEditing(true)}>
+              Редактировать
+            </button>
           </div>
         </div>
-        
-        {err && <div className="muted" style={{ marginBottom: 8 }}>{err}</div>}
-        
-        <div style={{ display: "grid", gap: 12 }}>
+      );
+    }
+
+    // Режим редактирования
+    return (
+      <div className="card profile-edit-card">
+        <div className="profile-edit-header">
+          <h2 className="h2" style={{ margin: 0 }}>Редактирование профиля</h2>
+          <p className="muted" style={{ margin: "4px 0 0" }}>{type === "parent" ? "👩‍🍼 Родитель" : "👩‍🏫 Специалист"}</p>
+        </div>
+        {err && <div className="profile-edit-err muted" role="alert">{err}</div>}
+        <div className="profile-edit-fields">
           <div className="field">
-            <div className="label">Имя для отображения</div>
-            <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+            <label className="label">Имя для отображения</label>
+            <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Как к вам обращаться" />
           </div>
-          
-          {/* ИСПРАВЛЕНО: Добавлено значение по умолчанию из activeProfile.age */}
           <div className="field">
-            <div className="label">Возраст</div>
-            <input 
-              className="input" 
-              value={age} 
-              onChange={(e) => setAge(e.target.value)} 
-              inputMode="numeric" 
-              placeholder="25" 
-            />
+            <label className="label">Возраст</label>
+            <input className="input" value={age} onChange={(e) => setAge(e.target.value)} inputMode="numeric" placeholder="25" />
           </div>
-          
           <div className="field">
-            <div className="label">Город</div>
+            <label className="label">Город</label>
             <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Москва" />
           </div>
-          
           <div className="field">
-            <div className="label">Район</div>
+            <label className="label">Район</label>
             <input className="input" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Центральный" />
           </div>
-          
           {type === "parent" && (
             <>
               <div className="field">
-                <div className="label">Возраст детей (через запятую)</div>
+                <label className="label">Возраст детей (через запятую)</label>
                 <input className="input" value={childrenAges} onChange={(e) => setChildrenAges(e.target.value)} placeholder="2, 5, 7" />
               </div>
               <div className="field">
-                <div className="label">Пожелания</div>
-                <textarea className="textarea" value={specialWishes} onChange={(e) => setSpecialWishes(e.target.value)} />
+                <label className="label">Пожелания</label>
+                <textarea className="textarea" value={specialWishes} onChange={(e) => setSpecialWishes(e.target.value)} placeholder="Кратко опишите пожелания" />
               </div>
             </>
           )}
-          
           {type === "specialist" && (
             <>
               <div className="field">
-                <div className="label">Категория</div>
-                <select
-                  className="input"
-                  value={specialistCategory}
-                  onChange={(e) => setSpecialistCategory(e.target.value)}
-                >
+                <label className="label">Категория</label>
+                <select className="input" value={specialistCategory} onChange={(e) => setSpecialistCategory(e.target.value)}>
                   <option value="">Не выбрано</option>
                   {FEED_CATEGORIES.filter((c) => c.id).map((c) => (
                     <option key={c.id} value={c.id}>{c.label}</option>
                   ))}
                 </select>
-                {/* ИСПРАВЛЕНО: Добавляем значение по умолчанию из данных */}
-                {activeProfile?.specialist?.skills && 
-                 Array.isArray(activeProfile.specialist.skills) && 
-                 activeProfile.specialist.skills.length > 0 && (
-                  <div className="muted" style={{ fontSize: '12px', marginTop: '4px' }}>
-                    Текущее значение: {activeProfile.specialist.skills[0]}
-                  </div>
-                )}
               </div>
-              
-              {/* ИСПРАВЛЕНО: Добавлено значение по умолчанию из activeProfile.specialist.pricePerHour */}
               <div className="field">
-                <div className="label">Цена за час (₽)</div>
-                <input 
-                  className="input" 
-                  value={pricePerHour} 
-                  onChange={(e) => setPricePerHour(e.target.value)} 
-                  inputMode="numeric" 
-                  placeholder="1000"
-                />
+                <label className="label">Цена за час (₽)</label>
+                <input className="input" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} inputMode="numeric" placeholder="1000" />
               </div>
-              
-              {/* ИСПРАВЛЕНО: Добавлено значение по умолчанию из activeProfile.specialist.about */}
               <div className="field">
-                <div className="label">О себе</div>
-                <textarea 
-                  className="textarea" 
-                  value={about} 
-                  onChange={(e) => setAbout(e.target.value)} 
-                  placeholder="Начинающая няня"
-                />
+                <label className="label">О себе</label>
+                <textarea className="textarea" value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Опыт, образование, чем можете помочь" rows={4} />
               </div>
             </>
           )}
-          
-          <div className="row">
-            <button className="btn" disabled={saving} onClick={() => void save()}>
-              {saving ? "Сохранение…" : "Сохранить"}
-            </button>
-          </div>
+        </div>
+        <div className="profile-edit-actions row" style={{ flexWrap: "wrap", gap: 8 }}>
+          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void save()}>
+            {saving ? "Сохранение…" : "Сохранить"}
+          </button>
+          <button type="button" className="btn secondary" disabled={saving} onClick={() => { setErr(null); setIsEditing(false); }}>
+            Отмена
+          </button>
         </div>
       </div>
     );
@@ -1427,25 +1402,57 @@ export default function App() {
     if (err) return <ErrorBox error={err} />;
     if (!p) return <div className="card">Загрузка…</div>;
 
-    const title = p.displayName ?? p.user.username ?? "Профиль";
+    const title = p.displayName ?? p.user?.username ?? "Профиль";
     const tgUsername = p.user?.username?.trim() || null;
     const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
+    const avatarSrc = (p.avatarUrl || p.user?.photoUrl || "").trim() || null;
+    const avatarEmoji = p.type === "specialist" ? "👩‍🏫" : "👩‍🍼";
 
     return (
       <div style={{ display: "grid", gap: 12 }}>
         <div className="card">
-          <div className="row">
-            <div className="h2">{title}</div>
-            <div className="spacer" />
-            <div className="muted">★ {p.ratingAvg} ({p.ratingCount})</div>
-          </div>
-          <div className="muted" style={{ marginTop: 6 }}>
-            {[p.city, p.district].filter(Boolean).join(" · ") || "—"}
+          <div className="row" style={{ alignItems: "flex-start", gap: 16 }}>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                overflow: "hidden",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "var(--tg-theme-secondary-bg-color, #eee)",
+                fontSize: 36,
+              }}
+            >
+              {avatarSrc ? (
+                <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span aria-hidden>{avatarEmoji}</span>
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="row">
+                <div className="h2" style={{ margin: 0 }}>{title}</div>
+                <div className="spacer" />
+                <div className="muted">★ {p.ratingAvg} ({p.ratingCount})</div>
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                {p.city && <span>Город: {p.city}</span>}
+                {p.city && p.district && " · "}
+                {p.district && <span>Район: {p.district}</span>}
+                {!p.city && !p.district && "—"}
+              </div>
+              {p.age != null && p.age > 0 && (
+                <div className="muted" style={{ marginTop: 4 }}>Возраст: {p.age} лет</div>
+              )}
+            </div>
           </div>
           {p.type === "specialist" && (
             <>
               {p.specialist?.pricePerHour != null && (
-                <div className="muted" style={{ marginTop: 6 }}>
+                <div className="muted" style={{ marginTop: 10 }}>
                   Цена: {p.specialist.pricePerHour} ₽/час
                 </div>
               )}
@@ -1456,6 +1463,16 @@ export default function App() {
                 </div>
               )}
             </>
+          )}
+          {p.type === "parent" && (p.parent?.childrenAges?.length || p.parent?.specialWishes) && (
+            <div style={{ marginTop: 12 }}>
+              {p.parent.childrenAges && p.parent.childrenAges.length > 0 && (
+                <div className="muted" style={{ marginTop: 6 }}>Возраст детей: {p.parent.childrenAges.join(", ")}</div>
+              )}
+              {p.parent.specialWishes && (
+                <div style={{ marginTop: 6 }}>{p.parent.specialWishes}</div>
+              )}
+            </div>
           )}
           <div className="row" style={{ marginTop: 16, flexWrap: "wrap", gap: 8 }}>
             {tgUrl ? (

@@ -8,11 +8,12 @@ export type PublicProfileDto = {
   isActive: boolean;
   displayName: string | null;
   avatarUrl: string | null;
+  age: number | null;
   city: string | null;
   district: string | null;
   ratingAvg: string;
   ratingCount: number;
-  user: { username: string | null; firstName: string | null; lastName: string | null };
+  user: { username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null };
   specialist: { pricePerHour: number | null; about: string | null } | null;
   parent: { childrenAges: number[] | null; specialWishes: string | null } | null;
 };
@@ -242,6 +243,7 @@ export class ProfilesService {
         is_active: boolean;
         display_name: string | null;
         avatar_url: string | null;
+        age: number | null;
         city: string | null;
         district: string | null;
         rating_avg: string | number;
@@ -249,15 +251,16 @@ export class ProfilesService {
         username: string | null;
         first_name: string | null;
         last_name: string | null;
+        photo_url: string | null;
         price_per_hour: number | null;
         about: string | null;
         children_ages: unknown;
         special_wishes: string | null;
       }>
     >(Prisma.sql`
-      SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.city, p.district,
+      SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.age, p.city, p.district,
              p.rating_avg::text AS rating_avg, p.rating_count,
-             u.username, u.first_name, u.last_name,
+             u.username, u.first_name, u.last_name, u.photo_url,
              sp.price_per_hour, sp.about,
              pp.children_ages, pp.special_wishes
       FROM profiles p
@@ -284,6 +287,7 @@ export class ProfilesService {
       isActive: row.is_active,
       displayName: row.display_name,
       avatarUrl: row.avatar_url,
+      age: row.age != null ? Number(row.age) : null,
       city: row.city,
       district: row.district,
       ratingAvg,
@@ -292,6 +296,7 @@ export class ProfilesService {
         username: row.username,
         firstName: row.first_name,
         lastName: row.last_name,
+        photoUrl: row.photo_url,
       },
       specialist:
         profileType === "specialist"
@@ -309,7 +314,7 @@ export class ProfilesService {
     const p = await this.prisma.profile.findUnique({
       where: { id: profileId },
       include: {
-        user: { select: { username: true, firstName: true, lastName: true } },
+        user: { select: { username: true, firstName: true, lastName: true, photoUrl: true } },
         specialistProfile: true,
         parentProfile: true,
       },
@@ -332,6 +337,7 @@ export class ProfilesService {
       isActive: p.isActive,
       displayName: p.displayName ?? null,
       avatarUrl: p.avatarUrl ?? null,
+      age: p.age != null ? Number(p.age) : null,
       city: p.city ?? null,
       district: p.district ?? null,
       ratingAvg,
@@ -340,6 +346,7 @@ export class ProfilesService {
         username: p.user?.username ?? null,
         firstName: p.user?.firstName ?? null,
         lastName: p.user?.lastName ?? null,
+        photoUrl: p.user?.photoUrl ?? null,
       },
       specialist:
         typeStr === "specialist" && p.specialistProfile
