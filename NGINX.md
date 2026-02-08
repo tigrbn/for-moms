@@ -29,6 +29,53 @@ npm run build
 
 ---
 
+## Без кэша для Telegram Mini App (всегда свежая версия)
+
+Чтобы в Telegram мини-приложении всегда подгружалась новая версия (без кэша), в nginx для раздачи фронта добавьте заголовки, запрещающие кэширование.
+
+**Вариант 1 — отключить кэш для всего каталога приложения** (проще всего):
+
+В конфиге сайта найдите блок `location`, который раздаёт статику (например `root /var/www/formoms;` или `root /root/formoms/web/dist;`). Добавьте в этот блок `location` строки:
+
+```nginx
+location / {
+    root /var/www/formoms;   # или /root/formoms/web/dist
+    index index.html;
+    try_files $uri $uri/ /index.html;
+
+    # Не кэшировать — Telegram Mini App всегда получит свежую версию
+    add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+    add_header Pragma "no-cache";
+}
+```
+
+**Вариант 2 — не кэшировать только `index.html`** (скрипты с хешами в имени можно кэшировать):
+
+```nginx
+location / {
+    root /var/www/formoms;
+    index index.html;
+    try_files $uri $uri/ /index.html;
+}
+
+location = /index.html {
+    root /var/www/formoms;
+    add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+    add_header Pragma "no-cache";
+}
+```
+
+После правок:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+После этого при каждом открытии мини-приложения в Telegram будет запрашиваться актуальная версия.
+
+---
+
 ## Ошибка 502 Bad Gateway
 
 502 значит: nginx не получает ответ от бэкенда (приложение на порту 3000). Чаще всего **бэкенд не запущен или упал**.
