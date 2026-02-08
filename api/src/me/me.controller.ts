@@ -16,7 +16,7 @@ export class MeController {
       where: { id: userId },
       include: {
         profiles: {
-          include: { specialistProfile: true },
+          include: { specialistProfile: true, parentProfile: true },
         },
       },
     });
@@ -66,6 +66,15 @@ export class MeController {
             skillsArr = raw ? [raw] : [];
           }
           return { ...base, specialist: { skills: skillsArr, pricePerHour: p.specialistProfile.pricePerHour, about: p.specialistProfile.about } };
+        }
+        if (p.type === "parent") {
+          return {
+            ...base,
+            parent: {
+              childrenAges: p.parentProfile?.childrenAges ?? null,
+              specialWishes: p.parentProfile?.specialWishes ?? null,
+            },
+          };
         }
         return base;
       }),

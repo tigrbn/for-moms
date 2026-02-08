@@ -32,6 +32,7 @@ type MeResponse = {
     city?: string | null;
     district?: string | null;
     specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null };
+    parent?: { childrenAges: number[] | null; specialWishes?: string | null };
   }>;
   activeProfileId: string | null;
 };
@@ -985,21 +986,40 @@ export default function App() {
 
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState<string | null>(null);
+    const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+    const [profileDataReady, setProfileDataReady] = useState(false);
     const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
     const [reviewsErr, setReviewsErr] = useState<string | null>(null);
 
-    // При открытии Профиля для специалиста всегда запрашиваем свежие /me (категория из skills)
+    // При открытии Профиля загружаем свежие /me, затем синхронизируем форму (без гонки)
     useEffect(() => {
-      if (activeProfile?.type === "specialist") {
-        void refreshMe();
-      }
-    }, [activeProfile?.id, activeProfile?.type]);
+      if (!activeProfile?.id || !token) return;
+      let cancelled = false;
+      setProfileDataReady(false);
+      setProfileLoadError(null);
+      refreshMe()
+        .then(() => {
+          if (!cancelled) setProfileDataReady(true);
+        })
+        .catch((e: unknown) => {
+          if (!cancelled) setProfileLoadError((e as Error)?.message ?? "Не удалось загрузить данные профиля");
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [activeProfile?.id, token]);
 
+    // Синхронизируем форму с данными из /me только после успешной загрузки
     useEffect(() => {
-      if (!activeProfile) return;
+      if (!activeProfile || !profileDataReady) return;
       setDisplayName(activeProfile.displayName ?? "");
       setCity(activeProfile.city ?? "");
       setDistrict(activeProfile.district ?? "");
+      if (activeProfile.type === "parent") {
+        const parent = activeProfile.parent;
+        setChildrenAges(Array.isArray(parent?.childrenAges) ? parent.childrenAges.join(", ") : "");
+        setSpecialWishes(parent?.specialWishes ?? "");
+      }
       if (activeProfile.type === "specialist") {
         const spec = activeProfile.specialist;
         if (spec) {
@@ -1009,24 +1029,44 @@ export default function App() {
           const firstSkill = Array.isArray(skills) && skills.length > 0 ? skills[0] : typeof skills === "string" && skills ? skills : "";
           setSpecialistCategory(firstSkill);
         } else {
+          setPricePerHour("");
+          setAbout("");
           setSpecialistCategory("");
         }
       }
-    }, [activeProfile]);
+    }, [activeProfile, profileDataReady]);
 
     useEffect(() => {
+      let cancelled = false;
+      setReviewsErr(null);
+      setReviews(null);
       const run = async () => {
-        setReviewsErr(null);
-        setReviews(null);
+        if (!token) {
+          setReviews([]);
+          setReviewsErr("Нет авторизации");
+          return;
+        }
         try {
-          const items = await authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`);
-          setReviews(items);
+          const timeout = new Promise<never>((_, rej) =>
+            setTimeout(() => rej(new Error("Таймаут загрузки отзывов")), 12000),
+          );
+          const items = await Promise.race([
+            authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`),
+            timeout,
+          ]);
+          if (cancelled) return;
+          setReviews(Array.isArray(items) ? items : []);
         } catch (e: any) {
-          setReviewsErr(e?.message ?? "Failed to load reviews");
+          if (cancelled) return;
+          setReviewsErr(e?.message ?? "Не удалось загрузить отзывы");
+          setReviews([]);
         }
       };
       void run();
-    }, [profileId]);
+      return () => {
+        cancelled = true;
+      };
+    }, [profileId, token]);
 
     const save = async () => {
       setErr(null);
@@ -1052,14 +1092,15 @@ export default function App() {
         }
         if (type === "specialist") {
           const payload = specialistCategory ? [specialistCategory] : [];
-          const specRes = await authedPatch<{ skills?: string[] }>(`/profiles/${profileId}/specialist`, {
+          const specRes = await authedPatch<{ skills?: string[]; pricePerHour?: number | null; about?: string | null }>(`/profiles/${profileId}/specialist`, {
             skills: payload,
             pricePerHour: pricePerHour ? Number(pricePerHour) : null,
             about: about || null,
           });
-          if (Array.isArray(specRes?.skills) && specRes.skills[0]) {
-            setSpecialistCategory(specRes.skills[0]);
-          }
+          const firstSkill = Array.isArray(specRes?.skills) && specRes.skills.length > 0 ? specRes.skills[0] : "";
+          setSpecialistCategory(firstSkill);
+          if (specRes?.pricePerHour != null) setPricePerHour(String(specRes.pricePerHour));
+          if (specRes?.about !== undefined) setAbout(specRes.about ?? "");
         }
 
         await refreshMe();
@@ -1117,7 +1158,12 @@ export default function App() {
             )}
           </div>
         )}
-        {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
+        {(err || profileLoadError) && (
+          <div className="muted" style={{ marginTop: 8 }}>{profileLoadError ?? err}</div>
+        )}
+        {!profileDataReady && !profileLoadError && (
+          <div className="muted" style={{ marginTop: 8 }}>Загрузка данных профиля…</div>
+        )}
         <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
           <div className="field">
             <div className="label">Имя для отображения</div>
@@ -1161,7 +1207,7 @@ export default function App() {
           )}
 
           <div className="row">
-            <button className="btn" disabled={saving} onClick={() => void save()}>
+            <button className="btn" disabled={saving || !profileDataReady} onClick={() => void save()}>
               {saving ? "Сохранение…" : "Сохранить"}
             </button>
           </div>
@@ -1365,18 +1411,36 @@ export default function App() {
     }, [profileId, activeProfileId]);
 
     useEffect(() => {
+      let cancelled = false;
+      setReviewsErr(null);
+      setReviews(null);
       const run = async () => {
-        setReviewsErr(null);
-        setReviews(null);
+        if (!token) {
+          setReviews([]);
+          setReviewsErr("Нет авторизации");
+          return;
+        }
         try {
-          const items = await authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`);
-          setReviews(items);
+          const timeout = new Promise<never>((_, rej) =>
+            setTimeout(() => rej(new Error("Таймаут загрузки отзывов")), 12000),
+          );
+          const items = await Promise.race([
+            authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`),
+            timeout,
+          ]);
+          if (cancelled) return;
+          setReviews(Array.isArray(items) ? items : []);
         } catch (e: any) {
+          if (cancelled) return;
           setReviewsErr(e?.message ?? "Не удалось загрузить отзывы");
+          setReviews([]);
         }
       };
       void run();
-    }, [profileId]);
+      return () => {
+        cancelled = true;
+      };
+    }, [profileId, token]);
 
     if (err) return <ErrorBox error={err} />;
     if (!p) return <div className="card">Загрузка…</div>;
