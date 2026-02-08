@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Logger, NotFoundException, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { ProfileType } from "@prisma/client";
 import type { Request } from "express";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -27,7 +27,17 @@ export class ProfilesController {
 
   @Get(":id")
   async get(@Param("id") id: string) {
-    return this.profiles.getPublicProfileOrThrow(BigInt(id));
+    const idTrim = id?.trim();
+    if (!idTrim || !/^\d+$/.test(idTrim)) {
+      throw new BadRequestException("Invalid profile id");
+    }
+    try {
+      return await this.profiles.getPublicProfileOrThrow(BigInt(idTrim));
+    } catch (e: unknown) {
+      if (e instanceof NotFoundException) throw e;
+      this.logger.error(`GET /profiles/${id} failed`, e instanceof Error ? e : String(e));
+      throw e;
+    }
   }
 
   @Post()

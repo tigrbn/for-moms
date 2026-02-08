@@ -223,8 +223,17 @@ export class ProfilesService {
     });
   }
 
-  /** Публичная анкета по id — через raw SQL, чтобы избежать 500 (Decimal/BigInt при сериализации). */
+  /** Публичная анкета по id. Сначала raw SQL; при ошибке — fallback через Prisma с ручной сериализацией. */
   async getPublicProfileOrThrow(profileId: bigint): Promise<PublicProfileDto> {
+    try {
+      return await this.getPublicProfileRaw(profileId);
+    } catch (rawErr: unknown) {
+      this.logger.warn(`getPublicProfile raw query failed: ${rawErr instanceof Error ? rawErr.message : String(rawErr)}`);
+      return this.getPublicProfilePrismaFallback(profileId);
+    }
+  }
+
+  private async getPublicProfileRaw(profileId: bigint): Promise<PublicProfileDto> {
     const idNum = Number(profileId);
     const rows = await this.prisma.$queryRaw<
       Array<{
@@ -267,6 +276,7 @@ export class ProfilesService {
       if (raw != null && typeof raw === "object") return Object.values(raw).filter((n): n is number => typeof n === "number");
       return null;
     })();
+    const profileType = String(row.type).toLowerCase();
 
     return {
       id: String(row.id),
@@ -284,12 +294,66 @@ export class ProfilesService {
         lastName: row.last_name,
       },
       specialist:
-        row.type === "specialist"
+        profileType === "specialist"
           ? { pricePerHour: row.price_per_hour, about: row.about }
           : null,
       parent:
-        row.type === "parent"
+        profileType === "parent"
           ? { childrenAges: childrenAges && childrenAges.length > 0 ? childrenAges : null, specialWishes: row.special_wishes }
+          : null,
+    };
+  }
+
+  /** Fallback: Prisma findUnique + ручная сборка DTO (без Decimal/BigInt в ответе). */
+  private async getPublicProfilePrismaFallback(profileId: bigint): Promise<PublicProfileDto> {
+    const p = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      include: {
+        user: { select: { username: true, firstName: true, lastName: true } },
+        specialistProfile: true,
+        parentProfile: true,
+      },
+    });
+    if (!p || !p.isActive) throw new NotFoundException("Profile not found");
+
+    const ratingAvg = p.ratingAvg != null && typeof (p.ratingAvg as { toString?: () => string }).toString === "function"
+      ? (p.ratingAvg as { toString: () => string }).toString()
+      : "0";
+    const typeStr = String(p.type).toLowerCase();
+    const childrenAges = p.parentProfile?.childrenAges != null
+      ? (Array.isArray(p.parentProfile.childrenAges)
+          ? (p.parentProfile.childrenAges as unknown[]).filter((n): n is number => typeof n === "number")
+          : [])
+      : null;
+
+    return {
+      id: String(p.id),
+      type: p.type,
+      isActive: p.isActive,
+      displayName: p.displayName ?? null,
+      avatarUrl: p.avatarUrl ?? null,
+      city: p.city ?? null,
+      district: p.district ?? null,
+      ratingAvg,
+      ratingCount: Number(p.ratingCount) || 0,
+      user: {
+        username: p.user?.username ?? null,
+        firstName: p.user?.firstName ?? null,
+        lastName: p.user?.lastName ?? null,
+      },
+      specialist:
+        typeStr === "specialist" && p.specialistProfile
+          ? {
+              pricePerHour: p.specialistProfile.pricePerHour ?? null,
+              about: p.specialistProfile.about ?? null,
+            }
+          : null,
+      parent:
+        typeStr === "parent"
+          ? {
+              childrenAges: childrenAges && childrenAges.length > 0 ? childrenAges : null,
+              specialWishes: p.parentProfile?.specialWishes ?? null,
+            }
           : null,
     };
   }
