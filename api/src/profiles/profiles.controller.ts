@@ -27,35 +27,7 @@ export class ProfilesController {
 
   @Get(":id")
   async get(@Param("id") id: string) {
-    const p = await this.profiles.getPublicProfileOrThrow(BigInt(id));
-    return {
-      id: p.id.toString(),
-      type: p.type,
-      isActive: p.isActive,
-      displayName: p.displayName,
-      avatarUrl: p.avatarUrl,
-      city: p.city,
-      district: p.district,
-      ratingAvg: p.ratingAvg.toString(),
-      ratingCount: p.ratingCount,
-      user: {
-        username: p.user?.username ?? null,
-        firstName: p.user?.firstName ?? null,
-        lastName: p.user?.lastName ?? null,
-      },
-      specialist: p.type === "specialist"
-        ? {
-            pricePerHour: p.specialistProfile?.pricePerHour ?? null,
-            about: p.specialistProfile?.about ?? null,
-          }
-        : null,
-      parent: p.type === "parent"
-        ? {
-            childrenAges: p.parentProfile?.childrenAges ?? null,
-            specialWishes: p.parentProfile?.specialWishes ?? null,
-          }
-        : null,
-    };
+    return this.profiles.getPublicProfileOrThrow(BigInt(id));
   }
 
   @Post()

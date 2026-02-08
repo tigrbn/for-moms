@@ -2,6 +2,21 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from "@nes
 import { Prisma, ProfileType } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
+export type PublicProfileDto = {
+  id: string;
+  type: string;
+  isActive: boolean;
+  displayName: string | null;
+  avatarUrl: string | null;
+  city: string | null;
+  district: string | null;
+  ratingAvg: string;
+  ratingCount: number;
+  user: { username: string | null; firstName: string | null; lastName: string | null };
+  specialist: { pricePerHour: number | null; about: string | null } | null;
+  parent: { childrenAges: number[] | null; specialWishes: string | null } | null;
+};
+
 @Injectable()
 export class ProfilesService {
   private readonly logger = new Logger(ProfilesService.name);
@@ -208,17 +223,75 @@ export class ProfilesService {
     });
   }
 
-  async getPublicProfileOrThrow(profileId: bigint) {
-    const profile = await this.prisma.profile.findUnique({
-      where: { id: profileId },
-      include: {
-        user: { select: { username: true, firstName: true, lastName: true } },
-        specialistProfile: true,
-        parentProfile: true,
+  /** Публичная анкета по id — через raw SQL, чтобы избежать 500 (Decimal/BigInt при сериализации). */
+  async getPublicProfileOrThrow(profileId: bigint): Promise<PublicProfileDto> {
+    const idNum = Number(profileId);
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: bigint;
+        type: string;
+        is_active: boolean;
+        display_name: string | null;
+        avatar_url: string | null;
+        city: string | null;
+        district: string | null;
+        rating_avg: string | number;
+        rating_count: number;
+        username: string | null;
+        first_name: string | null;
+        last_name: string | null;
+        price_per_hour: number | null;
+        about: string | null;
+        children_ages: unknown;
+        special_wishes: string | null;
+      }>
+    >(Prisma.sql`
+      SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.city, p.district,
+             p.rating_avg::text AS rating_avg, p.rating_count,
+             u.username, u.first_name, u.last_name,
+             sp.price_per_hour, sp.about,
+             pp.children_ages, pp.special_wishes
+      FROM profiles p
+      LEFT JOIN users u ON u.id = p.user_id
+      LEFT JOIN specialist_profiles sp ON sp.profile_id = p.id
+      LEFT JOIN parent_profiles pp ON pp.profile_id = p.id
+      WHERE p.id = ${idNum} AND p.is_active = true
+    `);
+    const row = rows[0];
+    if (!row) throw new NotFoundException("Profile not found");
+
+    const ratingAvg = row.rating_avg != null ? String(row.rating_avg) : "0";
+    const childrenAges = (() => {
+      const raw = row.children_ages;
+      if (Array.isArray(raw)) return raw.filter((n): n is number => typeof n === "number");
+      if (raw != null && typeof raw === "object") return Object.values(raw).filter((n): n is number => typeof n === "number");
+      return null;
+    })();
+
+    return {
+      id: String(row.id),
+      type: row.type,
+      isActive: row.is_active,
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url,
+      city: row.city,
+      district: row.district,
+      ratingAvg,
+      ratingCount: Number(row.rating_count) || 0,
+      user: {
+        username: row.username,
+        firstName: row.first_name,
+        lastName: row.last_name,
       },
-    });
-    if (!profile || !profile.isActive) throw new NotFoundException("Profile not found");
-    return profile;
+      specialist:
+        row.type === "specialist"
+          ? { pricePerHour: row.price_per_hour, about: row.about }
+          : null,
+      parent:
+        row.type === "parent"
+          ? { childrenAges: childrenAges && childrenAges.length > 0 ? childrenAges : null, specialWishes: row.special_wishes }
+          : null,
+    };
   }
 }
 

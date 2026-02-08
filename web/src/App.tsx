@@ -1428,7 +1428,8 @@ export default function App() {
     if (!p) return <div className="card">Загрузка…</div>;
 
     const title = p.displayName ?? p.user.username ?? "Профиль";
-    const tg = p.user.username ? `https://t.me/${p.user.username}` : null;
+    const tgUsername = p.user?.username?.trim() || null;
+    const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
 
     return (
       <div style={{ display: "grid", gap: 12 }}>
@@ -1439,19 +1440,30 @@ export default function App() {
             <div className="muted">★ {p.ratingAvg} ({p.ratingCount})</div>
           </div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {p.city ?? "—"} · {p.district ?? "—"}
+            {[p.city, p.district].filter(Boolean).join(" · ") || "—"}
           </div>
-          {p.specialist?.pricePerHour != null && (
-            <div className="muted" style={{ marginTop: 6 }}>
-              Цена: {p.specialist.pricePerHour} ₽/час
-            </div>
+          {p.type === "specialist" && (
+            <>
+              {p.specialist?.pricePerHour != null && (
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Цена: {p.specialist.pricePerHour} ₽/час
+                </div>
+              )}
+              {(p.specialist?.about ?? "").trim() && (
+                <div style={{ marginTop: 12 }}>
+                  <div className="label" style={{ marginBottom: 6 }}>О специалисте</div>
+                  <div style={{ whiteSpace: "pre-wrap" }}>{(p.specialist?.about ?? "").trim()}</div>
+                </div>
+              )}
+            </>
           )}
-          {p.specialist?.about && <div style={{ marginTop: 10 }}>{p.specialist.about}</div>}
-          <div className="row" style={{ marginTop: 12 }}>
-            {tg && (
-              <a className="btn" href={tg} target="_blank" rel="noreferrer">
+          <div className="row" style={{ marginTop: 16, flexWrap: "wrap", gap: 8 }}>
+            {tgUrl ? (
+              <a className="btn btn-primary" href={tgUrl} target="_blank" rel="noreferrer">
                 Написать в Telegram
               </a>
+            ) : (
+              <span className="muted" style={{ alignSelf: "center" }}>Контакты в Telegram не указаны</span>
             )}
             <button className="btn secondary" onClick={() => navigate(-1)}>
               Назад
