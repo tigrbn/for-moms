@@ -245,12 +245,6 @@ export function RequestDetailsScreen() {
         <div className="card">
           <div className="row">
             <div className="h2">Отклики</div>
-            <div className="spacer" />
-            {accepted?.specialist.username && (
-              <a className="btn secondary" href={`https://t.me/${accepted.specialist.username}`} target="_blank" rel="noreferrer">
-                Написать
-              </a>
-            )}
           </div>
 
           {data.status === "in_progress" && (
@@ -268,7 +262,7 @@ export function RequestDetailsScreen() {
           {data.offers.length === 0 && <div className="muted" style={{ marginTop: 8 }}>Пока нет откликов.</div>}
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             {data.offers.map((o) => (
-              <div key={o.id} className="card" style={{ background: "var(--tg-bg)" }}>
+              <div key={o.id} className="card offer-card" style={{ background: "var(--tg-bg)" }}>
                 <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
                   <img
                     src={getAvatarSrc(o.specialist.avatarUrl, o.specialist.photoUrl, o.specialist.gender)}
@@ -276,28 +270,42 @@ export function RequestDetailsScreen() {
                     style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
                   />
                   <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <div style={{ fontWeight: 800 }}>
-                      {o.specialist.displayName ?? o.specialist.username ?? "Специалист"}
+                    <div className="row" style={{ alignItems: "center", gap: 8 }}>
+                      <span style={{ fontWeight: 800 }}>
+                        {o.specialist.displayName ?? o.specialist.username ?? "Специалист"}
+                      </span>
+                      <div className="spacer" />
+                      <span className="offer-card-status">{labelOfferStatus(o.status)}</span>
                     </div>
                     <div className="muted" style={{ fontSize: 13 }}>
                       {formatOfferCreatedAt(o.createdAt)}
                     </div>
-                    <div style={{ marginTop: 4 }} className="muted">
-                      {labelOfferStatus(o.status)}
-                    </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
-                  <div className="muted" style={{ fontSize: 13 }}>
-                    <div>Город: {o.specialist.city ?? "—"}</div>
-                    <div>Район: {o.specialist.district ?? "—"}</div>
-                    <div>
-                      Пол: {o.specialist.gender === "female" ? "Женский" : o.specialist.gender === "male" ? "Мужской" : "—"}
-                    </div>
-                    {o.specialist.age != null && <div>Возраст: {o.specialist.age}</div>}
+                <div className="offer-card-meta">
+                  <div className="offer-card-meta-row">
+                    <span className="offer-card-meta-label">Город:</span>
+                    <span className="offer-card-meta-value">{o.specialist.city ?? "—"}</span>
                   </div>
-                  <div className="muted" style={{ marginTop: 4 }}>
-                    Цена: {formatMoney(o.priceOffer)}
+                  <div className="offer-card-meta-row">
+                    <span className="offer-card-meta-label">Район:</span>
+                    <span className="offer-card-meta-value">{o.specialist.district ?? "—"}</span>
+                  </div>
+                  <div className="offer-card-meta-row">
+                    <span className="offer-card-meta-label">Пол:</span>
+                    <span className="offer-card-meta-value">
+                      {o.specialist.gender === "female" ? "Женский" : o.specialist.gender === "male" ? "Мужской" : "—"}
+                    </span>
+                  </div>
+                  {o.specialist.age != null && (
+                    <div className="offer-card-meta-row">
+                      <span className="offer-card-meta-label">Возраст:</span>
+                      <span className="offer-card-meta-value">{o.specialist.age}</span>
+                    </div>
+                  )}
+                  <div className="offer-card-meta-row" style={{ marginTop: 4 }}>
+                    <span className="offer-card-meta-label">Цена:</span>
+                    <span className="offer-card-meta-value">{formatMoney(o.priceOffer)}</span>
                   </div>
                 </div>
                 {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
@@ -316,8 +324,13 @@ export function RequestDetailsScreen() {
                   )}
                   <div className="spacer" />
                   {o.specialist.username && (
-                    <a className="btn ghost" href={`https://t.me/${o.specialist.username}`} target="_blank" rel="noreferrer">
-                      Профиль TG
+                    <a className="btn btn-telegram btn-with-icon" href={`https://t.me/${o.specialist.username}`} target="_blank" rel="noreferrer">
+                      <span className="btn-icon-telegram" aria-hidden>
+                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                        </svg>
+                      </span>
+                      Написать
                     </a>
                   )}
                 </div>

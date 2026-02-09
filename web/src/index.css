@@ -561,6 +561,34 @@ a {
   margin-left: 4px;
 }
 
+/* Карточка отклика в разделе «Отклики» */
+.offer-card-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.offer-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.offer-card-meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.offer-card-meta-label {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.offer-card-meta-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 /* Блок статуса (специалист): онлайн + личный кабинет */
 .status-block {
   display: flex;
@@ -894,6 +922,26 @@ a {
 .profile-card-rating .rating-star,
 .rating-star {
   color: #d4a012;
+}
+.rating-star--empty {
+  color: var(--text-secondary);
+}
+
+/* Карточка отзыва в разделе «Отзывы» профиля специалиста */
+.review-card-rating {
+  flex-shrink: 0;
+}
+.review-card-text {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Карточка заявки в разделе «Все заявки» — серый текст вертикально */
+.request-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
 }
 .feed-card-top {
   font-size: 11px;

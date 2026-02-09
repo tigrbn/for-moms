@@ -73,11 +73,12 @@ export function RequestsScreen() {
           {items.map((r) => (
             <div key={r.id} className="card card--status-top" style={{ background: "var(--tg-bg)" }}>
               <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
-              <div className="row">
-                <div style={{ fontWeight: 800 }}>{r.category}</div>
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · Откликов: {r.offersCount}
+              <div style={{ fontWeight: 800 }}>{r.category}</div>
+              <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>{formatDate(r.createdAt)}</div>
+              <div className="request-card-meta muted" style={{ marginTop: 6 }}>
+                <div>Район: {r.district ?? "—"}</div>
+                <div>Бюджет: {formatMoney(r.budget)}</div>
+                <div>Откликов: {r.offersCount}</div>
               </div>
               {r.description && <div style={{ marginTop: 8 }}>{r.description}</div>}
               <div className="row" style={{ marginTop: 10 }}>
@@ -99,8 +100,6 @@ export function RequestsScreen() {
                 >
                   Удалить
                 </button>
-                <div className="spacer" />
-                <div className="muted">{formatDate(r.createdAt)}</div>
               </div>
             </div>
           ))}

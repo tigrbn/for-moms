@@ -94,7 +94,10 @@ export function PublicProfileScreen() {
               <h2 className="h2 profile-card-title" style={{ margin: 0 }}>
                 {title}
               </h2>
-              <div className="profile-card-rating"><span className="rating-star">★</span> {p.ratingAvg} ({p.ratingCount})</div>
+              <div className="profile-card-rating">
+                <span className={p.ratingCount > 0 ? "rating-star" : "rating-star rating-star--empty"}>★</span>{" "}
+                {p.ratingAvg} ({p.ratingCount})}
+              </div>
             </div>
             {parentRoleLabel && (
               <p className="muted profile-card-role-label" style={{ margin: "2px 0 0", fontSize: 14 }}>
@@ -198,7 +201,7 @@ export function PublicProfileScreen() {
               );
               const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
               return (
-                <div key={r.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                <div key={r.id} className="card review-card" style={{ background: "var(--tg-bg)" }}>
                   <div className="row" style={{ alignItems: "center", gap: 12 }}>
                     <img
                       src={authorAvatar}
@@ -220,13 +223,14 @@ export function PublicProfileScreen() {
                         </div>
                       )}
                     </div>
+                    <div className="review-card-rating" style={{ fontWeight: 900 }}>
+                      <span className="rating-star">★</span> {r.rating}
+                    </div>
                   </div>
-                  <div className="row" style={{ marginTop: 8 }}>
-                    <div style={{ fontWeight: 900 }}><span className="rating-star">★</span> {r.rating}</div>
-                    <div className="spacer" />
-                    <div className="muted">{formatDate(r.createdAt)}</div>
+                  <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                    {formatDate(r.createdAt)}
                   </div>
-                  {r.text && <div style={{ marginTop: 8 }}>{r.text}</div>}
+                  {r.text && <div className="review-card-text" style={{ marginTop: 6 }}>{r.text}</div>}
                 </div>
               );
             })}

@@ -14,6 +14,7 @@ git pull
 cd api
 npm ci
 npx prisma generate
+npx prisma migrate deploy   # применить новые миграции БД (если есть)
 npm run build
 pm2 restart formoms-api --update-env
 

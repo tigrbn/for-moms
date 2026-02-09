@@ -171,7 +171,10 @@ export function FeedScreen() {
                           {p.displayName ?? "Специалист"}
                           {it.isPromoted && <span className="pill feed-card-top">TOP</span>}
                         </div>
-                        <div className="feed-card-rating"><span className="rating-star">★</span> {p.ratingAvg} ({p.ratingCount})</div>
+                        <div className="feed-card-rating">
+                        <span className={p.ratingCount > 0 ? "rating-star" : "rating-star rating-star--empty"}>★</span>{" "}
+                        {p.ratingAvg} ({p.ratingCount})
+                      </div>
                       </div>
                       <div className="feed-card-meta-block">
                         <div className="feed-card-category">
