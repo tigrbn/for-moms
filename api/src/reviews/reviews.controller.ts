@@ -32,9 +32,16 @@ export class ReviewsController {
       rating: r.rating,
       text: r.text,
       createdAt: r.createdAt.toISOString(),
+      requestCategory: r.request?.category ?? null,
       fromProfile: {
         id: r.fromProfile.id.toString(),
         type: r.fromProfile.type,
+        displayName: r.fromProfile.displayName ?? null,
+        avatarUrl: r.fromProfile.avatarUrl ?? null,
+        photoUrl: r.fromProfile.user?.photoUrl ?? null,
+        gender: r.fromProfile.gender ?? null,
+        firstName: r.fromProfile.user?.firstName ?? null,
+        lastName: r.fromProfile.user?.lastName ?? null,
       },
     }));
   }

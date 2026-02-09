@@ -890,6 +890,11 @@ a {
   flex-shrink: 0;
   white-space: nowrap;
 }
+.feed-card-rating .rating-star,
+.profile-card-rating .rating-star,
+.rating-star {
+  color: #d4a012;
+}
 .feed-card-top {
   font-size: 11px;
 }

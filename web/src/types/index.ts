@@ -108,6 +108,8 @@ export type OfferMineItem = {
 
 export type RequestDetails = {
   id: string;
+  /** Текущий пользователь уже оставил отзыв по этой заявке */
+  currentUserHasReviewed?: boolean;
   status: "active" | "in_progress" | "done" | "cancelled";
   category: string;
   childAge?: number | null;
@@ -159,7 +161,17 @@ export type ReviewListItem = {
   rating: number;
   text?: string | null;
   createdAt: string;
-  fromProfile: { id: string; type: "parent" | "specialist" };
+  requestCategory?: string | null;
+  fromProfile: {
+    id: string;
+    type: "parent" | "specialist";
+    displayName?: string | null;
+    avatarUrl?: string | null;
+    photoUrl?: string | null;
+    gender?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  };
 };
 
 export type PublicProfile = {

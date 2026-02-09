@@ -82,6 +82,7 @@ export class RequestsController {
     const r = await this.requests.get(userId, BigInt(id));
     return {
       id: r.id.toString(),
+      currentUserHasReviewed: r.currentUserHasReviewed,
       status: r.status,
       category: r.category,
       childAge: r.childAge,

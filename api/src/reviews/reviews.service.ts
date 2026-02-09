@@ -94,7 +94,19 @@ export class ReviewsService {
     return this.prisma.review.findMany({
       where: { toProfileId: profileId, isHidden: false },
       orderBy: { createdAt: "desc" },
-      include: { fromProfile: { select: { id: true, type: true } } },
+      include: {
+        fromProfile: {
+          select: {
+            id: true,
+            type: true,
+            displayName: true,
+            avatarUrl: true,
+            gender: true,
+            user: { select: { photoUrl: true, firstName: true, lastName: true } },
+          },
+        },
+        request: { select: { category: true } },
+      },
     });
   }
 }

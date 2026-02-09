@@ -102,7 +102,12 @@ export class RequestsService {
       request.parentLastSeenAt = new Date();
     }
 
-    return request;
+    const existingReview = await this.prisma.review.findFirst({
+      where: { requestId, fromProfileId: active.id },
+      select: { id: true },
+    });
+
+    return { ...request, currentUserHasReviewed: !!existingReview };
   }
 
   async update(userId: bigint, requestId: bigint, dto: { category?: string; childAge?: number | null; description?: string | null; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null; status?: "active" | "in_progress" | "done" | "cancelled" }) {

@@ -94,7 +94,7 @@ export function PublicProfileScreen() {
               <h2 className="h2 profile-card-title" style={{ margin: 0 }}>
                 {title}
               </h2>
-              <div className="profile-card-rating">★ {p.ratingAvg} ({p.ratingCount})</div>
+              <div className="profile-card-rating"><span className="rating-star">★</span> {p.ratingAvg} ({p.ratingCount})</div>
             </div>
             {parentRoleLabel && (
               <p className="muted profile-card-role-label" style={{ margin: "2px 0 0", fontSize: 14 }}>
@@ -186,16 +186,50 @@ export function PublicProfileScreen() {
         )}
         {reviews && reviews.length > 0 && (
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-            {reviews.map((r) => (
-              <div key={r.id} className="card" style={{ background: "var(--tg-bg)" }}>
-                <div className="row">
-                  <div style={{ fontWeight: 900 }}>★ {r.rating}</div>
-                  <div className="spacer" />
-                  <div className="muted">{formatDate(r.createdAt)}</div>
+            {reviews.map((r) => {
+              const authorName =
+                r.fromProfile.displayName?.trim() ||
+                [r.fromProfile.firstName, r.fromProfile.lastName].filter(Boolean).join(" ") ||
+                "Пользователь";
+              const authorAvatar = getAvatarSrc(
+                r.fromProfile.avatarUrl ?? null,
+                r.fromProfile.photoUrl ?? null,
+                r.fromProfile.gender ?? null,
+              );
+              const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
+              return (
+                <div key={r.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                  <div className="row" style={{ alignItems: "center", gap: 12 }}>
+                    <img
+                      src={authorAvatar}
+                      alt=""
+                      style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800 }}>{authorName}</div>
+                      {r.requestCategory && (
+                        <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                          {categoryIcon && (
+                            <img
+                              src={categoryIcon}
+                              alt=""
+                              style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 4 }}
+                            />
+                          )}
+                          {r.requestCategory}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="row" style={{ marginTop: 8 }}>
+                    <div style={{ fontWeight: 900 }}><span className="rating-star">★</span> {r.rating}</div>
+                    <div className="spacer" />
+                    <div className="muted">{formatDate(r.createdAt)}</div>
+                  </div>
+                  {r.text && <div style={{ marginTop: 8 }}>{r.text}</div>}
                 </div>
-                {r.text && <div style={{ marginTop: 8 }}>{r.text}</div>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

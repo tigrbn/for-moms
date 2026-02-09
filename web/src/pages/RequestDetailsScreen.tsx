@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
-import { formatMoney, formatDate } from "../lib/format";
+import { formatMoney, formatDate, formatOfferCreatedAt } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon } from "../constants/feed";
@@ -103,6 +103,8 @@ export function RequestDetailsScreen() {
         text: reviewText || null,
       });
       setReviewOk("Отзыв отправлен");
+      const updated = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
+      setData(updated);
     } catch (e: unknown) {
       setActionErr(e instanceof Error ? e.message : "Failed to create review");
     } finally {
@@ -114,7 +116,7 @@ export function RequestDetailsScreen() {
   if (!data) return <div className="card">Загрузка…</div>;
 
   const accepted = data.offers.find((o) => o.status === "accepted") ?? null;
-  const reviewAvailable = data.status === "done" && accepted;
+  const reviewAvailable = data.status === "done" && accepted && !data.currentUserHasReviewed;
 
   const parentName =
     data.parent.displayName?.trim() ||
@@ -267,27 +269,36 @@ export function RequestDetailsScreen() {
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             {data.offers.map((o) => (
               <div key={o.id} className="card" style={{ background: "var(--tg-bg)" }}>
-                <div className="row" style={{ alignItems: "center", gap: 12 }}>
+                <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
                   <img
                     src={getAvatarSrc(o.specialist.avatarUrl, o.specialist.photoUrl, o.specialist.gender)}
                     alt=""
                     style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
                   />
-                  <div style={{ flex: 1, minWidth: 0 }} className="row">
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                     <div style={{ fontWeight: 800 }}>
                       {o.specialist.displayName ?? o.specialist.username ?? "Специалист"}
                     </div>
-                    <div className="spacer" />
-                    <div className="muted">{labelOfferStatus(o.status)}</div>
+                    <div className="muted" style={{ fontSize: 13 }}>
+                      {formatOfferCreatedAt(o.createdAt)}
+                    </div>
+                    <div style={{ marginTop: 4 }} className="muted">
+                      {labelOfferStatus(o.status)}
+                    </div>
                   </div>
                 </div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Город: {o.specialist.city ?? "—"} · Район: {o.specialist.district ?? "—"} · Пол:{" "}
-                  {o.specialist.gender === "female" ? "Женский" : o.specialist.gender === "male" ? "Мужской" : "—"}
-                  {o.specialist.age != null ? ` · Возраст: ${o.specialist.age}` : ""}
-                </div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  Цена: {formatMoney(o.priceOffer)} · {formatDate(o.createdAt)}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    <div>Город: {o.specialist.city ?? "—"}</div>
+                    <div>Район: {o.specialist.district ?? "—"}</div>
+                    <div>
+                      Пол: {o.specialist.gender === "female" ? "Женский" : o.specialist.gender === "male" ? "Мужской" : "—"}
+                    </div>
+                    {o.specialist.age != null && <div>Возраст: {o.specialist.age}</div>}
+                  </div>
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    Цена: {formatMoney(o.priceOffer)}
+                  </div>
                 </div>
                 {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
                 <div className="row" style={{ marginTop: 10 }}>
@@ -319,6 +330,9 @@ export function RequestDetailsScreen() {
       {accepted && data.status === "done" && (
         <div className="card">
           <div className="h2">Отзыв</div>
+          {data.currentUserHasReviewed && !reviewOk && (
+            <div className="muted" style={{ marginTop: 8 }}>Вы уже оставили отзыв по этой заявке.</div>
+          )}
           {reviewOk && <div className="muted" style={{ marginTop: 8 }}>{reviewOk}</div>}
 
           {reviewAvailable && (
