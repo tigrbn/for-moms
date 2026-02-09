@@ -5,6 +5,7 @@ import { ErrorBox } from "../components/ErrorBox";
 import { formatDate } from "../lib/format";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon } from "../constants/feed";
+import { getParentRoleLabel } from "../lib/labels";
 import type { PublicProfile, ReviewListItem } from "../types";
 
 export function PublicProfileScreen() {
@@ -66,6 +67,7 @@ export function PublicProfileScreen() {
   if (!p) return <div className="card">Загрузка…</div>;
 
   const title = p.displayName ?? p.user?.username ?? "Профиль";
+  const parentRoleLabel = p.type === "parent" ? getParentRoleLabel(p.gender) : null;
   const tgUsername = p.user?.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
   const avatarSrc = getAvatarSrc(p.avatarUrl, p.user?.photoUrl, p.gender);
@@ -94,6 +96,11 @@ export function PublicProfileScreen() {
               </h2>
               <div className="profile-card-rating">★ {p.ratingAvg} ({p.ratingCount})</div>
             </div>
+            {parentRoleLabel && (
+              <p className="muted profile-card-role-label" style={{ margin: "2px 0 0", fontSize: 14 }}>
+                {parentRoleLabel}
+              </p>
+            )}
             <div className="profile-card-meta-block">
               {p.type === "specialist" && (
                 <div className="profile-card-meta-row">
@@ -149,7 +156,7 @@ export function PublicProfileScreen() {
         <div className="profile-card-actions row">
           {tgUrl ? (
             <a className="btn btn-telegram btn-with-icon" href={tgUrl} target="_blank" rel="noreferrer">
-              <span className="btn-icon" aria-hidden>
+              <span className="btn-icon-telegram" aria-hidden>
                 <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
                 </svg>

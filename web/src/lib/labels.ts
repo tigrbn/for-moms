@@ -1,3 +1,12 @@
+/** Подпись роли родителя по полу: Мама / Папа / Родитель */
+export function getParentRoleLabel(gender: string | null | undefined): "Мама" | "Папа" | "Родитель" {
+  if (gender === "female") return "Мама";
+  if (gender === "male") return "Папа";
+  return "Родитель";
+}
+
+export const PARENT_ROLE_EMOJI = "👨‍👩‍👧‍👦";
+
 export function labelRequestStatus(s: "active" | "in_progress" | "done" | "cancelled"): string {
   if (s === "active") return "🟢 Активна";
   if (s === "in_progress") return "🟡 В работе";

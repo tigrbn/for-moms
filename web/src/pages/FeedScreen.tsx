@@ -5,7 +5,8 @@ import { formatMoney, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { FEED_CATEGORIES, getCategoryIcon } from "../constants/feed";
-import menuLenta from "../assets/img/menu/лента.png";
+import { PARENT_ROLE_EMOJI } from "../lib/labels";
+import feedHeaderBg from "../assets/img/background.png";
 
 export function FeedScreen() {
   const {
@@ -36,12 +37,12 @@ export function FeedScreen() {
         </div>
       )}
 
-      <div className="card feed-header-card">
-        <div className="row">
-          <div className="row feed-title-row">
-            <img src={menuLenta} alt="" className="feed-title-icon" />
-            <span className="h2 feed-title-text">Привет! 👋 Кого сегодня ищем?</span>
-          </div>
+      <div
+        className="card feed-header-card"
+        style={{ backgroundImage: `url(${feedHeaderBg})` }}
+      >
+        <div className="row feed-header-row">
+          <span className="h2 feed-title-text">Привет! 👋 Кого сегодня ищем?</span>
           <div className="spacer" />
           <button
             type="button"
@@ -108,7 +109,7 @@ export function FeedScreen() {
                 </button>
                 {missingRole && (
                   <button type="button" className="btn" onClick={() => void addMissingRole()}>
-                    + {missingRole === "parent" ? "Мама" : "Специалист"}
+                    + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "Специалист"}
                   </button>
                 )}
               </div>
@@ -121,8 +122,15 @@ export function FeedScreen() {
               return (
                 <div key={`sp-${p.id}-${idx}`} className="card feed-card feed-card-specialist">
                   <div className="feed-card-header">
-                    <div className="feed-card-avatar">
-                      <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
+                    <div className="feed-card-avatar-wrap">
+                      <div className="feed-card-avatar">
+                        <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
+                      </div>
+                      {categoryIcon && (
+                        <div className="feed-card-category-badge" title={p.category ?? undefined}>
+                          <img src={categoryIcon} alt="" />
+                        </div>
+                      )}
                     </div>
                     <div className="feed-card-title-block">
                       <div className="feed-card-title-row">
@@ -134,7 +142,6 @@ export function FeedScreen() {
                       </div>
                       <div className="feed-card-meta-block">
                         <div className="feed-card-category">
-                          {categoryIcon && <img src={categoryIcon} alt="" className="feed-card-category-icon" />}
                           <span>Категория: <strong>{p.category ?? "—"}</strong></span>
                         </div>
                         <div className="feed-card-meta muted">

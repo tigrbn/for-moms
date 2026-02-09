@@ -62,7 +62,12 @@ export function useTelegramAuth() {
         localStorage.setItem("accessToken", session.accessToken);
         setToken(session.accessToken);
       } catch (e: any) {
-        setError(e?.message ?? "Auth failed");
+        const msg = e?.message ?? "Auth failed";
+        setError(
+          typeof msg === "string" && (msg.includes("401") || msg.includes("Unauthorized"))
+            ? "Сессия истекла. Закройте и откройте приложение снова."
+            : msg,
+        );
       } finally {
         setLoading(false);
       }

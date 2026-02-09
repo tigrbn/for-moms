@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../context/AppContext";
 import { getAvatarSrc } from "../lib/avatar";
+import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 import { FEED_CATEGORIES } from "../constants/feed";
 
 export function ProfileScreen() {
@@ -61,6 +62,32 @@ export function ProfileScreen() {
 
   const save = async () => {
     setErr(null);
+    if (type === "parent") {
+      const nameOk = displayName.trim().length > 0;
+      const genderOk = gender === "female" || gender === "male";
+      const ageNum = age.trim() === "" ? null : Number(age);
+      const ageOk = ageNum != null && Number.isFinite(ageNum) && ageNum > 0;
+      const cityOk = city.trim().length > 0;
+      const districtOk = district.trim().length > 0;
+      const childrenAgesParsed = childrenAges
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => Number(s))
+        .filter((n) => Number.isFinite(n));
+      const childrenOk = childrenAgesParsed.length > 0;
+      if (!nameOk || !genderOk || !ageOk || !cityOk || !districtOk || !childrenOk) {
+        const parts: string[] = [];
+        if (!nameOk) parts.push("имя");
+        if (!genderOk) parts.push("пол");
+        if (!ageOk) parts.push("возраст");
+        if (!cityOk) parts.push("город");
+        if (!districtOk) parts.push("район");
+        if (!childrenOk) parts.push("возраст детей");
+        setErr(`Заполните обязательные поля: ${parts.join(", ")}`);
+        return;
+      }
+    }
     setSaving(true);
     try {
       const ageNum = age.trim() === "" ? null : Number(age);
@@ -80,7 +107,7 @@ export function ProfileScreen() {
           .filter((n) => Number.isFinite(n));
         await authedPatch(`/profiles/${profileId}/parent`, {
           childrenAges: ages.length ? ages : null,
-          specialWishes: specialWishes || null,
+          specialWishes: specialWishes.trim() || null,
         });
       }
       if (type === "specialist") {
@@ -125,7 +152,7 @@ export function ProfileScreen() {
               {activeProfile.displayName || "—"}
             </h2>
             <p className="muted" style={{ margin: "4px 0 0" }}>
-              {type === "parent" ? "👩‍🍼 Родитель" : "👩‍🏫 Специалист"}
+              {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : "👩‍🏫 Специалист"}
             </p>
           </div>
         </div>
@@ -207,7 +234,7 @@ export function ProfileScreen() {
           Редактирование профиля
         </h2>
         <p className="muted" style={{ margin: "4px 0 0" }}>
-          {type === "parent" ? "👩‍🍼 Родитель" : "👩‍🏫 Специалист"}
+          {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : "👩‍🏫 Специалист"}
         </p>
       </div>
       {err && (
@@ -217,7 +244,7 @@ export function ProfileScreen() {
       )}
       <div className="profile-edit-fields">
         <div className="field">
-          <label className="label">Имя для отображения</label>
+          <label className="label">{type === "parent" ? "Имя для отображения *" : "Имя для отображения"}</label>
           <input
             className="input"
             value={displayName}
@@ -226,7 +253,7 @@ export function ProfileScreen() {
           />
         </div>
         <div className="field">
-          <label className="label">Пол</label>
+          <label className="label">{type === "parent" ? "Пол *" : "Пол"}</label>
           <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
             <option value="">Не указан</option>
             <option value="female">Женский</option>
@@ -234,7 +261,7 @@ export function ProfileScreen() {
           </select>
         </div>
         <div className="field">
-          <label className="label">Возраст</label>
+          <label className="label">{type === "parent" ? "Возраст *" : "Возраст"}</label>
           <input
             className="input"
             value={age}
@@ -244,7 +271,7 @@ export function ProfileScreen() {
           />
         </div>
         <div className="field">
-          <label className="label">Город</label>
+          <label className="label">{type === "parent" ? "Город *" : "Город"}</label>
           <input
             className="input"
             value={city}
@@ -253,7 +280,7 @@ export function ProfileScreen() {
           />
         </div>
         <div className="field">
-          <label className="label">Район</label>
+          <label className="label">{type === "parent" ? "Район *" : "Район"}</label>
           <input
             className="input"
             value={district}
@@ -264,7 +291,7 @@ export function ProfileScreen() {
         {type === "parent" && (
           <>
             <div className="field">
-              <label className="label">Возраст детей (через запятую)</label>
+              <label className="label">Возраст детей (через запятую) *</label>
               <input
                 className="input"
                 value={childrenAges}

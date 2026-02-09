@@ -1,4 +1,5 @@
 import { useApp } from "../context/AppContext";
+import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 
 export function RolesScreen() {
   const { me, ensureActiveProfile, refreshMe, navigate, missingRole, addMissingRole, authedDelete, setMeError } =
@@ -10,7 +11,10 @@ export function RolesScreen() {
     .filter((p) => p.type === "parent" || p.type === "specialist")
     .map((p) => ({
       ...p,
-      title: p.type === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист",
+      title:
+        p.type === "parent"
+          ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(p.gender)}`
+          : "👩‍🏫 Специалист",
     }));
 
   return (
@@ -20,7 +24,7 @@ export function RolesScreen() {
         <div className="spacer" />
         {missingRole && (
           <button className="btn roles-page-btn" onClick={() => void addMissingRole()}>
-            + {missingRole === "parent" ? "👩‍🍼 Мама" : "👩‍🏫 Специалист"}
+            + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "👩‍🏫 Специалист"}
           </button>
         )}
       </div>
@@ -58,7 +62,7 @@ export function RolesScreen() {
                 type="button"
                 className="btn danger roles-delete-btn roles-page-btn"
                 onClick={async () => {
-                  const roleName = p.type === "parent" ? "Мама" : "Специалист";
+                  const roleName = p.type === "parent" ? getParentRoleLabel(p.gender) : "Специалист";
                   if (
                     !confirm(
                       `Удалить аккаунт «${roleName}»? Все данные этой роли будут удалены безвозвратно.`,

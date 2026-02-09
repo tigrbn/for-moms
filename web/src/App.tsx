@@ -10,6 +10,7 @@ import type { MeResponse, FeedResponse } from "./types";
 import { AppContext } from "./context/AppContext";
 import { TopBar } from "./components/TopBar";
 import { ErrorBox } from "./components/ErrorBox";
+import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "./lib/labels";
 import { BottomNav } from "./components/BottomNav";
 
 import { RequestsScreen } from "./pages/RequestsScreen";
@@ -34,6 +35,7 @@ export default function App() {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [feedCategory, setFeedCategory] = useState("");
   const [feedReloadKey, setFeedReloadKey] = useState(0);
+  const [reauthing, setReauthing] = useState(false);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -55,6 +57,7 @@ export default function App() {
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Failed to load /me";
         if (typeof msg === "string" && msg.includes("HTTP 401")) {
+          setReauthing(true);
           clearToken();
           setMe(null);
           return;
@@ -80,6 +83,7 @@ export default function App() {
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Failed to load feed";
         if (typeof msg === "string" && msg.includes("401")) {
+          setReauthing(true);
           clearToken();
           setMe(null);
           setFeed(null);
@@ -91,6 +95,10 @@ export default function App() {
     };
     void run();
   }, [token, me?.activeProfileId, feedCategory, feedReloadKey]);
+
+  useEffect(() => {
+    if (token) setReauthing(false);
+  }, [token]);
 
   const activeProfile = useMemo(() => {
     if (!me?.activeProfileId) return null;
@@ -115,7 +123,7 @@ export default function App() {
       const { postJSON } = await import("./shared/api");
       const created = await postJSON<{ id: string }>("/profiles", { type }, token);
       await ensureActiveProfile(created.id);
-      if (type === "specialist") navigate("/profile");
+      navigate("/profile");
     },
     [token, ensureActiveProfile, navigate],
   );
@@ -246,8 +254,10 @@ export default function App() {
           rightNode={
             me && activeProfile ? (
               <Link to="/roles" className="topbar-role-link" title="Роли — переключить или настроить">
-                <span className="topbar-role-emoji">{activeProfile.type === "parent" ? "👩‍🍼" : "👩‍🏫"}</span>
-                <span className="topbar-role-label">{activeProfile.type === "parent" ? "Мама" : "Специалист"}</span>
+                <span className="topbar-role-emoji">{activeProfile.type === "parent" ? "👨‍👩‍👧‍👦" : "👩‍🏫"}</span>
+                <span className="topbar-role-label">
+                  {activeProfile.type === "parent" ? getParentRoleLabel(activeProfile.gender) : "Специалист"}
+                </span>
                 <span className="topbar-role-gear">⚙</span>
               </Link>
             ) : undefined
@@ -255,6 +265,11 @@ export default function App() {
         />
 
         {error && <ErrorBox error={error} />}
+        {reauthing && (
+          <div className="card session-toast" role="status">
+            Обновляем сессию…
+          </div>
+        )}
 
         {!token && (
           <div className="card">
@@ -278,7 +293,7 @@ export default function App() {
                     className="btn"
                     onClick={() => void createRole("parent").catch((e: unknown) => setMeError(e instanceof Error ? e.message : "Не удалось создать роль"))}
                   >
-                    👩‍🍼 Мама
+                    {PARENT_ROLE_EMOJI} Родитель
                   </button>
                   <button
                     className="btn"
