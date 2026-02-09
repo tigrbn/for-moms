@@ -3,16 +3,15 @@ import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { formatMoney, formatDate } from "../lib/format";
-import { labelRequestStatus } from "../lib/labels";
+import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon } from "../constants/feed";
-import { hoursBetween } from "../lib/utils";
 import type { RequestDetails as RequestDetailsType } from "../types";
 
 export function RequestDetailsScreen() {
   const params = useParams();
   const requestId = params.id!;
-  const { activeProfileId, activeProfileType, authedGet, authedPost, authedDelete, navigate } = useApp();
+  const { activeProfileId, activeProfileType, authedGet, authedPost, authedDelete, navigate, refreshParentNewOffersCount } = useApp();
   const [data, setData] = useState<RequestDetailsType | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -34,12 +33,13 @@ export function RequestDetailsScreen() {
       try {
         const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
         setData(r);
+        void refreshParentNewOffersCount();
       } catch (e: unknown) {
         setErr(e instanceof Error ? e.message : "Failed to load request");
       }
     };
     void run();
-  }, [requestId, activeProfileId, authedGet]);
+  }, [requestId, activeProfileId, authedGet, refreshParentNewOffersCount]);
 
   const sendOffer = async () => {
     setActionErr(null);
@@ -114,12 +114,7 @@ export function RequestDetailsScreen() {
   if (!data) return <div className="card">Загрузка…</div>;
 
   const accepted = data.offers.find((o) => o.status === "accepted") ?? null;
-  const completedAt = data.completedAt ? new Date(data.completedAt) : null;
-  const reviewAvailable =
-    data.status === "done" &&
-    completedAt &&
-    hoursBetween(new Date(), new Date(completedAt.getTime() + 24 * 60 * 60 * 1000)) >= 0 &&
-    Date.now() >= completedAt.getTime() + 24 * 60 * 60 * 1000;
+  const reviewAvailable = data.status === "done" && accepted;
 
   const parentName =
     data.parent.displayName?.trim() ||
@@ -212,7 +207,7 @@ export function RequestDetailsScreen() {
               <div className="card" style={{ background: "var(--tg-bg)" }}>
                 <div className="h2">Вы уже откликнулись</div>
                 <div className="muted" style={{ marginTop: 8 }}>
-                  Цена: {formatMoney(myOffer.priceOffer)} · {myOffer.status}
+                  Цена: {formatMoney(myOffer.priceOffer)} · {labelOfferStatus(myOffer.status)}
                 </div>
                 {myOffer.comment && <div style={{ marginTop: 8 }}>{myOffer.comment}</div>}
               </div>
@@ -231,7 +226,7 @@ export function RequestDetailsScreen() {
                   <textarea className="textarea" value={offerComment} onChange={(e) => setOfferComment(e.target.value)} />
                 </div>
                 <div className="row offer-actions-row">
-                  <button className="btn" disabled={sending} onClick={() => void sendOffer()}>
+                  <button className="btn btn-primary" disabled={sending} onClick={() => void sendOffer()}>
                     {sending ? "Отправка…" : "Отправить отклик"}
                   </button>
                   <div className="spacer" />
@@ -250,7 +245,7 @@ export function RequestDetailsScreen() {
             <div className="h2">Отклики</div>
             <div className="spacer" />
             {accepted?.specialist.username && (
-              <a className="btn" href={`https://t.me/${accepted.specialist.username}`} target="_blank" rel="noreferrer">
+              <a className="btn secondary" href={`https://t.me/${accepted.specialist.username}`} target="_blank" rel="noreferrer">
                 Написать
               </a>
             )}
@@ -258,12 +253,12 @@ export function RequestDetailsScreen() {
 
           {data.status === "in_progress" && (
             <div className="row" style={{ marginTop: 10 }}>
-              <button className="btn" onClick={() => void completeRequest()} disabled={!accepted}>
+              <button className="btn btn-primary" onClick={() => void completeRequest()} disabled={!accepted}>
                 Завершить заявку
               </button>
               <div className="spacer" />
               <div className="muted">
-                {accepted ? "После завершения можно оставить отзыв (через 24ч)." : "Сначала нужно принять отклик."}
+                {accepted ? "После завершения можно оставить отзыв." : "Сначала нужно принять отклик."}
               </div>
             </div>
           )}
@@ -283,20 +278,25 @@ export function RequestDetailsScreen() {
                       {o.specialist.displayName ?? o.specialist.username ?? "Специалист"}
                     </div>
                     <div className="spacer" />
-                    <div className="muted">{o.status}</div>
+                    <div className="muted">{labelOfferStatus(o.status)}</div>
                   </div>
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>
+                  Город: {o.specialist.city ?? "—"} · Район: {o.specialist.district ?? "—"} · Пол:{" "}
+                  {o.specialist.gender === "female" ? "Женский" : o.specialist.gender === "male" ? "Мужской" : "—"}
+                  {o.specialist.age != null ? ` · Возраст: ${o.specialist.age}` : ""}
+                </div>
+                <div className="muted" style={{ marginTop: 4 }}>
                   Цена: {formatMoney(o.priceOffer)} · {formatDate(o.createdAt)}
                 </div>
                 {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
                 <div className="row" style={{ marginTop: 10 }}>
                   {!accepted ? (
                     <>
-                      <button className="btn" onClick={() => void acceptOffer(o.id)} disabled={o.status !== "pending"}>
+                      <button className="btn btn-success" onClick={() => void acceptOffer(o.id)} disabled={o.status !== "pending"}>
                         Принять
                       </button>
-                      <button className="btn secondary" onClick={() => void rejectOffer(o.id)} disabled={o.status !== "pending"}>
+                      <button className="btn danger" onClick={() => void rejectOffer(o.id)} disabled={o.status !== "pending"}>
                         Отклонить
                       </button>
                     </>
@@ -319,15 +319,9 @@ export function RequestDetailsScreen() {
       {accepted && data.status === "done" && (
         <div className="card">
           <div className="h2">Отзыв</div>
-          {!completedAt && <div className="muted" style={{ marginTop: 8 }}>Заявка завершена, но время завершения не указано.</div>}
-          {completedAt && !reviewAvailable && (
-            <div className="muted" style={{ marginTop: 8 }}>
-              Отзыв будет доступен через 24 часа после завершения: {formatDate(data.completedAt)}
-            </div>
-          )}
           {reviewOk && <div className="muted" style={{ marginTop: 8 }}>{reviewOk}</div>}
 
-          {completedAt && reviewAvailable && (
+          {reviewAvailable && (
             <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
               <div className="field">
                 <div className="label">Оценка</div>
@@ -346,7 +340,7 @@ export function RequestDetailsScreen() {
               <div className="row">
                 {activeProfileType === "parent" && (
                   <button
-                    className="btn"
+                    className="btn btn-primary"
                     disabled={reviewSending}
                     onClick={() => void sendReview(accepted.specialist.profileId)}
                   >
@@ -355,7 +349,7 @@ export function RequestDetailsScreen() {
                 )}
                 {activeProfileType === "specialist" && (
                   <button
-                    className="btn"
+                    className="btn btn-primary"
                     disabled={reviewSending}
                     onClick={() => void sendReview(data.parent.profileId)}
                   >

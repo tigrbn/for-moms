@@ -35,6 +35,7 @@ export default function App() {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [feedCategory, setFeedCategory] = useState("");
   const [feedReloadKey, setFeedReloadKey] = useState(0);
+  const [parentNewOffersCount, setParentNewOffersCount] = useState<number | null>(null);
   const [reauthing, setReauthing] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
 
@@ -193,6 +194,28 @@ export default function App() {
     [token],
   );
 
+  const refreshParentNewOffersCount = useCallback(async () => {
+    if (!token) return;
+    const active = me?.profiles.find((p) => String(p.id) === String(me?.activeProfileId));
+    if (active?.type !== "parent") {
+      setParentNewOffersCount(null);
+      return;
+    }
+    try {
+      const data = await getJSON<{ count: number }>("/requests/new-offers-count", token);
+      setParentNewOffersCount(data.count);
+    } catch {
+      setParentNewOffersCount(null);
+    }
+  }, [token, me?.activeProfileId, me?.profiles]);
+
+  useEffect(() => {
+    if (!me?.activeProfileId) return;
+    const active = me.profiles.find((p) => String(p.id) === String(me.activeProfileId));
+    if (active?.type === "parent") void refreshParentNewOffersCount();
+    else setParentNewOffersCount(null);
+  }, [me?.activeProfileId, me?.profiles, refreshParentNewOffersCount]);
+
   const allTypes = useMemo(() => new Set((me?.profiles ?? []).map((p) => p.type)), [me]);
   const missingRole = useMemo(() => {
     if (!allTypes.has("parent")) return "parent" as const;
@@ -243,6 +266,8 @@ export default function App() {
       missingRole,
       addMissingRole,
       allTypes,
+      parentNewOffersCount,
+      refreshParentNewOffersCount,
     }),
     [
       token,
@@ -266,6 +291,8 @@ export default function App() {
       missingRole,
       addMissingRole,
       allTypes,
+      parentNewOffersCount,
+      refreshParentNewOffersCount,
     ],
   );
 

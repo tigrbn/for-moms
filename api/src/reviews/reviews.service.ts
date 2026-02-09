@@ -49,9 +49,6 @@ export class ReviewsService {
       if (toProfileId !== request.parentProfileId) throw new BadRequestException("Invalid toProfileId for this request");
     }
 
-    const minAt = new Date(request.completedAt.getTime() + 24 * 60 * 60 * 1000);
-    if (Date.now() < minAt.getTime()) throw new BadRequestException("Review is available 24 hours after completion");
-
     const existing = await this.prisma.review.findFirst({
       where: { fromProfileId: active.id, requestId },
       select: { id: true },

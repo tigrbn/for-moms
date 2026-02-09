@@ -31,6 +31,9 @@ export type AppContextValue = {
   missingRole: "parent" | "specialist" | null;
   addMissingRole: () => Promise<void>;
   allTypes: Set<string>;
+  /** Количество непросмотренных откликов (для родителя). null = не загружено или не родитель. */
+  parentNewOffersCount: number | null;
+  refreshParentNewOffersCount: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);

@@ -90,10 +90,11 @@ model Request {
   durationMin     Int?          @map("duration_min")
   budget          Int?
   district        String?
-  status          RequestStatus @default(active)
-  completedAt     DateTime?     @db.Timestamptz(6) @map("completed_at")
-  createdAt       DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
-  updatedAt       DateTime      @default(now()) @db.Timestamptz(6) @map("updated_at")
+  status             RequestStatus @default(active)
+  completedAt        DateTime?     @db.Timestamptz(6) @map("completed_at")
+  parentLastSeenAt   DateTime?     @db.Timestamptz(6) @map("parent_last_seen_at")
+  createdAt          DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt          DateTime      @default(now()) @db.Timestamptz(6) @map("updated_at")
 
   offers          Offer[]
   parent          Profile       @relation(fields: [parentProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)

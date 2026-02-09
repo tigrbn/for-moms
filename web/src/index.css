@@ -228,9 +228,9 @@ a {
   appearance: none;
   border: 0;
   border-radius: var(--radius-btn);
-  padding: 14px 20px;
-  min-height: 48px;
-  font-size: 15px;
+  padding: 8px 16px;
+  min-height: 40px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -244,10 +244,18 @@ a {
   transform: scale(0.96);
 }
 
-.btn-primary,
-.btn:not(.btn-secondary):not(.btn-danger):not(.danger):not(.ghost) {
+/* По умолчанию — нейтральная кнопка (серый), чтобы на одной странице не было сплошь фиолетовых */
+.btn {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.btn-primary {
   background: var(--primary);
   color: #ffffff;
+  border-color: var(--primary);
   box-shadow: var(--shadow-btn);
 }
 
@@ -273,10 +281,17 @@ a {
   box-shadow: 0 2px 8px rgba(198, 40, 40, 0.25);
 }
 
+.btn.btn-success {
+  background: var(--success);
+  color: #1a5c4d;
+  border: 1px solid rgba(26, 92, 77, 0.4);
+  box-shadow: 0 2px 8px rgba(110, 211, 181, 0.35);
+}
+
 .btn.ghost {
   background: transparent;
   color: var(--primary);
-  padding: 8px 12px;
+  padding: 6px 10px;
   min-height: auto;
   box-shadow: none;
 }
@@ -519,6 +534,31 @@ a {
 .bottom-nav-icon {
   font-size: 30px;
   line-height: 1;
+}
+.bottom-nav-item-badge-wrap {
+  position: relative;
+  display: block;
+}
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  color: #fff;
+  text-align: center;
+  background: #e53935;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+.nav-badge--inline {
+  position: static;
+  vertical-align: middle;
+  margin-left: 4px;
 }
 
 /* Блок статуса (специалист): онлайн + личный кабинет */

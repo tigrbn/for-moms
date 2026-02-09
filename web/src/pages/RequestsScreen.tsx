@@ -7,7 +7,7 @@ import { labelRequestStatus } from "../lib/labels";
 import type { RequestMineItem } from "../types";
 
 export function RequestsScreen() {
-  const { activeProfileType, activeProfileId, authedGet, authedDelete } = useApp();
+  const { activeProfileType, activeProfileId, authedGet, authedDelete, parentNewOffersCount } = useApp();
   const [items, setItems] = useState<RequestMineItem[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -37,12 +37,20 @@ export function RequestsScreen() {
     );
   }
 
+  const showNewOffersBadge = parentNewOffersCount != null && parentNewOffersCount > 0;
   return (
     <div className="card">
       <div className="row">
-        <div className="h2">Мои заявки</div>
+        <div className="h2" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          Мои заявки
+          {showNewOffersBadge && (
+            <span className="nav-badge nav-badge--inline" aria-label={`Новых откликов: ${parentNewOffersCount}`}>
+              {parentNewOffersCount > 99 ? "99+" : parentNewOffersCount}
+            </span>
+          )}
+        </div>
         <div className="spacer" />
-        <Link className="btn" to="/requests/new">
+        <Link className="btn btn-primary" to="/requests/new">
           + Создать
         </Link>
       </div>

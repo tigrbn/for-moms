@@ -141,7 +141,7 @@ export function FeedScreen() {
                   Показать все
                 </button>
                 {missingRole && (
-                  <button type="button" className="btn" onClick={() => void addMissingRole()}>
+                  <button type="button" className="btn btn-primary" onClick={() => void addMissingRole()}>
                     + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "Специалист"}
                   </button>
                 )}

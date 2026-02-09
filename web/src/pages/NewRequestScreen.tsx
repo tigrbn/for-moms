@@ -66,7 +66,7 @@ export function NewRequestScreen() {
           <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
         <div className="row">
-          <button className="btn" onClick={() => void onSubmit()} disabled={saving}>
+          <button className="btn btn-primary" onClick={() => void onSubmit()} disabled={saving}>
             {saving ? "Создание…" : "Создать"}
           </button>
           <button className="btn secondary" onClick={() => navigate(-1)} disabled={saving}>

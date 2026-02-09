@@ -86,6 +86,7 @@ export type RequestMineItem = {
   district?: string | null;
   createdAt: string;
   offersCount: number;
+  newOffersCount: number;
 };
 
 export type OfferMineItem = {
@@ -141,6 +142,7 @@ export type RequestDetails = {
       displayName?: string | null;
       avatarUrl?: string | null;
       gender?: string | null;
+      age?: number | null;
       photoUrl?: string | null;
       city?: string | null;
       district?: string | null;

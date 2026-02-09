@@ -23,7 +23,7 @@ export function RolesScreen() {
         <div className="h2">Роли</div>
         <div className="spacer" />
         {missingRole && (
-          <button className="btn roles-page-btn" onClick={() => void addMissingRole()}>
+          <button className="btn btn-primary roles-page-btn" onClick={() => void addMissingRole()}>
             + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "👩‍🏫 Специалист"}
           </button>
         )}

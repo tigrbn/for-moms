@@ -35,10 +35,21 @@ export class RequestsService {
       include: { offers: true },
     });
 
-    return requests.map((r) => ({
-      ...r,
-      offersCount: r.offers.length,
-    }));
+    const epoch0 = new Date(0);
+    return requests.map((r) => {
+      const seenAt = r.parentLastSeenAt ?? epoch0;
+      const newOffersCount = r.offers.filter((o) => o.createdAt > seenAt).length;
+      return {
+        ...r,
+        offersCount: r.offers.length,
+        newOffersCount,
+      };
+    });
+  }
+
+  async newOffersCount(userId: bigint): Promise<number> {
+    const items = await this.mine(userId);
+    return items.reduce((sum, r) => sum + r.newOffersCount, 0);
   }
 
   async get(userId: bigint, requestId: bigint) {
@@ -80,6 +91,15 @@ export class RequestsService {
     // - specialist can view (public feed)
     if (active.type === "parent" && request.parentProfileId !== active.id) {
       throw new NotFoundException("Request not found");
+    }
+
+    // Mark offers as seen when parent opens the request
+    if (active.type === "parent" && request.parentProfileId === active.id) {
+      await this.prisma.request.update({
+        where: { id: requestId },
+        data: { parentLastSeenAt: new Date() },
+      });
+      request.parentLastSeenAt = new Date();
     }
 
     return request;

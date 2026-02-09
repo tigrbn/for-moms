@@ -48,7 +48,15 @@ export class RequestsController {
       completedAt: r.completedAt?.toISOString() ?? null,
       createdAt: r.createdAt.toISOString(),
       offersCount: r.offersCount,
+      newOffersCount: r.newOffersCount,
     }));
+  }
+
+  @Get("new-offers-count")
+  async newOffersCount(@Req() req: Request) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const count = await this.requests.newOffersCount(userId);
+    return { count };
   }
 
   @Post(":id/offers")
@@ -108,6 +116,7 @@ export class RequestsController {
           displayName: o.specialistProfile.displayName,
           avatarUrl: o.specialistProfile.avatarUrl ?? null,
           gender: o.specialistProfile.gender ?? null,
+          age: o.specialistProfile.age ?? null,
           photoUrl: o.specialistProfile.user?.photoUrl ?? null,
           city: o.specialistProfile.city,
           district: o.specialistProfile.district,
