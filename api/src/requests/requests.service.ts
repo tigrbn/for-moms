@@ -66,7 +66,7 @@ export class RequestsService {
         parent: {
           include: {
             user: {
-              select: { username: true, firstName: true, lastName: true },
+              select: { username: true, firstName: true, lastName: true, photoUrl: true },
             },
             parentProfile: true,
           },

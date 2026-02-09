@@ -87,6 +87,9 @@ export class RequestsController {
       parent: {
         profileId: r.parent.id.toString(),
         displayName: r.parent.displayName,
+        avatarUrl: r.parent.avatarUrl ?? null,
+        photoUrl: r.parent.user?.photoUrl ?? null,
+        gender: r.parent.gender ?? null,
         city: r.parent.city,
         district: r.parent.district,
         username: r.parent.user?.username ?? null,

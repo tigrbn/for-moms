@@ -198,20 +198,56 @@ export function FeedScreen() {
 
             if (it.kind === "request") {
               const r = it.request;
+              const parent = r.parent;
+              const requestAuthorName =
+                parent?.displayName?.trim() ||
+                (parent?.firstName || parent?.lastName
+                  ? [parent.firstName, parent.lastName].filter(Boolean).join(" ")
+                  : null) ||
+                "Родитель";
+              const requestAvatarSrc = getAvatarSrc(
+                parent?.avatarUrl ?? null,
+                parent?.photoUrl ?? null,
+                parent?.gender ?? null,
+              );
+              const requestCategoryIcon = getCategoryIcon(r.category);
               return (
                 <div key={`r-${r.id}-${idx}`} className="card feed-card feed-card-request card--status-top">
                   <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
-                  <div className="feed-card-request-category">{r.category}</div>
-                  <div className="feed-card-request-meta">
-                    <span>Район: {r.district ?? "—"}</span>
-                    <span>Бюджет: {formatMoney(r.budget)}</span>
-                    <span className="feed-card-request-time">{formatRequestCreatedAt(r.createdAt)}</span>
+                  <div className="feed-card-header">
+                    <div className="feed-card-avatar-wrap">
+                      <div className="feed-card-avatar">
+                        <img src={requestAvatarSrc} alt="" />
+                      </div>
+                      {requestCategoryIcon && (
+                        <div className="feed-card-category-badge" title={r.category}>
+                          <img src={requestCategoryIcon} alt="" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="feed-card-title-block">
+                      <div className="feed-card-title-row">
+                        <div className="feed-card-title">{requestAuthorName}</div>
+                      </div>
+                      <div className="feed-card-meta-block">
+                        <div className="feed-card-category">
+                          <span>Категория: <strong>{r.category}</strong></span>
+                        </div>
+                        <div className="feed-card-meta muted">
+                          {r.district ? <span>район: {r.district}</span> : null}
+                          {r.district && r.budget != null ? " · " : null}
+                          {r.budget != null ? <span>бюджет: {formatMoney(r.budget)}</span> : null}
+                          {!r.district && r.budget == null ? "—" : null}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   {r.description && <div className="feed-card-desc">{r.description}</div>}
-                  <div className="feed-card-request-actions">
+                  <div className="feed-card-request-row">
                     <Link className="btn feed-card-btn feed-card-btn-open" to={`/requests/${r.id}`}>
                       Открыть заявку
                     </Link>
+                    <span className="feed-card-request-time muted">{formatRequestCreatedAt(r.createdAt)}</span>
                   </div>
                 </div>
               );

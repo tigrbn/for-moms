@@ -48,6 +48,13 @@ export class FeedController {
         where,
         orderBy: { createdAt: "desc" },
         take: 50,
+        include: {
+          parent: {
+            include: {
+              user: { select: { photoUrl: true } },
+            },
+          },
+        },
       });
       const requestItems = requests.map((r) => ({
         kind: "request" as const,
@@ -62,6 +69,12 @@ export class FeedController {
           district: r.district,
           status: r.status,
           createdAt: r.createdAt.toISOString(),
+          parent: {
+            displayName: r.parent.displayName ?? null,
+            avatarUrl: r.parent.avatarUrl ?? null,
+            photoUrl: r.parent.user?.photoUrl ?? null,
+            gender: r.parent.gender ?? null,
+          },
         },
       }));
       return {

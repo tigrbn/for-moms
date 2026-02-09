@@ -754,21 +754,18 @@ a {
 }
 .feed-card-request {
   background: #ffffff;
-  padding-right: 72px;
 }
-.feed-card-request-meta {
+.feed-card-request-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 8px;
-}
-.feed-card-request-time {
-  margin-left: auto;
-}
-.feed-card-request-actions {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: 12px;
+}
+.feed-card-request-row .feed-card-request-time {
+  font-size: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .feed-card-specialist {
   background: #ffffff;

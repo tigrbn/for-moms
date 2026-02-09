@@ -5,6 +5,7 @@ import { ErrorBox } from "../components/ErrorBox";
 import { formatMoney, formatDate } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
+import { getCategoryIcon } from "../constants/feed";
 import { hoursBetween } from "../lib/utils";
 import type { RequestDetails as RequestDetailsType } from "../types";
 
@@ -120,19 +121,68 @@ export function RequestDetailsScreen() {
     hoursBetween(new Date(), new Date(completedAt.getTime() + 24 * 60 * 60 * 1000)) >= 0 &&
     Date.now() >= completedAt.getTime() + 24 * 60 * 60 * 1000;
 
+  const parentName =
+    data.parent.displayName?.trim() ||
+    (data.parent.firstName || data.parent.lastName
+      ? [data.parent.firstName, data.parent.lastName].filter(Boolean).join(" ")
+      : null) ||
+    "Родитель";
+  const parentAvatarSrc = getAvatarSrc(
+    data.parent.avatarUrl ?? null,
+    data.parent.photoUrl ?? null,
+    data.parent.gender ?? null,
+  );
+  const categoryIcon = getCategoryIcon(data.category);
+
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <div className="card card--status-top">
+      <div className="card profile-card card--status-top">
         <div className="pill pill--top-right">{labelRequestStatus(data.status)}</div>
-        <div className="row">
-          <div className="h2">{data.category}</div>
+        <div className="profile-card-header">
+          <div className="profile-card-avatar-wrap">
+            <div className="profile-card-avatar">
+              <img src={parentAvatarSrc} alt="" />
+            </div>
+            {categoryIcon && (
+              <div className="profile-card-category-badge" title={data.category}>
+                <img src={categoryIcon} alt="" />
+              </div>
+            )}
+          </div>
+          <div className="profile-card-title-block">
+            <div className="profile-card-title-row">
+              <h2 className="h2 profile-card-title" style={{ margin: 0 }}>
+                {parentName}
+              </h2>
+            </div>
+            <div className="profile-card-meta-block">
+              <div className="profile-card-meta-row">
+                <span className="profile-card-meta-label">Категория:</span>
+                <strong className="profile-card-meta-value">{data.category}</strong>
+              </div>
+              <div className="profile-card-meta-row">
+                <span className="profile-card-meta-label">Район:</span>
+                <span className="profile-card-meta-value">{data.district ?? "—"}</span>
+              </div>
+              <div className="profile-card-meta-row">
+                <span className="profile-card-meta-label">Бюджет:</span>
+                <strong className="profile-card-meta-value">{formatMoney(data.budget)}</strong>
+              </div>
+              <div className="profile-card-meta-row">
+                <span className="profile-card-meta-label">Создано:</span>
+                <span className="profile-card-meta-value">{formatDate(data.createdAt)}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="muted" style={{ marginTop: 6 }}>
-          Район: {data.district ?? "—"} · Бюджет: {formatMoney(data.budget)} · Создано: {formatDate(data.createdAt)}
-        </div>
-        {data.description && <div style={{ marginTop: 10 }}>{data.description}</div>}
+        {data.description && (
+          <div className="profile-card-about" style={{ marginTop: 12 }}>
+            <div className="profile-card-about-title">Описание</div>
+            <div className="profile-card-about-text">{data.description}</div>
+          </div>
+        )}
         {activeProfileType === "parent" && (
-          <div className="row" style={{ marginTop: 12 }}>
+          <div className="row" style={{ marginTop: 16 }}>
             <button
               type="button"
               className="btn danger"
@@ -180,10 +230,11 @@ export function RequestDetailsScreen() {
                   <div className="label">Комментарий</div>
                   <textarea className="textarea" value={offerComment} onChange={(e) => setOfferComment(e.target.value)} />
                 </div>
-                <div className="row">
+                <div className="row offer-actions-row">
                   <button className="btn" disabled={sending} onClick={() => void sendOffer()}>
                     {sending ? "Отправка…" : "Отправить отклик"}
                   </button>
+                  <div className="spacer" />
                   <button className="btn secondary" onClick={() => navigate(-1)} disabled={sending}>
                     Назад
                   </button>

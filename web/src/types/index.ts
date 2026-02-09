@@ -64,6 +64,12 @@ export type FeedResponse =
               district?: string | null;
               status: "active" | "in_progress" | "done" | "cancelled";
               createdAt: string;
+              parent?: {
+                displayName?: string | null;
+                avatarUrl?: string | null;
+                photoUrl?: string | null;
+                gender?: string | null;
+              } | null;
             };
           }
       >;
@@ -114,6 +120,9 @@ export type RequestDetails = {
   parent: {
     profileId: string;
     displayName?: string | null;
+    avatarUrl?: string | null;
+    photoUrl?: string | null;
+    gender?: string | null;
     city?: string | null;
     district?: string | null;
     username?: string | null;
