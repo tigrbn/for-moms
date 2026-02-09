@@ -64,7 +64,7 @@ export function OffersScreen() {
                 <div className="pill">{labelOfferStatus(o.status)}</div>
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
-                <span className="feed-card-meta-icon" aria-hidden>📍</span> Район: {o.request.district ?? "—"} · Бюджет: {formatMoney(o.request.budget)}
+                Район: {o.request.district ?? "—"} · Бюджет: {formatMoney(o.request.budget)}
               </div>
               {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
               <div className="row" style={{ marginTop: 10 }}>

@@ -69,7 +69,7 @@ export function RequestsScreen() {
                 <div style={{ fontWeight: 800 }}>{r.category}</div>
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
-                <span className="feed-card-meta-icon" aria-hidden>📍</span> Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · Откликов: {r.offersCount}
+                Район: {r.district ?? "—"} · Бюджет: {formatMoney(r.budget)} · Откликов: {r.offersCount}
               </div>
               {r.description && <div style={{ marginTop: 8 }}>{r.description}</div>}
               <div className="row" style={{ marginTop: 10 }}>
