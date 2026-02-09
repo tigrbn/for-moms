@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { postJSON } from "./api";
 
 type SessionResponse = {
@@ -36,10 +36,10 @@ export function useTelegramAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const clearToken = () => {
+  const clearToken = useCallback(() => {
     localStorage.removeItem("accessToken");
     setToken(null);
-  };
+  }, []);
 
   useEffect(() => {
     const run = async () => {

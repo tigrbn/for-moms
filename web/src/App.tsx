@@ -66,7 +66,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token, clearToken]);
+  }, [token]);
 
   useEffect(() => {
     const run = async () => {
@@ -91,7 +91,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token, me?.activeProfileId, feedCategory, feedReloadKey, clearToken]);
+  }, [token, me?.activeProfileId, feedCategory, feedReloadKey]);
 
   const activeProfile = useMemo(() => {
     if (!me?.activeProfileId) return null;
@@ -276,7 +276,7 @@ export default function App() {
 
         {token && (
           <AppContext.Provider value={contextValue}>
-            {(meLoading || !me) && <div className="card">Loading profile…</div>}
+            {(meLoading || !me) && <div className="card">Загрузка профиля…</div>}
             {meError && <ErrorBox error={meError} />}
 
             {me && me.profiles.length === 0 && (
