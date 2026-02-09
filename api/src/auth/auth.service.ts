@@ -58,8 +58,9 @@ export class AuthService {
           ok?: boolean;
           result?: { total_count?: number; photos?: Array<Array<{ file_id: string }>> };
         };
-        if (photosData?.ok && photosData.result?.photos?.length > 0) {
-          const sizes = photosData.result.photos[0];
+        const photos = photosData?.ok ? photosData.result?.photos : undefined;
+        if (photos && photos.length > 0) {
+          const sizes = photos[0];
           const largest = sizes[sizes.length - 1];
           const fileRes = await fetch(
             `https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(largest.file_id)}`,
