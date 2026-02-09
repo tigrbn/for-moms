@@ -199,12 +199,7 @@ export function FeedScreen() {
             if (it.kind === "request") {
               const r = it.request;
               const parent = r.parent;
-              const requestAuthorName =
-                parent?.displayName?.trim() ||
-                (parent?.firstName || parent?.lastName
-                  ? [parent.firstName, parent.lastName].filter(Boolean).join(" ")
-                  : null) ||
-                "Родитель";
+              const requestAuthorName = parent?.displayName?.trim() || "Родитель";
               const requestAvatarSrc = getAvatarSrc(
                 parent?.avatarUrl ?? null,
                 parent?.photoUrl ?? null,
