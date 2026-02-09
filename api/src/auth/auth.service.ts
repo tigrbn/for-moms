@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import jwt from "jsonwebtoken";
 import { PrismaService } from "../prisma/prisma.service";
@@ -6,6 +6,8 @@ import { verifyTelegramInitData } from "./telegram-initdata";
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(private prisma: PrismaService, private config: ConfigService) {}
 
   async createSession(initData: string) {
@@ -27,7 +29,8 @@ export class AuthService {
       photo_url?: string;
     };
 
-    // upsert user
+    const hasPhotoFromInit = tg.photo_url != null && String(tg.photo_url).trim() !== "";
+
     const user = await this.prisma.user.upsert({
       where: { telegramId: BigInt(tg.id) },
       create: {
@@ -41,10 +44,40 @@ export class AuthService {
         firstName: tg.first_name ?? null,
         lastName: tg.last_name ?? null,
         username: tg.username ?? null,
-        photoUrl: tg.photo_url ?? null,
+        ...(hasPhotoFromInit ? { photoUrl: tg.photo_url! } : {}),
       },
       include: { profiles: true },
     });
+
+    if (botToken) {
+      try {
+        const photosRes = await fetch(
+          `https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${tg.id}&limit=1`,
+        );
+        const photosData = (await photosRes.json()) as {
+          ok?: boolean;
+          result?: { total_count?: number; photos?: Array<Array<{ file_id: string }>> };
+        };
+        if (photosData?.ok && photosData.result?.photos?.length > 0) {
+          const sizes = photosData.result.photos[0];
+          const largest = sizes[sizes.length - 1];
+          const fileRes = await fetch(
+            `https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(largest.file_id)}`,
+          );
+          const fileData = (await fileRes.json()) as { ok?: boolean; result?: { file_path?: string } };
+          if (fileData?.ok && fileData.result?.file_path) {
+            const photoUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
+            await this.prisma.user.update({
+              where: { id: user.id },
+              data: { photoUrl },
+            });
+            (user as { photoUrl: string | null }).photoUrl = photoUrl;
+          }
+        }
+      } catch (e) {
+        this.logger.warn("Failed to fetch Telegram profile photo", e);
+      }
+    }
 
     const accessToken = jwt.sign(
       { sub: user.id.toString(), telegramId: user.telegramId.toString() },

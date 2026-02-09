@@ -119,9 +119,11 @@ export class ProfilesService {
       values.push(data.district);
     }
 
-    this.logger.log(`updateBase profileId=${profileId} data keys=${Object.keys(data).join(",")}`);
+    setClauses.push("updated_at = now()");
 
-    if (setClauses.length === 0) {
+    this.logger.log(`updateBase profileId=${profileId} data keys=${Object.keys(data).join(",")} gender=${data.gender ?? "n/a"}`);
+
+    if (setClauses.length <= 1) {
       return this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
     }
 
