@@ -8,6 +8,7 @@ export type PublicProfileDto = {
   isActive: boolean;
   displayName: string | null;
   avatarUrl: string | null;
+  gender: string | null;
   age: number | null;
   city: string | null;
   district: string | null;
@@ -86,7 +87,7 @@ export class ProfilesService {
   async updateBase(
     userId: bigint,
     profileId: bigint,
-    data: { displayName?: string | null; avatarUrl?: string | null; age?: number | null; city?: string | null; district?: string | null },
+    data: { displayName?: string | null; avatarUrl?: string | null; gender?: string | null; age?: number | null; city?: string | null; district?: string | null },
   ) {
     await this.getOwnedProfileOrThrow(userId, profileId);
 
@@ -100,6 +101,10 @@ export class ProfilesService {
     if ("avatarUrl" in data) {
       setClauses.push(`avatar_url = $${++paramIndex}`);
       values.push(data.avatarUrl);
+    }
+    if ("gender" in data) {
+      setClauses.push(`gender = $${++paramIndex}`);
+      values.push(data.gender === "male" || data.gender === "female" ? data.gender : null);
     }
     if ("age" in data) {
       setClauses.push(`age = $${++paramIndex}`);
@@ -243,6 +248,7 @@ export class ProfilesService {
         is_active: boolean;
         display_name: string | null;
         avatar_url: string | null;
+        gender: string | null;
         age: number | null;
         city: string | null;
         district: string | null;
@@ -258,7 +264,7 @@ export class ProfilesService {
         special_wishes: string | null;
       }>
     >(Prisma.sql`
-      SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.age, p.city, p.district,
+      SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.gender, p.age, p.city, p.district,
              p.rating_avg::text AS rating_avg, p.rating_count,
              u.username, u.first_name, u.last_name, u.photo_url,
              sp.price_per_hour, sp.about,
@@ -287,6 +293,7 @@ export class ProfilesService {
       isActive: row.is_active,
       displayName: row.display_name,
       avatarUrl: row.avatar_url,
+      gender: row.gender === "male" || row.gender === "female" ? row.gender : null,
       age: row.age != null ? Number(row.age) : null,
       city: row.city,
       district: row.district,
@@ -337,6 +344,7 @@ export class ProfilesService {
       isActive: p.isActive,
       displayName: p.displayName ?? null,
       avatarUrl: p.avatarUrl ?? null,
+      gender: p.gender === "male" || p.gender === "female" ? p.gender : null,
       age: p.age != null ? Number(p.age) : null,
       city: p.city ?? null,
       district: p.district ?? null,

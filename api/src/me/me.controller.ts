@@ -38,11 +38,12 @@ export class MeController {
         is_active: boolean;
         display_name: string | null;
         avatar_url: string | null;
+        gender: string | null;
         age: number | null;
         city: string | null;
         district: string | null;
       }>
-    >`SELECT id, type, is_active, display_name, avatar_url, age, city, district FROM profiles WHERE user_id = ${userId}`;
+    >`SELECT id, type, is_active, display_name, avatar_url, gender, age, city, district FROM profiles WHERE user_id = ${userId}`;
 
     const profileIds = profilesRaw.map((r) => r.id);
     // Числа для IN: BigInt в raw-запросах Prisma может ломать привязку параметров
@@ -92,6 +93,7 @@ export class MeController {
         isActive: p.is_active,
         displayName: p.display_name,
         avatarUrl: p.avatar_url,
+        gender: p.gender === "male" || p.gender === "female" ? p.gender : null,
         age: p.age,
         city: p.city,
         district: p.district,

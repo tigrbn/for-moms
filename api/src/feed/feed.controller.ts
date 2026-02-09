@@ -78,7 +78,7 @@ export class FeedController {
     let specialists = await this.prisma.profile.findMany({
       where: profileWhere,
       include: {
-        user: { select: { username: true } },
+        user: { select: { username: true, photoUrl: true } },
         specialistProfile: true,
       },
       orderBy: [{ promotedUntil: "desc" }, { ratingAvg: "desc" }],
@@ -100,6 +100,8 @@ export class FeedController {
         id: p.id.toString(),
         displayName: p.displayName,
         avatarUrl: p.avatarUrl,
+        gender: p.gender ?? null,
+        photoUrl: p.user?.photoUrl ?? null,
         city: p.city,
         district: p.district,
         ratingAvg: p.ratingAvg.toString(),

@@ -7,6 +7,8 @@ import "./App.css";
 import backgroundImg from "./assets/img/background.png";
 import mainLogoImg from "./assets/img/main_logo.png";
 import stubImg from "./assets/img/заглушка.png";
+import userpicMan from "./assets/img/userpic/man.png";
+import userpicWoman from "./assets/img/userpic/woman.png";
 import categoryNanny from "./assets/img/category/няня.png";
 import categoryTutor from "./assets/img/category/репетитор.png";
 import categoryLeisure from "./assets/img/category/досуг.png";
@@ -30,6 +32,7 @@ type MeResponse = {
     isActive: boolean;
     displayName?: string | null;
     avatarUrl?: string | null;
+    gender?: string | null;
     age?: number | null;
     city?: string | null;
     district?: string | null;
@@ -38,6 +41,17 @@ type MeResponse = {
   }>;
   activeProfileId: string | null;
 };
+
+/** URL или импорт картинки для аватара: сначала фото профиля/Telegram, иначе userpic по полу. */
+function getAvatarSrc(
+  avatarUrl: string | null | undefined,
+  telegramPhotoUrl: string | null | undefined,
+  gender: string | null | undefined,
+): string {
+  if (avatarUrl?.trim()) return avatarUrl;
+  if (telegramPhotoUrl?.trim()) return telegramPhotoUrl;
+  return gender === "male" ? userpicMan : userpicWoman;
+}
 
 
 type FeedResponse =
@@ -48,7 +62,7 @@ type FeedResponse =
         | {
             kind: "specialist_profile";
             isPromoted: boolean;
-            profile: { id: string; displayName?: string | null; avatarUrl?: string | null; city?: string | null; district?: string | null; ratingAvg: string; ratingCount: number; pricePerHour?: number | null };
+            profile: { id: string; displayName?: string | null; avatarUrl?: string | null; gender?: string | null; photoUrl?: string | null; city?: string | null; district?: string | null; ratingAvg: string; ratingCount: number; pricePerHour?: number | null };
           }
       >;
     }
@@ -135,6 +149,9 @@ type RequestDetails = {
     specialist: {
       profileId: string;
       displayName?: string | null;
+      avatarUrl?: string | null;
+      gender?: string | null;
+      photoUrl?: string | null;
       city?: string | null;
       district?: string | null;
       username?: string | null;
@@ -159,6 +176,7 @@ type PublicProfile = {
   isActive: boolean;
   displayName?: string | null;
   avatarUrl?: string | null;
+  gender?: string | null;
   age?: number | null;
   city?: string | null;
   district?: string | null;
@@ -794,12 +812,19 @@ export default function App() {
             <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
               {data.offers.map((o) => (
                 <div key={o.id} className="card" style={{ background: "var(--tg-bg)" }}>
-                  <div className="row">
-                    <div style={{ fontWeight: 800 }}>
-                      {o.specialist.displayName ?? o.specialist.username ?? "Специалист"}
+                  <div className="row" style={{ alignItems: "center", gap: 12 }}>
+                    <img
+                      src={getAvatarSrc(o.specialist.avatarUrl, o.specialist.photoUrl, o.specialist.gender)}
+                      alt=""
+                      style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }} className="row">
+                      <div style={{ fontWeight: 800 }}>
+                        {o.specialist.displayName ?? o.specialist.username ?? "Специалист"}
+                      </div>
+                      <div className="spacer" />
+                      <div className="muted">{o.status}</div>
                     </div>
-                    <div className="spacer" />
-                    <div className="muted">{o.status}</div>
                   </div>
                   <div className="muted" style={{ marginTop: 6 }}>
                     Цена: {formatMoney(o.priceOffer)} · {formatDate(o.createdAt)}
@@ -969,10 +994,11 @@ export default function App() {
     const profileId = activeProfile!.id;
     const type = activeProfile!.type;
     const telegramPhotoUrl = me?.user?.photoUrl ?? null;
-    const avatarEmoji = type === "parent" ? "👩‍🍼" : "👩‍🏫";
+    const profileAvatarSrc = getAvatarSrc(activeProfile!.avatarUrl, telegramPhotoUrl, activeProfile!.gender);
 
     const [isEditing, setIsEditing] = useState(false);
     const [displayName, setDisplayName] = useState(activeProfile!.displayName ?? "");
+    const [gender, setGender] = useState<string>(activeProfile!.gender === "male" || activeProfile!.gender === "female" ? activeProfile!.gender : "");
     const [age, setAge] = useState(activeProfile!.age != null ? String(activeProfile!.age) : "");
     const [city, setCity] = useState(activeProfile!.city ?? "");
     const [district, setDistrict] = useState(activeProfile!.district ?? "");
@@ -987,6 +1013,7 @@ export default function App() {
     useEffect(() => {
       if (!activeProfile) return;
       setDisplayName(activeProfile.displayName ?? "");
+      setGender(activeProfile.gender === "male" || activeProfile.gender === "female" ? activeProfile.gender : "");
       setAge(activeProfile.age != null ? String(activeProfile.age) : "");
       setCity(activeProfile.city ?? "");
       setDistrict(activeProfile.district ?? "");
@@ -1017,6 +1044,7 @@ export default function App() {
         const ageNum = age.trim() === "" ? null : Number(age);
         await authedPatch(`/profiles/${profileId}`, {
           displayName: displayName.trim() || null,
+          gender: gender === "male" || gender === "female" ? gender : null,
           age: ageNum != null && Number.isFinite(ageNum) ? ageNum : null,
           city: city.trim() || null,
           district: district.trim() || null,
@@ -1059,14 +1087,9 @@ export default function App() {
                 alignItems: "center",
                 justifyContent: "center",
                 background: "var(--tg-theme-secondary-bg-color, #eee)",
-                fontSize: 36,
               }}
             >
-              {(activeProfile!.avatarUrl || telegramPhotoUrl) ? (
-                <img src={activeProfile!.avatarUrl || telegramPhotoUrl || ""} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <span aria-hidden>{avatarEmoji}</span>
-              )}
+              <img src={profileAvatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div className="profile-view-title-wrap" style={{ flex: 1, minWidth: 0 }}>
               <h2 className="h2" style={{ margin: 0 }}>{activeProfile!.displayName || "—"}</h2>
@@ -1074,6 +1097,10 @@ export default function App() {
             </div>
           </div>
           <dl className="profile-view-dl">
+            <div className="profile-view-row">
+              <dt className="muted">Пол</dt>
+              <dd>{activeProfile!.gender === "male" ? "Мужской" : activeProfile!.gender === "female" ? "Женский" : "—"}</dd>
+            </div>
             <div className="profile-view-row">
               <dt className="muted">Возраст</dt>
               <dd>{activeProfile!.age != null ? `${activeProfile!.age} лет` : "—"}</dd>
@@ -1136,6 +1163,14 @@ export default function App() {
           <div className="field">
             <label className="label">Имя для отображения</label>
             <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Как к вам обращаться" />
+          </div>
+          <div className="field">
+            <label className="label">Пол</label>
+            <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
+              <option value="">Не указан</option>
+              <option value="female">Женский</option>
+              <option value="male">Мужской</option>
+            </select>
           </div>
           <div className="field">
             <label className="label">Возраст</label>
@@ -1290,11 +1325,7 @@ export default function App() {
                   <div key={`sp-${p.id}-${idx}`} className="card feed-card feed-card-specialist">
                     <div className="feed-card-header">
                       <div className="feed-card-avatar">
-                        {p.avatarUrl ? (
-                          <img src={p.avatarUrl} alt="" />
-                        ) : (
-                          <span className="feed-card-avatar-placeholder">👤</span>
-                        )}
+                        <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
                       </div>
                       <div className="feed-card-title-block">
                         <div className="feed-card-title">
@@ -1405,8 +1436,7 @@ export default function App() {
     const title = p.displayName ?? p.user?.username ?? "Профиль";
     const tgUsername = p.user?.username?.trim() || null;
     const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
-    const avatarSrc = (p.avatarUrl || p.user?.photoUrl || "").trim() || null;
-    const avatarEmoji = p.type === "specialist" ? "👩‍🏫" : "👩‍🍼";
+    const avatarSrc = getAvatarSrc(p.avatarUrl, p.user?.photoUrl, p.gender);
 
     return (
       <div style={{ display: "grid", gap: 12 }}>
@@ -1423,14 +1453,9 @@ export default function App() {
                 alignItems: "center",
                 justifyContent: "center",
                 background: "var(--tg-theme-secondary-bg-color, #eee)",
-                fontSize: 36,
               }}
             >
-              {avatarSrc ? (
-                <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <span aria-hidden>{avatarEmoji}</span>
-              )}
+              <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="row">
@@ -1591,7 +1616,7 @@ export default function App() {
   }
 
   return (
-    <div className="app safe" style={{ backgroundImage: `url(${backgroundImg})` }}>
+    <div className="app safe" style={{ backgroundImage: `url(${backgroundImg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}>
       <div className="container">
         <TopBar
           logo={mainLogoImg}

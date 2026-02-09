@@ -55,10 +55,10 @@ body {
 
 .app {
   color-scheme: light;
-  background: var(--bg) !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
+  background-color: var(--bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding-bottom: 88px;
 }
 

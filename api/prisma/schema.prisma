@@ -54,6 +54,7 @@ model Profile {
   isActive      Boolean     @default(true) @map("is_active")
   displayName   String?     @map("display_name")
   avatarUrl     String?     @map("avatar_url")
+  gender        String?     @map("gender")
   age           Int?
   city          String?
   district      String?

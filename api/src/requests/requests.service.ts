@@ -55,6 +55,7 @@ export class RequestsService {
                     username: true,
                     firstName: true,
                     lastName: true,
+                    photoUrl: true,
                   },
                 },
                 specialistProfile: true,

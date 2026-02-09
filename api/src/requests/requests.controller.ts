@@ -103,6 +103,9 @@ export class RequestsController {
         specialist: {
           profileId: o.specialistProfile.id.toString(),
           displayName: o.specialistProfile.displayName,
+          avatarUrl: o.specialistProfile.avatarUrl ?? null,
+          gender: o.specialistProfile.gender ?? null,
+          photoUrl: o.specialistProfile.user?.photoUrl ?? null,
           city: o.specialistProfile.city,
           district: o.specialistProfile.district,
           username: o.specialistProfile.user?.username ?? null,
