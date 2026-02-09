@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { getAvatarSrc } from "../lib/avatar";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 import { FEED_CATEGORIES } from "../constants/feed";
 
 export function ProfileScreen() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { activeProfile, me, authedPatch, refreshMe } = useApp();
   if (!activeProfile) return null;
 
@@ -13,7 +16,14 @@ export function ProfileScreen() {
   const telegramPhotoUrl = me?.user?.photoUrl ?? null;
   const profileAvatarSrc = getAvatarSrc(activeProfile.avatarUrl, telegramPhotoUrl, activeProfile.gender);
 
-  const [isEditing, setIsEditing] = useState(false);
+  const openedWithEditRef = useRef(Boolean((location.state as { openEdit?: boolean })?.openEdit));
+  const [isEditing, setIsEditing] = useState(openedWithEditRef.current);
+
+  useEffect(() => {
+    if ((location.state as { openEdit?: boolean })?.openEdit) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate]);
   const [displayName, setDisplayName] = useState(activeProfile.displayName ?? "");
   const [gender, setGender] = useState<string>(
     activeProfile.gender === "male" || activeProfile.gender === "female" ? activeProfile.gender : "",
@@ -350,17 +360,21 @@ export function ProfileScreen() {
           </>
         )}
       </div>
-      <div className="profile-edit-actions row" style={{ flexWrap: "wrap", gap: 8 }}>
+      <div className="profile-edit-actions">
         <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void save()}>
           {saving ? "Сохранение…" : "Сохранить"}
         </button>
         <button
           type="button"
-          className="btn secondary"
+          className="btn profile-edit-cancel-btn"
           disabled={saving}
           onClick={() => {
             setErr(null);
-            setIsEditing(false);
+            if (openedWithEditRef.current) {
+              navigate(-1);
+            } else {
+              setIsEditing(false);
+            }
           }}
         >
           Отмена

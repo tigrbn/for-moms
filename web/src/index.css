@@ -319,6 +319,26 @@ a {
   outline: none;
   font-size: 16px;
   border: 1px solid var(--border-color);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:hover,
+.textarea:hover,
+.select:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border-color));
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 .textarea {
@@ -421,7 +441,7 @@ a {
   opacity: 0.8;
 }
 
-/* Нижнее меню */
+/* Нижнее меню — всегда прижато к низу экрана, вне прокручиваемого контейнера */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -431,21 +451,23 @@ a {
   justify-content: space-around;
   align-items: center;
   gap: 4px;
-  padding: 10px 8px calc(12px + env(safe-area-inset-bottom));
+  padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
   background: #ffffff;
   border-top: 1px solid var(--border-color);
   box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
-  z-index: 200;
+  z-index: 9999;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 .bottom-nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 8px 6px;
-  border-radius: 16px;
+  gap: 3px;
+  padding: 5px 6px;
+  border-radius: 14px;
   color: #b5b2c7;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   min-width: 0;
   flex: 1;
@@ -465,8 +487,8 @@ a {
 .bottom-nav-item.active {
   color: #7b7cff;
   background: #f4efff;
-  border-radius: 15px;
-  padding: 8px 10px;
+  border-radius: 14px;
+  padding: 5px 8px;
   box-shadow: 0 4px 12px rgba(123, 124, 255, 0.25);
 }
 .bottom-nav-item.active:active {
@@ -474,19 +496,19 @@ a {
 }
 /* Иконки с прозрачным фоном — активность только подложка + цвет текста, иконку не красим чтобы не было сплошного квадрата */
 .bottom-nav-icon-img {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
   transition: width 0.15s ease-out, height 0.15s ease-out;
 }
 .bottom-nav-item.active .bottom-nav-icon-img {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
 }
 .bottom-nav-icon {
-  font-size: 44px;
+  font-size: 36px;
   line-height: 1;
 }
 
@@ -1146,5 +1168,20 @@ a {
   margin-bottom: 20px;
 }
 .profile-edit-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   padding-top: 8px;
+}
+.profile-edit-cancel-btn {
+  margin-left: auto;
+  background: var(--text-secondary);
+  color: #fff;
+  border-color: var(--text-secondary);
+}
+.profile-edit-cancel-btn:hover {
+  background: color-mix(in srgb, var(--text-secondary) 85%, #000);
+  border-color: color-mix(in srgb, var(--text-secondary) 85%, #000);
+  color: #fff;
 }

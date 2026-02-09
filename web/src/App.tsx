@@ -123,7 +123,7 @@ export default function App() {
       const { postJSON } = await import("./shared/api");
       const created = await postJSON<{ id: string }>("/profiles", { type }, token);
       await ensureActiveProfile(created.id);
-      navigate("/profile");
+      navigate("/profile", { state: { openEdit: true } });
     },
     [token, ensureActiveProfile, navigate],
   );
@@ -312,10 +312,7 @@ export default function App() {
             {me && me.profiles.length > 0 && !me.activeProfileId && <RolesScreen />}
 
             {me && me.activeProfileId && activeProfile && (
-              <>
-                <BottomNav />
-
-                <Routes>
+              <Routes>
                   <Route path="/" element={<FeedScreen />} />
                   <Route path="/requests" element={<RequestsScreen />} />
                   <Route path="/requests/new" element={<NewRequestScreen />} />
@@ -335,11 +332,11 @@ export default function App() {
                   <Route path="/profiles/:id" element={<PublicProfileScreen />} />
                   <Route path="*" element={<Navigate to="/" replace state={{ from: location.pathname }} />} />
                 </Routes>
-              </>
             )}
           </AppContext.Provider>
         )}
       </div>
+      {me && me.activeProfileId && activeProfile && <BottomNav />}
     </div>
   );
 }
