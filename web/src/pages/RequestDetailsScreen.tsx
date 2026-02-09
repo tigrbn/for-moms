@@ -1,0 +1,321 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useApp } from "../context/AppContext";
+import { ErrorBox } from "../components/ErrorBox";
+import { formatMoney, formatDate } from "../lib/format";
+import { labelRequestStatus } from "../lib/labels";
+import { getAvatarSrc } from "../lib/avatar";
+import { hoursBetween } from "../lib/utils";
+import type { RequestDetails as RequestDetailsType } from "../types";
+
+export function RequestDetailsScreen() {
+  const params = useParams();
+  const requestId = params.id!;
+  const { activeProfileId, activeProfileType, authedGet, authedPost, authedDelete, navigate } = useApp();
+  const [data, setData] = useState<RequestDetailsType | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const [offerPrice, setOfferPrice] = useState("");
+  const [offerComment, setOfferComment] = useState("");
+  const [sending, setSending] = useState(false);
+  const [actionErr, setActionErr] = useState<string | null>(null);
+
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSending, setReviewSending] = useState(false);
+  const [reviewOk, setReviewOk] = useState<string | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      setErr(null);
+      setData(null);
+      setReviewOk(null);
+      try {
+        const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
+        setData(r);
+      } catch (e: unknown) {
+        setErr(e instanceof Error ? e.message : "Failed to load request");
+      }
+    };
+    void run();
+  }, [requestId, activeProfileId, authedGet]);
+
+  const sendOffer = async () => {
+    setActionErr(null);
+    setSending(true);
+    try {
+      await authedPost(`/requests/${requestId}/offers`, {
+        priceOffer: offerPrice ? Number(offerPrice) : null,
+        comment: offerComment || null,
+      });
+      const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
+      setData(r);
+    } catch (e: unknown) {
+      setActionErr(e instanceof Error ? e.message : "Failed to send offer");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const acceptOffer = async (offerId: string) => {
+    setActionErr(null);
+    try {
+      await authedPost(`/offers/${offerId}/accept`, {});
+      const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
+      setData(r);
+    } catch (e: unknown) {
+      setActionErr(e instanceof Error ? e.message : "Failed to accept offer");
+    }
+  };
+
+  const rejectOffer = async (offerId: string) => {
+    setActionErr(null);
+    try {
+      await authedPost(`/offers/${offerId}/reject`, {});
+      const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
+      setData(r);
+    } catch (e: unknown) {
+      setActionErr(e instanceof Error ? e.message : "Failed to reject offer");
+    }
+  };
+
+  const completeRequest = async () => {
+    setActionErr(null);
+    try {
+      await authedPost(`/requests/${requestId}/complete`, {});
+      const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
+      setData(r);
+    } catch (e: unknown) {
+      setActionErr(e instanceof Error ? e.message : "Failed to complete request");
+    }
+  };
+
+  const sendReview = async (toProfileId: string) => {
+    setActionErr(null);
+    setReviewOk(null);
+    setReviewSending(true);
+    try {
+      await authedPost(`/reviews`, {
+        toProfileId,
+        requestId,
+        rating: reviewRating,
+        text: reviewText || null,
+      });
+      setReviewOk("Отзыв отправлен");
+    } catch (e: unknown) {
+      setActionErr(e instanceof Error ? e.message : "Failed to create review");
+    } finally {
+      setReviewSending(false);
+    }
+  };
+
+  if (err) return <ErrorBox error={err} />;
+  if (!data) return <div className="card">Загрузка…</div>;
+
+  const accepted = data.offers.find((o) => o.status === "accepted") ?? null;
+  const completedAt = data.completedAt ? new Date(data.completedAt) : null;
+  const reviewAvailable =
+    data.status === "done" &&
+    completedAt &&
+    hoursBetween(new Date(), new Date(completedAt.getTime() + 24 * 60 * 60 * 1000)) >= 0 &&
+    Date.now() >= completedAt.getTime() + 24 * 60 * 60 * 1000;
+
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <div className="card card--status-top">
+        <div className="pill pill--top-right">{labelRequestStatus(data.status)}</div>
+        <div className="row">
+          <div className="h2">{data.category}</div>
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          Район: {data.district ?? "—"} · Бюджет: {formatMoney(data.budget)} · Создано: {formatDate(data.createdAt)}
+        </div>
+        {data.description && <div style={{ marginTop: 10 }}>{data.description}</div>}
+        {activeProfileType === "parent" && (
+          <div className="row" style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              className="btn danger"
+              onClick={async () => {
+                if (!confirm("Удалить заявку? Отклики тоже будут удалены.")) return;
+                try {
+                  await authedDelete(`/requests/${requestId}`);
+                  navigate("/requests", { replace: true });
+                } catch (e: unknown) {
+                  setActionErr(e instanceof Error ? e.message : "Не удалось удалить");
+                }
+              }}
+            >
+              Удалить заявку
+            </button>
+          </div>
+        )}
+      </div>
+
+      {actionErr && <ErrorBox error={actionErr} />}
+
+      {activeProfileType === "specialist" &&
+        (() => {
+          const myOffer = data.offers.find((o) => o.specialistProfileId === activeProfileId);
+          if (myOffer) {
+            return (
+              <div className="card" style={{ background: "var(--tg-bg)" }}>
+                <div className="h2">Вы уже откликнулись</div>
+                <div className="muted" style={{ marginTop: 8 }}>
+                  Цена: {formatMoney(myOffer.priceOffer)} · {myOffer.status}
+                </div>
+                {myOffer.comment && <div style={{ marginTop: 8 }}>{myOffer.comment}</div>}
+              </div>
+            );
+          }
+          return (
+            <div className="card">
+              <div className="h2">Откликнуться</div>
+              <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+                <div className="field">
+                  <div className="label">Цена (₽)</div>
+                  <input className="input" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} inputMode="numeric" />
+                </div>
+                <div className="field">
+                  <div className="label">Комментарий</div>
+                  <textarea className="textarea" value={offerComment} onChange={(e) => setOfferComment(e.target.value)} />
+                </div>
+                <div className="row">
+                  <button className="btn" disabled={sending} onClick={() => void sendOffer()}>
+                    {sending ? "Отправка…" : "Отправить отклик"}
+                  </button>
+                  <button className="btn secondary" onClick={() => navigate(-1)} disabled={sending}>
+                    Назад
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {activeProfileType === "parent" && (
+        <div className="card">
+          <div className="row">
+            <div className="h2">Отклики</div>
+            <div className="spacer" />
+            {accepted?.specialist.username && (
+              <a className="btn" href={`https://t.me/${accepted.specialist.username}`} target="_blank" rel="noreferrer">
+                Написать
+              </a>
+            )}
+          </div>
+
+          {data.status === "in_progress" && (
+            <div className="row" style={{ marginTop: 10 }}>
+              <button className="btn" onClick={() => void completeRequest()} disabled={!accepted}>
+                Завершить заявку
+              </button>
+              <div className="spacer" />
+              <div className="muted">
+                {accepted ? "После завершения можно оставить отзыв (через 24ч)." : "Сначала нужно принять отклик."}
+              </div>
+            </div>
+          )}
+
+          {data.offers.length === 0 && <div className="muted" style={{ marginTop: 8 }}>Пока нет откликов.</div>}
+          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+            {data.offers.map((o) => (
+              <div key={o.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                <div className="row" style={{ alignItems: "center", gap: 12 }}>
+                  <img
+                    src={getAvatarSrc(o.specialist.avatarUrl, o.specialist.photoUrl, o.specialist.gender)}
+                    alt=""
+                    style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }} className="row">
+                    <div style={{ fontWeight: 800 }}>
+                      {o.specialist.displayName ?? o.specialist.username ?? "Специалист"}
+                    </div>
+                    <div className="spacer" />
+                    <div className="muted">{o.status}</div>
+                  </div>
+                </div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Цена: {formatMoney(o.priceOffer)} · {formatDate(o.createdAt)}
+                </div>
+                {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
+                <div className="row" style={{ marginTop: 10 }}>
+                  {!accepted ? (
+                    <>
+                      <button className="btn" onClick={() => void acceptOffer(o.id)} disabled={o.status !== "pending"}>
+                        Принять
+                      </button>
+                      <button className="btn secondary" onClick={() => void rejectOffer(o.id)} disabled={o.status !== "pending"}>
+                        Отклонить
+                      </button>
+                    </>
+                  ) : (
+                    <div className="muted">Исполнитель уже выбран</div>
+                  )}
+                  <div className="spacer" />
+                  {o.specialist.username && (
+                    <a className="btn ghost" href={`https://t.me/${o.specialist.username}`} target="_blank" rel="noreferrer">
+                      Профиль TG
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {accepted && data.status === "done" && (
+        <div className="card">
+          <div className="h2">Отзыв</div>
+          {!completedAt && <div className="muted" style={{ marginTop: 8 }}>Заявка завершена, но время завершения не указано.</div>}
+          {completedAt && !reviewAvailable && (
+            <div className="muted" style={{ marginTop: 8 }}>
+              Отзыв будет доступен через 24 часа после завершения: {formatDate(data.completedAt)}
+            </div>
+          )}
+          {reviewOk && <div className="muted" style={{ marginTop: 8 }}>{reviewOk}</div>}
+
+          {completedAt && reviewAvailable && (
+            <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+              <div className="field">
+                <div className="label">Оценка</div>
+                <select className="select" value={reviewRating} onChange={(e) => setReviewRating(Number(e.target.value))}>
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <div className="label">Текст (необязательно)</div>
+                <textarea className="textarea" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
+              </div>
+              <div className="row">
+                {activeProfileType === "parent" && (
+                  <button
+                    className="btn"
+                    disabled={reviewSending}
+                    onClick={() => void sendReview(accepted.specialist.profileId)}
+                  >
+                    {reviewSending ? "Отправка…" : "Оставить отзыв специалисту"}
+                  </button>
+                )}
+                {activeProfileType === "specialist" && (
+                  <button
+                    className="btn"
+                    disabled={reviewSending}
+                    onClick={() => void sendReview(data.parent.profileId)}
+                  >
+                    {reviewSending ? "Отправка…" : "Оставить отзыв родителю"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

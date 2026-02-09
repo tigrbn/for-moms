@@ -1,0 +1,171 @@
+import { Link } from "react-router-dom";
+import { useApp } from "../context/AppContext";
+import { StubCard } from "../components/StubCard";
+import { formatMoney, formatRequestCreatedAt } from "../lib/format";
+import { labelRequestStatus } from "../lib/labels";
+import { getAvatarSrc } from "../lib/avatar";
+import { FEED_CATEGORIES } from "../constants/feed";
+import menuLenta from "../assets/img/menu/лента.png";
+
+export function FeedScreen() {
+  const {
+    feed,
+    feedError,
+    feedCategory,
+    setFeedCategory,
+    setFeed,
+    setFeedError,
+    setFeedReloadKey,
+    activeProfileType,
+    missingRole,
+    addMissingRole,
+  } = useApp();
+
+  const contentItems = feed?.items.filter((it) => it.kind !== "banner") ?? [];
+  const contentCount = contentItems.length;
+  const role = activeProfileType;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {activeProfileType === "specialist" && (
+        <div className="status-block">
+          <div className="status-block-inner">
+            <span className="status-avatar">👤</span>
+            <span className="status-text">Вы онлайн — родители могут видеть вас</span>
+          </div>
+        </div>
+      )}
+
+      <div className="card feed-header-card">
+        <div className="row">
+          <div className="row feed-title-row">
+            <img src={menuLenta} alt="" className="feed-title-icon" />
+            <span className="h2">Лента</span>
+          </div>
+          <div className="spacer" />
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => {
+              setFeed(null);
+              setFeedError(null);
+              setFeedReloadKey((x) => x + 1);
+            }}
+          >
+            🔄 Обновить
+          </button>
+        </div>
+
+        <div className="feed-categories-label">Категория</div>
+        <div className="feed-categories-scroll">
+          <div className="feed-categories">
+            {FEED_CATEGORIES.map((c) => (
+              <button
+                key={c.id || "all"}
+                type="button"
+                className={`feed-category-chip ${feedCategory === c.id ? "active" : ""}`}
+                onClick={() => {
+                  setFeedCategory(c.id);
+                  setFeedReloadKey((x) => x + 1);
+                }}
+              >
+                {c.icon ? <img src={c.icon} alt="" className="feed-category-icon" /> : null}
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {feedError && (
+        <div className="card">
+          <div className="muted">{feedError}</div>
+        </div>
+      )}
+      {!feed && (
+        <div className="card">
+          <div className="muted">Загрузка…</div>
+        </div>
+      )}
+
+      {feed && (
+        <div className="feed-content">
+          {contentCount === 0 && (
+            <StubCard
+              title={role === "specialist" ? "💛 Заявок пока нет" : "💛 Специалистов пока нет"}
+              desc="Но они появляются регулярно — попробуйте выбрать другую категорию."
+            >
+              <div className="row feed-empty-row">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={() => {
+                    setFeedError(null);
+                    setFeedCategory("");
+                  }}
+                >
+                  Показать все
+                </button>
+                {missingRole && (
+                  <button type="button" className="btn" onClick={() => void addMissingRole()}>
+                    + {missingRole === "parent" ? "Мама" : "Специалист"}
+                  </button>
+                )}
+              </div>
+            </StubCard>
+          )}
+          {contentItems.map((it, idx) => {
+            if (it.kind === "specialist_profile") {
+              const p = it.profile;
+              return (
+                <div key={`sp-${p.id}-${idx}`} className="card feed-card feed-card-specialist">
+                  <div className="feed-card-header">
+                    <div className="feed-card-avatar">
+                      <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
+                    </div>
+                    <div className="feed-card-title-block">
+                      <div className="feed-card-title">
+                        {p.displayName ?? "Специалист"}
+                        {it.isPromoted && <span className="pill feed-card-top">TOP</span>}
+                      </div>
+                      <div className="muted feed-card-meta">
+                        ★ {p.ratingAvg} ({p.ratingCount}) · {p.city ?? "—"} · {p.district ?? "—"}
+                      </div>
+                      {p.pricePerHour != null && <div className="feed-card-price">{p.pricePerHour} ₽/час</div>}
+                    </div>
+                  </div>
+                  <Link className="btn feed-card-btn" to={`/profiles/${p.id}`}>
+                    Открыть анкету
+                  </Link>
+                </div>
+              );
+            }
+
+            if (it.kind === "request") {
+              const r = it.request;
+              return (
+                <div key={`r-${r.id}-${idx}`} className="card feed-card feed-card-request card--status-top">
+                  <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
+                  <div className="feed-card-request-category">{r.category}</div>
+                  <div className="feed-card-request-meta">
+                    <span>Район: {r.district ?? "—"}</span>
+                    <span>Бюджет: {formatMoney(r.budget)}</span>
+                    <span className="feed-card-request-time">{formatRequestCreatedAt(r.createdAt)}</span>
+                  </div>
+                  {r.description && <div className="feed-card-desc">{r.description}</div>}
+                  <div className="feed-card-request-actions">
+                    <Link className="btn feed-card-btn" to={`/requests/${r.id}`}>
+                      Открыть заявку
+                    </Link>
+                  </div>
+                </div>
+              );
+            }
+
+            return null;
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
