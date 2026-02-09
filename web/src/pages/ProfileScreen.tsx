@@ -8,7 +8,7 @@ import { FEED_CATEGORIES } from "../constants/feed";
 export function ProfileScreen() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { activeProfile, me, authedPatch, refreshMe } = useApp();
+  const { activeProfile, me, authedPatch, authedDelete, refreshMe } = useApp();
   if (!activeProfile) return null;
 
   const profileId = activeProfile.id;
@@ -37,6 +37,7 @@ export function ProfileScreen() {
   const [about, setAbout] = useState("");
   const [specialistCategory, setSpecialistCategory] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -367,17 +368,30 @@ export function ProfileScreen() {
         <button
           type="button"
           className="btn profile-edit-cancel-btn"
-          disabled={saving}
-          onClick={() => {
+          disabled={saving || cancelling}
+          onClick={async () => {
             setErr(null);
             if (openedWithEditRef.current) {
-              navigate(-1);
+              setCancelling(true);
+              try {
+                await authedDelete(`/profiles/${profileId}`);
+                await refreshMe();
+                if (me && me.profiles.length <= 1) {
+                  navigate("/", { replace: true });
+                } else {
+                  navigate("/roles", { replace: true });
+                }
+              } catch (e: unknown) {
+                setErr(e instanceof Error ? e.message : "Не удалось отменить");
+              } finally {
+                setCancelling(false);
+              }
             } else {
               setIsEditing(false);
             }
           }}
         >
-          Отмена
+          {cancelling ? "Отмена…" : "Отмена"}
         </button>
       </div>
     </div>

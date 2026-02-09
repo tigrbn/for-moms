@@ -36,6 +36,29 @@ export default function App() {
   const [feedCategory, setFeedCategory] = useState("");
   const [feedReloadKey, setFeedReloadKey] = useState(0);
   const [reauthing, setReauthing] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+
+  useEffect(() => {
+    const isInput = (el: EventTarget | null) => {
+      if (!el || !(el instanceof Element)) return false;
+      const tag = (el as HTMLElement).tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+    };
+    const handleFocusIn = (e: FocusEvent) => {
+      if (isInput(e.target)) setInputFocused(true);
+    };
+    const handleFocusOut = () => {
+      setTimeout(() => {
+        if (!isInput(document.activeElement)) setInputFocused(false);
+      }, 0);
+    };
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -247,7 +270,7 @@ export default function App() {
   );
 
   return (
-    <div className="app safe">
+    <div className={`app safe${inputFocused ? " input-focused" : ""}`}>
       <div className="container">
         <TopBar
           logo={mainLogoImg}

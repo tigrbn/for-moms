@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { StubCard } from "../components/StubCard";
@@ -9,6 +10,40 @@ import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
 
 export function FeedScreen() {
+  const categoriesScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = categoriesScrollRef.current;
+    if (!el) return;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startScrollLeft = el.scrollLeft;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+      const deltaX = x - startX;
+      const deltaY = y - startY;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 0) return;
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8) {
+        e.preventDefault();
+        const newScroll = Math.max(0, Math.min(maxScroll, startScrollLeft - deltaX));
+        el.scrollLeft = newScroll;
+      }
+    };
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+    };
+  }, []);
+
   const {
     feed,
     feedError,
@@ -26,23 +61,19 @@ export function FeedScreen() {
   const contentCount = contentItems.length;
   const role = activeProfileType;
 
+  const feedTitle =
+    activeProfileType === "specialist"
+      ? "Привет! 👋 Заявки от родителей"
+      : "Привет! 👋 Кого сегодня ищем?";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {activeProfileType === "specialist" && (
-        <div className="status-block">
-          <div className="status-block-inner">
-            <span className="status-avatar">👤</span>
-            <span className="status-text">Вы онлайн — родители могут видеть вас</span>
-          </div>
-        </div>
-      )}
-
       <div
         className="card feed-header-card"
         style={{ backgroundImage: `url(${feedHeaderBg})` }}
       >
         <div className="row feed-header-row">
-          <span className="h2 feed-title-text">Привет! 👋 Кого сегодня ищем?</span>
+          <span className="h2 feed-title-text">{feedTitle}</span>
           <div className="spacer" />
           <button
             type="button"
@@ -58,7 +89,7 @@ export function FeedScreen() {
         </div>
 
         <div className="feed-categories-label">Категория</div>
-        <div className="feed-categories-scroll" role="region" aria-label="Категории">
+        <div ref={categoriesScrollRef} className="feed-categories-scroll" role="region" aria-label="Категории">
           <div className="feed-categories">
             {FEED_CATEGORIES.map((c) => (
               <button

@@ -441,17 +441,26 @@ a {
   opacity: 0.8;
 }
 
+/* Нижнее меню — скрыто при фокусе в поле ввода (открыта клавиатура) */
+.app.input-focused .bottom-nav {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: visibility 0.2s ease, opacity 0.2s ease;
+}
+
 /* Нижнее меню — всегда прижато к низу экрана, вне прокручиваемого контейнера */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  transition: visibility 0.2s ease, opacity 0.2s ease;
   display: flex;
   justify-content: space-around;
   align-items: center;
   gap: 4px;
-  padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
+  padding: 4px 6px calc(6px + env(safe-area-inset-bottom));
   background: #ffffff;
   border-top: 1px solid var(--border-color);
   box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
@@ -463,11 +472,11 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 5px 6px;
-  border-radius: 14px;
+  gap: 2px;
+  padding: 4px 5px;
+  border-radius: 12px;
   color: #b5b2c7;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   min-width: 0;
   flex: 1;
@@ -487,8 +496,8 @@ a {
 .bottom-nav-item.active {
   color: #7b7cff;
   background: #f4efff;
-  border-radius: 14px;
-  padding: 5px 8px;
+  border-radius: 12px;
+  padding: 4px 6px;
   box-shadow: 0 4px 12px rgba(123, 124, 255, 0.25);
 }
 .bottom-nav-item.active:active {
@@ -496,19 +505,19 @@ a {
 }
 /* Иконки с прозрачным фоном — активность только подложка + цвет текста, иконку не красим чтобы не было сплошного квадрата */
 .bottom-nav-icon-img {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
   transition: width 0.15s ease-out, height 0.15s ease-out;
 }
 .bottom-nav-item.active .bottom-nav-icon-img {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
 }
 .bottom-nav-icon {
-  font-size: 36px;
+  font-size: 30px;
   line-height: 1;
 }
 
