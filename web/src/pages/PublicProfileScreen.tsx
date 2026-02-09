@@ -96,7 +96,7 @@ export function PublicProfileScreen() {
               </h2>
               <div className="profile-card-rating">
                 <span className={p.ratingCount > 0 ? "rating-star" : "rating-star rating-star--empty"}>★</span>{" "}
-                {p.ratingAvg} ({p.ratingCount})}
+                {p.ratingAvg} ({p.ratingCount})
               </div>
             </div>
             {parentRoleLabel && (
