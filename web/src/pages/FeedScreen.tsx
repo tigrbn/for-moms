@@ -177,14 +177,13 @@ export function FeedScreen() {
                         <div className="feed-card-category">
                           <span>Категория: <strong>{p.category ?? "—"}</strong></span>
                         </div>
-                        <div className="feed-card-meta muted">
+                        <div className="feed-card-meta feed-card-meta-vertical muted">
                           {p.city && <span>город: {p.city}</span>}
-                          {p.city && p.district && ", "}
                           {p.district && <span>район: {p.district}</span>}
-                          {!p.city && !p.district && "—"}
+                          {!p.city && !p.district && <span>—</span>}
                         </div>
                         {p.pricePerHour != null && (
-                          <div className="feed-card-price">{p.pricePerHour} ₽/час</div>
+                          <div className="feed-card-price">цена за час: {p.pricePerHour} ₽/час</div>
                         )}
                       </div>
                     </div>
@@ -228,11 +227,10 @@ export function FeedScreen() {
                         <div className="feed-card-category">
                           <span>Категория: <strong>{r.category}</strong></span>
                         </div>
-                        <div className="feed-card-meta muted">
-                          {r.district ? <span>район: {r.district}</span> : null}
-                          {r.district && r.budget != null ? " · " : null}
-                          {r.budget != null ? <span>бюджет: {formatMoney(r.budget)}</span> : null}
-                          {!r.district && r.budget == null ? "—" : null}
+                        <div className="feed-card-meta feed-card-meta-vertical muted">
+                          {r.district && <span>район: {r.district}</span>}
+                          {r.budget != null && <span>бюджет: {formatMoney(r.budget)}</span>}
+                          {!r.district && r.budget == null && <span>—</span>}
                         </div>
                       </div>
                     </div>
