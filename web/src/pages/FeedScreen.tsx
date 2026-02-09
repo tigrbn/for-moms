@@ -40,12 +40,12 @@ export function FeedScreen() {
         <div className="row">
           <div className="row feed-title-row">
             <img src={menuLenta} alt="" className="feed-title-icon" />
-            <span className="h2">Лента</span>
+            <span className="h2 feed-title-text">Привет! 👋 Кого сегодня ищем?</span>
           </div>
           <div className="spacer" />
           <button
             type="button"
-            className="btn secondary"
+            className="btn secondary feed-refresh-btn"
             onClick={() => {
               setFeed(null);
               setFeedError(null);
@@ -57,7 +57,7 @@ export function FeedScreen() {
         </div>
 
         <div className="feed-categories-label">Категория</div>
-        <div className="feed-categories-scroll">
+        <div className="feed-categories-scroll" role="region" aria-label="Категории">
           <div className="feed-categories">
             {FEED_CATEGORIES.map((c) => (
               <button
