@@ -41,14 +41,25 @@ export function useTelegramAuth() {
     setToken(null);
   }, []);
 
+  const refreshSession = useCallback(async () => {
+    const initData = getInitData();
+    if (!initData) return;
+    try {
+      const session = await postJSON<SessionResponse>("/auth/session", {
+        initData,
+      });
+      localStorage.setItem("accessToken", session.accessToken);
+      setToken(session.accessToken);
+    } catch {
+      // Тихо игнорируем — при следующем запросе получим 401 и очистим токен
+    }
+  }, []);
+
   useEffect(() => {
     const run = async () => {
       const initData = getInitData();
 
-      // В браузере вне Telegram — просто не логинимся
       if (!initData) return;
-
-      // Уже есть токен — ничего не делаем
       if (token) return;
 
       setLoading(true);
@@ -76,5 +87,15 @@ export function useTelegramAuth() {
     void run();
   }, [token]);
 
-  return { token, setToken, clearToken, loading, error };
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && token) {
+        void refreshSession();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [token, refreshSession]);
+
+  return { token, setToken, clearToken, refreshSession, loading, error };
 }

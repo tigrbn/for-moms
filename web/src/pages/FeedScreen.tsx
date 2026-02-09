@@ -61,10 +61,10 @@ export function FeedScreen() {
   const contentCount = contentItems.length;
   const role = activeProfileType;
 
-  const feedTitle =
+  const feedSubtitle =
     activeProfileType === "specialist"
-      ? "Привет! 👋 Заявки от родителей"
-      : "Привет! 👋 Кого сегодня ищем?";
+      ? "👋 Заявки от родителей"
+      : "👋 Кого сегодня ищем?";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -73,7 +73,9 @@ export function FeedScreen() {
         style={{ backgroundImage: `url(${feedHeaderBg})` }}
       >
         <div className="row feed-header-row">
-          <span className="h2 feed-title-text">{feedTitle}</span>
+          <span className="h2 feed-title-text">
+            <span className="feed-title-hello">Привет</span> {feedSubtitle}
+          </span>
           <div className="spacer" />
           <button
             type="button"
@@ -207,7 +209,7 @@ export function FeedScreen() {
                   </div>
                   {r.description && <div className="feed-card-desc">{r.description}</div>}
                   <div className="feed-card-request-actions">
-                    <Link className="btn feed-card-btn" to={`/requests/${r.id}`}>
+                    <Link className="btn feed-card-btn feed-card-btn-open" to={`/requests/${r.id}`}>
                       Открыть заявку
                     </Link>
                   </div>

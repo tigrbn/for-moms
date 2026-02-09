@@ -587,6 +587,7 @@ a {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  overflow: hidden;
 }
 .feed-header-row {
   display: flex;
@@ -598,6 +599,10 @@ a {
   flex: 1;
   min-width: 0;
   text-align: left;
+}
+.feed-title-hello {
+  color: var(--primary);
+  font-weight: 800;
 }
 .feed-refresh-btn {
   padding: 6px 12px;
@@ -611,21 +616,18 @@ a {
   margin-top: 12px;
   margin-bottom: 6px;
 }
-/* Горизонтальный скролл категорий: scroll (не auto) и touch-action для мобильных */
+/* Полоса категорий на всю ширину карточки, обрезка по скруглению карточки */
 .feed-categories-scroll {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 10px;
   overflow-x: scroll;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
   overscroll-behavior-x: contain;
-  padding-bottom: 8px;
-  margin-left: -4px;
-  margin-right: -4px;
-  padding-left: 4px;
-  padding-right: 4px;
   scrollbar-width: thin;
   display: block;
   position: relative;
@@ -747,9 +749,11 @@ a {
   border-radius: var(--radius);
   padding: 14px;
   border: 1px solid var(--border);
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 .feed-card-request {
-  background: var(--tg-bg);
+  background: #ffffff;
   padding-right: 72px;
 }
 .feed-card-request-meta {
@@ -767,7 +771,7 @@ a {
   margin-top: 12px;
 }
 .feed-card-specialist {
-  background: var(--tg-bg);
+  background: #ffffff;
 }
 .feed-card-header {
   display: flex;
@@ -879,6 +883,15 @@ a {
 .feed-card-btn-open {
   min-width: 160px;
   padding: 10px 20px;
+  background: #ffffff;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  box-shadow: none;
+}
+.feed-card-btn-open:hover {
+  background: color-mix(in srgb, var(--primary) 8%, #fff);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 .feed-card-request-category {
   font-weight: 900;

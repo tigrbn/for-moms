@@ -83,7 +83,7 @@ export class AuthService {
     const accessToken = jwt.sign(
       { sub: user.id.toString(), telegramId: user.telegramId.toString() },
       jwtSecret,
-      { expiresIn: "15m" },
+      { expiresIn: "7d" },
     );
 
     return {

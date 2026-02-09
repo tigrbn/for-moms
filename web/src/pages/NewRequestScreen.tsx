@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { FEED_CATEGORIES } from "../constants/feed";
+
+const REQUEST_CATEGORIES = FEED_CATEGORIES.filter((c) => c.id && c.id.trim());
 
 export function NewRequestScreen() {
   const { activeProfileType, authedPost, navigate } = useApp();
-  const [category, setCategory] = useState("Няня");
+  const [category, setCategory] = useState(REQUEST_CATEGORIES[0]?.id ?? "");
   const [district, setDistrict] = useState("");
   const [budget, setBudget] = useState("");
   const [description, setDescription] = useState("");
@@ -38,7 +41,17 @@ export function NewRequestScreen() {
       <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
         <div className="field">
           <div className="label">Категория</div>
-          <input className="input" value={category} onChange={(e) => setCategory(e.target.value)} />
+          <select
+            className="input"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {REQUEST_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <div className="label">Район</div>
