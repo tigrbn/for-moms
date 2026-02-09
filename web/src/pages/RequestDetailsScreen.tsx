@@ -161,7 +161,10 @@ export function RequestDetailsScreen() {
                 <strong className="profile-card-meta-value">{data.category}</strong>
               </div>
               <div className="profile-card-meta-row">
-                <span className="profile-card-meta-label">Район:</span>
+                <span className="profile-card-meta-label">
+                  <span className="feed-card-meta-icon" aria-hidden>📍</span>
+                  Район:
+                </span>
                 <span className="profile-card-meta-value">{data.district ?? "—"}</span>
               </div>
               <div className="profile-card-meta-row">

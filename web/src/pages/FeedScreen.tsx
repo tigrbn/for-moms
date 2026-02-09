@@ -179,7 +179,12 @@ export function FeedScreen() {
                         </div>
                         <div className="feed-card-meta feed-card-meta-vertical muted">
                           {p.city && <span>город: {p.city}</span>}
-                          {p.district && <span>район: {p.district}</span>}
+                          {p.district && (
+                            <span className="feed-card-meta-with-icon">
+                              <span className="feed-card-meta-icon" aria-hidden>📍</span>
+                              район: {p.district}
+                            </span>
+                          )}
                           {!p.city && !p.district && <span>—</span>}
                         </div>
                         {p.pricePerHour != null && (
@@ -228,7 +233,12 @@ export function FeedScreen() {
                           <span>Категория: <strong>{r.category}</strong></span>
                         </div>
                         <div className="feed-card-meta feed-card-meta-vertical muted">
-                          {r.district && <span>район: {r.district}</span>}
+                          {r.district && (
+                            <span className="feed-card-meta-with-icon">
+                              <span className="feed-card-meta-icon" aria-hidden>📍</span>
+                              район: {r.district}
+                            </span>
+                          )}
                           {r.budget != null && <span>бюджет: {formatMoney(r.budget)}</span>}
                           {!r.district && r.budget == null && <span>—</span>}
                         </div>

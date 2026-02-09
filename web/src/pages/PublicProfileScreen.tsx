@@ -109,7 +109,10 @@ export function PublicProfileScreen() {
                 </div>
               )}
               <div className="profile-card-meta-row">
-                <span className="profile-card-meta-label">город, район:</span>
+                <span className="profile-card-meta-label">
+                  <span className="feed-card-meta-icon" aria-hidden>📍</span>
+                  город, район:
+                </span>
                 <span className="profile-card-meta-value">
                   {[p.city, p.district].filter(Boolean).join(", ") || "—"}
                 </span>
