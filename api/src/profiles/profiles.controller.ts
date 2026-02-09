@@ -64,14 +64,14 @@ export class ProfilesController {
     this.logger.log(`PATCH /profiles/${id} (base) body=${JSON.stringify(body)}`);
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const profile = await this.profiles.updateBase(userId, BigInt(id), body ?? {});
-    this.logger.log(`PATCH /profiles/${id} (base) result age=${profile.age} displayName=${profile.displayName} gender=${(profile as { gender?: string | null }).gender ?? "null"}`);
+    this.logger.log(`PATCH /profiles/${id} (base) result age=${profile.age} displayName=${profile.displayName} gender=${profile.gender ?? "null"}`);
     return {
       id: profile.id.toString(),
       type: profile.type,
       isActive: profile.isActive,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
-      gender: (profile as { gender?: string | null }).gender ?? null,
+      gender: profile.gender ?? null,
       age: profile.age,
       city: profile.city,
       district: profile.district,

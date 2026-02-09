@@ -91,49 +91,36 @@ export class ProfilesService {
   ) {
     await this.getOwnedProfileOrThrow(userId, profileId);
 
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 0;
-    if ("displayName" in data) {
-      setClauses.push(`display_name = $${++paramIndex}`);
-      values.push(data.displayName);
+    const updateData: Prisma.ProfileUpdateInput = {};
+    if (Object.prototype.hasOwnProperty.call(data, "displayName")) {
+      updateData.displayName = data.displayName;
     }
-    if ("avatarUrl" in data) {
-      setClauses.push(`avatar_url = $${++paramIndex}`);
-      values.push(data.avatarUrl);
+    if (Object.prototype.hasOwnProperty.call(data, "avatarUrl")) {
+      updateData.avatarUrl = data.avatarUrl;
     }
-    if ("gender" in data) {
-      setClauses.push(`gender = $${++paramIndex}`);
-      values.push(data.gender === "male" || data.gender === "female" ? data.gender : null);
+    if (Object.prototype.hasOwnProperty.call(data, "gender")) {
+      updateData.gender = data.gender === "male" || data.gender === "female" ? data.gender : null;
     }
-    if ("age" in data) {
-      setClauses.push(`age = $${++paramIndex}`);
-      values.push(data.age);
+    if (Object.prototype.hasOwnProperty.call(data, "age")) {
+      updateData.age = data.age;
     }
-    if ("city" in data) {
-      setClauses.push(`city = $${++paramIndex}`);
-      values.push(data.city);
+    if (Object.prototype.hasOwnProperty.call(data, "city")) {
+      updateData.city = data.city;
     }
-    if ("district" in data) {
-      setClauses.push(`district = $${++paramIndex}`);
-      values.push(data.district);
+    if (Object.prototype.hasOwnProperty.call(data, "district")) {
+      updateData.district = data.district;
     }
 
-    setClauses.push("updated_at = now()");
+    this.logger.log(`updateBase profileId=${profileId} keys=${Object.keys(updateData).join(",")} gender=${(updateData as { gender?: string | null }).gender ?? "n/a"}`);
 
-    this.logger.log(`updateBase profileId=${profileId} data keys=${Object.keys(data).join(",")} gender=${data.gender ?? "n/a"}`);
-
-    if (setClauses.length <= 1) {
+    if (Object.keys(updateData).length === 0) {
       return this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
     }
 
-    values.push(profileId);
-    const whereParam = paramIndex + 1;
-    const sql = `UPDATE profiles SET ${setClauses.join(", ")} WHERE id = $${whereParam}`;
-    await this.prisma.$executeRawUnsafe(sql, ...values);
-
-    const updated = await this.prisma.profile.findUniqueOrThrow({ where: { id: profileId } });
-    return updated;
+    return this.prisma.profile.update({
+      where: { id: profileId },
+      data: updateData,
+    });
   }
 
   async updateParent(userId: bigint, profileId: bigint, data: { childrenAges?: number[] | null; specialWishes?: string | null }) {
