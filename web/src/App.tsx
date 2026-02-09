@@ -383,10 +383,11 @@ export default function App() {
                   <Route path="*" element={<Navigate to="/" replace state={{ from: location.pathname }} />} />
                 </Routes>
             )}
+
+            {me && me.activeProfileId && activeProfile && <BottomNav />}
           </AppContext.Provider>
         )}
       </div>
-      {me && me.activeProfileId && activeProfile && <BottomNav />}
     </div>
   );
 }
