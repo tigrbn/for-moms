@@ -708,11 +708,6 @@ a {
 .feed-card-specialist {
   background: var(--tg-bg);
 }
-.feed-card-specialist--bg {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
 .feed-card-header {
   display: flex;
   gap: 12px;
@@ -777,8 +772,8 @@ a {
   gap: 6px;
 }
 .feed-card-category-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
 }
 .feed-card-category strong {
@@ -794,13 +789,16 @@ a {
   font-size: 14px;
 }
 .feed-card-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 12px;
   text-align: center;
+  min-height: 44px;
 }
-.feed-card-btn--small {
-  padding: 8px 14px;
-  font-size: 13px;
+.feed-card-btn-open {
+  min-width: 160px;
+  padding: 10px 20px;
 }
 .feed-card-request-category {
   font-weight: 900;
@@ -819,12 +817,7 @@ a {
   line-height: 1.4;
 }
 
-/* Карточка анкеты (лента + страница профиля) */
-.profile-card--bg {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
+/* Карточка анкеты (страница профиля) */
 .profile-card-header {
   display: flex;
   gap: 16px;
@@ -886,9 +879,10 @@ a {
   gap: 6px;
 }
 .profile-card-category-icon {
-  width: 20px;
-  height: 20px;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 .profile-card-category strong {
   font-weight: 700;
@@ -898,6 +892,15 @@ a {
   font-weight: 700;
   color: var(--tg-link);
   font-size: 14px;
+}
+.profile-card-price-row {
+  font-size: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.profile-card-price-row strong {
+  color: var(--tg-link);
 }
 .profile-card-about {
   margin-top: 14px;
@@ -913,6 +916,25 @@ a {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+.profile-card-actions .btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Кнопка «Написать в Telegram» — фирменный голубой Telegram */
+.btn-telegram {
+  background: #0088cc !important;
+  color: #fff !important;
+  border-color: #0088cc !important;
+}
+.btn-telegram:hover {
+  background: #006699 !important;
+  border-color: #006699 !important;
+  color: #fff !important;
 }
 
 /* Страница Профиль — заголовок «Категория» и выбор категории с иконкой */

@@ -6,7 +6,6 @@ import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { FEED_CATEGORIES, getCategoryIcon } from "../constants/feed";
 import menuLenta from "../assets/img/menu/лента.png";
-import backgroundImg from "../assets/img/background.png";
 
 export function FeedScreen() {
   const {
@@ -120,11 +119,7 @@ export function FeedScreen() {
               const p = it.profile;
               const categoryIcon = getCategoryIcon(p.category ?? null);
               return (
-                <div
-                  key={`sp-${p.id}-${idx}`}
-                  className="card feed-card feed-card-specialist feed-card-specialist--bg"
-                  style={{ backgroundImage: `url(${backgroundImg})` }}
-                >
+                <div key={`sp-${p.id}-${idx}`} className="card feed-card feed-card-specialist">
                   <div className="feed-card-header">
                     <div className="feed-card-avatar">
                       <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
@@ -154,7 +149,7 @@ export function FeedScreen() {
                       </div>
                     </div>
                   </div>
-                  <Link className="btn feed-card-btn feed-card-btn--small" to={`/profiles/${p.id}`}>
+                  <Link className="btn feed-card-btn feed-card-btn-open" to={`/profiles/${p.id}`}>
                     Открыть анкету
                   </Link>
                 </div>
