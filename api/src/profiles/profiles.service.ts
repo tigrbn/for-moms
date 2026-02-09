@@ -246,6 +246,7 @@ export class ProfilesService {
         username: string | null;
         first_name: string | null;
         last_name: string | null;
+        photo_url: string | null;
         skills: unknown;
         price_per_hour: number | null;
         about: string | null;
