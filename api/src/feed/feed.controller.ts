@@ -93,22 +93,28 @@ export class FeedController {
         return arr.some((s: unknown) => String(s).toLowerCase().includes(cat));
       });
     }
-    const specialistItems = specialists.slice(0, 50).map((p) => ({
-      kind: "specialist_profile" as const,
-      isPromoted: Boolean(p.promotedUntil && p.promotedUntil > now),
-      profile: {
-        id: p.id.toString(),
-        displayName: p.displayName,
-        avatarUrl: p.avatarUrl,
-        gender: p.gender ?? null,
-        photoUrl: p.user?.photoUrl ?? null,
-        city: p.city,
-        district: p.district,
-        ratingAvg: p.ratingAvg.toString(),
-        ratingCount: p.ratingCount,
-        pricePerHour: p.specialistProfile?.pricePerHour ?? null,
-      },
-    }));
+    const specialistItems = specialists.slice(0, 50).map((p) => {
+      const skills = p.specialistProfile?.skills;
+      const skillArr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+      const category = skillArr.length > 0 ? String(skillArr[0]) : null;
+      return {
+        kind: "specialist_profile" as const,
+        isPromoted: Boolean(p.promotedUntil && p.promotedUntil > now),
+        profile: {
+          id: p.id.toString(),
+          displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
+          gender: p.gender ?? null,
+          photoUrl: p.user?.photoUrl ?? null,
+          category,
+          city: p.city,
+          district: p.district,
+          ratingAvg: p.ratingAvg.toString(),
+          ratingCount: p.ratingCount,
+          pricePerHour: p.specialistProfile?.pricePerHour ?? null,
+        },
+      };
+    });
     return {
       role: "parent" as const,
       items: [...bannerItems, ...specialistItems],

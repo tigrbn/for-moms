@@ -4,6 +4,8 @@ import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { formatDate } from "../lib/format";
 import { getAvatarSrc } from "../lib/avatar";
+import { getCategoryIcon } from "../constants/feed";
+import backgroundImg from "../assets/img/background.png";
 import type { PublicProfile, ReviewListItem } from "../types";
 
 export function PublicProfileScreen() {
@@ -68,77 +70,69 @@ export function PublicProfileScreen() {
   const tgUsername = p.user?.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
   const avatarSrc = getAvatarSrc(p.avatarUrl, p.user?.photoUrl, p.gender);
+  const genderLabel = p.gender === "male" ? "Мужской" : p.gender === "female" ? "Женский" : "—";
+  const category = p.type === "specialist" ? p.specialist?.category ?? null : null;
+  const categoryIcon = getCategoryIcon(category);
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <div className="card">
-        <div className="row" style={{ alignItems: "flex-start", gap: 16 }}>
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: "50%",
-              overflow: "hidden",
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "var(--tg-theme-secondary-bg-color, #eee)",
-            }}
-          >
-            <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      <div
+        className="card profile-card profile-card--bg"
+        style={{ backgroundImage: `url(${backgroundImg})` }}
+      >
+        <div className="profile-card-header">
+          <div className="profile-card-avatar">
+            <img src={avatarSrc} alt="" />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="row">
-              <div className="h2" style={{ margin: 0 }}>
+          <div className="profile-card-title-block">
+            <div className="profile-card-title-row">
+              <h2 className="h2 profile-card-title" style={{ margin: 0 }}>
                 {title}
-              </div>
-              <div className="spacer" />
-              <div className="muted">
-                ★ {p.ratingAvg} ({p.ratingCount})
-              </div>
+              </h2>
+              <div className="profile-card-rating">★ {p.ratingAvg} ({p.ratingCount})</div>
             </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              {p.city && <span>Город: {p.city}</span>}
-              {p.city && p.district && " · "}
-              {p.district && <span>Район: {p.district}</span>}
-              {!p.city && !p.district && "—"}
-            </div>
-            {p.age != null && p.age > 0 && (
-              <div className="muted" style={{ marginTop: 4 }}>
-                Возраст: {p.age} лет
+            <div className="profile-card-meta-block">
+              <div className="profile-card-meta-row muted">
+                Пол: <strong>{genderLabel}</strong>
               </div>
-            )}
+              {p.type === "specialist" && (
+                <div className="profile-card-category">
+                  {categoryIcon && <img src={categoryIcon} alt="" className="profile-card-category-icon" />}
+                  <span>Категория: <strong>{category ?? "—"}</strong></span>
+                </div>
+              )}
+              <div className="profile-card-meta-row muted">
+                {p.city && <span>город: {p.city}</span>}
+                {p.city && p.district && ", "}
+                {p.district && <span>район: {p.district}</span>}
+                {!p.city && !p.district && "—"}
+              </div>
+              {p.age != null && p.age > 0 && (
+                <div className="profile-card-meta-row muted">Возраст: {p.age} лет</div>
+              )}
+              {p.type === "specialist" && p.specialist?.pricePerHour != null && (
+                <div className="profile-card-price">{p.specialist.pricePerHour} ₽/час</div>
+              )}
+            </div>
           </div>
         </div>
-        {p.type === "specialist" && (
-          <>
-            {p.specialist?.pricePerHour != null && (
-              <div className="muted" style={{ marginTop: 10 }}>
-                Цена: {p.specialist.pricePerHour} ₽/час
-              </div>
-            )}
-            {(p.specialist?.about ?? "").trim() && (
-              <div style={{ marginTop: 12 }}>
-                <div className="label" style={{ marginBottom: 6 }}>
-                  О специалисте
-                </div>
-                <div style={{ whiteSpace: "pre-wrap" }}>{(p.specialist?.about ?? "").trim()}</div>
-              </div>
-            )}
-          </>
-        )}
-        {p.type === "parent" && (p.parent?.childrenAges?.length || p.parent?.specialWishes) && (
-          <div style={{ marginTop: 12 }}>
-            {p.parent.childrenAges && p.parent.childrenAges.length > 0 && (
-              <div className="muted" style={{ marginTop: 6 }}>
-                Возраст детей: {p.parent.childrenAges.join(", ")}
-              </div>
-            )}
-            {p.parent.specialWishes && <div style={{ marginTop: 6 }}>{p.parent.specialWishes}</div>}
+        {p.type === "specialist" && (p.specialist?.about ?? "").trim() && (
+          <div className="profile-card-about">
+            <div className="label" style={{ marginBottom: 6 }}>
+              О специалисте
+            </div>
+            <div style={{ whiteSpace: "pre-wrap" }}>{(p.specialist?.about ?? "").trim()}</div>
           </div>
         )}
-        <div className="row" style={{ marginTop: 16, flexWrap: "wrap", gap: 8 }}>
+        {p.type === "parent" && (p.parent?.childrenAges?.length || p.parent?.specialWishes) && (
+          <div className="profile-card-extra muted">
+            {p.parent.childrenAges && p.parent.childrenAges.length > 0 && (
+              <div>Возраст детей: {p.parent.childrenAges.join(", ")}</div>
+            )}
+            {p.parent.specialWishes && <div>{p.parent.specialWishes}</div>}
+          </div>
+        )}
+        <div className="profile-card-actions row">
           {tgUrl ? (
             <a className="btn btn-primary" href={tgUrl} target="_blank" rel="noreferrer">
               Написать в Telegram
@@ -148,7 +142,8 @@ export function PublicProfileScreen() {
               Контакты в Telegram не указаны
             </span>
           )}
-          <button className="btn secondary" onClick={() => navigate(-1)}>
+          <div className="spacer" />
+          <button type="button" className="btn secondary" onClick={() => navigate(-1)}>
             Назад
           </button>
         </div>

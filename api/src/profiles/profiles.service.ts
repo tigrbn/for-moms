@@ -15,7 +15,7 @@ export type PublicProfileDto = {
   ratingAvg: string;
   ratingCount: number;
   user: { username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null };
-  specialist: { pricePerHour: number | null; about: string | null } | null;
+  specialist: { category: string | null; pricePerHour: number | null; about: string | null } | null;
   parent: { childrenAges: number[] | null; specialWishes: string | null } | null;
 };
 
@@ -246,7 +246,7 @@ export class ProfilesService {
         username: string | null;
         first_name: string | null;
         last_name: string | null;
-        photo_url: string | null;
+        skills: unknown;
         price_per_hour: number | null;
         about: string | null;
         children_ages: unknown;
@@ -256,7 +256,7 @@ export class ProfilesService {
       SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.gender, p.age, p.city, p.district,
              p.rating_avg::text AS rating_avg, p.rating_count,
              u.username, u.first_name, u.last_name, u.photo_url,
-             sp.price_per_hour, sp.about,
+             sp.skills, sp.price_per_hour, sp.about,
              pp.children_ages, pp.special_wishes
       FROM profiles p
       LEFT JOIN users u ON u.id = p.user_id
@@ -296,7 +296,12 @@ export class ProfilesService {
       },
       specialist:
         profileType === "specialist"
-          ? { pricePerHour: row.price_per_hour, about: row.about }
+          ? (() => {
+              const skills = row.skills;
+              const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+              const category = arr.length > 0 ? String(arr[0]) : null;
+              return { category, pricePerHour: row.price_per_hour, about: row.about };
+            })()
           : null,
       parent:
         profileType === "parent"
@@ -347,10 +352,16 @@ export class ProfilesService {
       },
       specialist:
         typeStr === "specialist" && p.specialistProfile
-          ? {
-              pricePerHour: p.specialistProfile.pricePerHour ?? null,
-              about: p.specialistProfile.about ?? null,
-            }
+          ? (() => {
+              const skills = p.specialistProfile.skills;
+              const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+              const category = arr.length > 0 ? String(arr[0]) : null;
+              return {
+                category,
+                pricePerHour: p.specialistProfile.pricePerHour ?? null,
+                about: p.specialistProfile.about ?? null,
+              };
+            })()
           : null,
       parent:
         typeStr === "parent"

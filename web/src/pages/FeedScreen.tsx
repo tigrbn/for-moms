@@ -4,8 +4,9 @@ import { StubCard } from "../components/StubCard";
 import { formatMoney, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
-import { FEED_CATEGORIES } from "../constants/feed";
+import { FEED_CATEGORIES, getCategoryIcon } from "../constants/feed";
 import menuLenta from "../assets/img/menu/лента.png";
+import backgroundImg from "../assets/img/background.png";
 
 export function FeedScreen() {
   const {
@@ -117,24 +118,43 @@ export function FeedScreen() {
           {contentItems.map((it, idx) => {
             if (it.kind === "specialist_profile") {
               const p = it.profile;
+              const categoryIcon = getCategoryIcon(p.category ?? null);
               return (
-                <div key={`sp-${p.id}-${idx}`} className="card feed-card feed-card-specialist">
+                <div
+                  key={`sp-${p.id}-${idx}`}
+                  className="card feed-card feed-card-specialist feed-card-specialist--bg"
+                  style={{ backgroundImage: `url(${backgroundImg})` }}
+                >
                   <div className="feed-card-header">
                     <div className="feed-card-avatar">
                       <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
                     </div>
                     <div className="feed-card-title-block">
-                      <div className="feed-card-title">
-                        {p.displayName ?? "Специалист"}
-                        {it.isPromoted && <span className="pill feed-card-top">TOP</span>}
+                      <div className="feed-card-title-row">
+                        <div className="feed-card-title">
+                          {p.displayName ?? "Специалист"}
+                          {it.isPromoted && <span className="pill feed-card-top">TOP</span>}
+                        </div>
+                        <div className="feed-card-rating">★ {p.ratingAvg} ({p.ratingCount})</div>
                       </div>
-                      <div className="muted feed-card-meta">
-                        ★ {p.ratingAvg} ({p.ratingCount}) · {p.city ?? "—"} · {p.district ?? "—"}
+                      <div className="feed-card-meta-block">
+                        <div className="feed-card-category">
+                          {categoryIcon && <img src={categoryIcon} alt="" className="feed-card-category-icon" />}
+                          <span>Категория: <strong>{p.category ?? "—"}</strong></span>
+                        </div>
+                        <div className="feed-card-meta muted">
+                          {p.city && <span>город: {p.city}</span>}
+                          {p.city && p.district && ", "}
+                          {p.district && <span>район: {p.district}</span>}
+                          {!p.city && !p.district && "—"}
+                        </div>
+                        {p.pricePerHour != null && (
+                          <div className="feed-card-price">{p.pricePerHour} ₽/час</div>
+                        )}
                       </div>
-                      {p.pricePerHour != null && <div className="feed-card-price">{p.pricePerHour} ₽/час</div>}
                     </div>
                   </div>
-                  <Link className="btn feed-card-btn" to={`/profiles/${p.id}`}>
+                  <Link className="btn feed-card-btn feed-card-btn--small" to={`/profiles/${p.id}`}>
                     Открыть анкету
                   </Link>
                 </div>

@@ -37,6 +37,7 @@ export type FeedResponse =
               avatarUrl?: string | null;
               gender?: string | null;
               photoUrl?: string | null;
+              category?: string | null;
               city?: string | null;
               district?: string | null;
               ratingAvg: string;
@@ -163,6 +164,6 @@ export type PublicProfile = {
   ratingAvg: string;
   ratingCount: number;
   user: { username?: string | null; firstName?: string | null; lastName?: string | null; photoUrl?: string | null };
-  specialist: { pricePerHour?: number | null; about?: string | null } | null;
+  specialist: { category?: string | null; pricePerHour?: number | null; about?: string | null } | null;
   parent: { childrenAges?: number[] | null; specialWishes?: string | null } | null;
 };

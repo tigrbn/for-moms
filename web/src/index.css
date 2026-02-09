@@ -708,6 +708,11 @@ a {
 .feed-card-specialist {
   background: var(--tg-bg);
 }
+.feed-card-specialist--bg {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 .feed-card-header {
   display: flex;
   gap: 12px;
@@ -736,6 +741,12 @@ a {
   flex: 1;
   min-width: 0;
 }
+.feed-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
 .feed-card-title {
   font-weight: 900;
   font-size: 15px;
@@ -744,22 +755,52 @@ a {
   gap: 8px;
   flex-wrap: wrap;
 }
+.feed-card-rating {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .feed-card-top {
   font-size: 11px;
 }
+.feed-card-meta-block {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.feed-card-category {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.feed-card-category-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.feed-card-category strong {
+  font-weight: 700;
+  color: var(--tg-link, var(--primary));
+}
 .feed-card-meta {
   font-size: 13px;
-  margin-top: 4px;
 }
 .feed-card-price {
   font-weight: 700;
   color: var(--tg-link);
-  margin-top: 4px;
+  font-size: 14px;
 }
 .feed-card-btn {
   display: inline-block;
   margin-top: 12px;
   text-align: center;
+}
+.feed-card-btn--small {
+  padding: 8px 14px;
+  font-size: 13px;
 }
 .feed-card-request-category {
   font-weight: 900;
@@ -776,6 +817,102 @@ a {
   margin-top: 10px;
   font-size: 14px;
   line-height: 1.4;
+}
+
+/* Карточка анкеты (лента + страница профиля) */
+.profile-card--bg {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.profile-card-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.profile-card-avatar {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--tg-theme-secondary-bg-color, #eee);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-card-title-block {
+  flex: 1;
+  min-width: 0;
+}
+.profile-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.profile-card-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.profile-card-rating {
+  font-size: 14px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.profile-card-meta-block {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.profile-card-meta-row {
+  font-size: 14px;
+}
+.profile-card-meta-row strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.profile-card-category {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.profile-card-category-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.profile-card-category strong {
+  font-weight: 700;
+  color: var(--tg-link, var(--primary));
+}
+.profile-card-price {
+  font-weight: 700;
+  color: var(--tg-link);
+  font-size: 14px;
+}
+.profile-card-about {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+.profile-card-extra {
+  margin-top: 10px;
+  font-size: 14px;
+}
+.profile-card-actions {
+  margin-top: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 /* Страница Профиль — заголовок «Категория» и выбор категории с иконкой */

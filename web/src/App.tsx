@@ -4,7 +4,6 @@ import { getJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
-import backgroundImg from "./assets/img/background.png";
 import mainLogoImg from "./assets/img/main_logo.png";
 
 import type { MeResponse, FeedResponse } from "./types";
@@ -240,15 +239,7 @@ export default function App() {
   );
 
   return (
-    <div
-      className="app safe"
-      style={{
-        backgroundImage: `url(${backgroundImg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
+    <div className="app safe">
       <div className="container">
         <TopBar
           logo={mainLogoImg}

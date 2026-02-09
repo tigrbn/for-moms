@@ -9,3 +9,9 @@ export const FEED_CATEGORIES = [
   { id: "Репетитор", label: "Репетитор", icon: categoryTutor },
   { id: "Досуг", label: "Досуг", icon: categoryLeisure },
 ];
+
+export function getCategoryIcon(category: string | null | undefined): string | null {
+  if (!category?.trim()) return null;
+  const c = FEED_CATEGORIES.find((x) => x.id && x.id.trim() && category.trim() === x.id);
+  return c?.icon ?? null;
+}
