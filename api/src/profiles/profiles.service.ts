@@ -80,6 +80,76 @@ export class ProfilesService {
     }
   }
 
+  /** Создание профиля с заполненными данными (для первого входа: без пустого профиля в БД). */
+  async createProfileWithData(
+    userId: bigint,
+    dto: {
+      type: "parent" | "specialist";
+      displayName?: string | null;
+      gender?: string | null;
+      age?: number | null;
+      city?: string | null;
+      district?: string | null;
+      contactPhone?: string | null;
+      showContactPhonePublicly?: boolean;
+      parent?: { childrenAges?: number[] | null; specialWishes?: string | null };
+      specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null };
+    },
+  ) {
+    const { type } = dto;
+    if (type !== "parent" && type !== "specialist") {
+      throw new BadRequestException("Invalid profile type");
+    }
+
+    const profile = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.profile.create({
+        data: {
+          userId,
+          type,
+          isActive: true,
+          displayName: dto.displayName?.trim() || null,
+          gender: dto.gender === "male" || dto.gender === "female" ? dto.gender : null,
+          age: dto.age ?? null,
+          city: dto.city?.trim() || null,
+          district: dto.district?.trim() || null,
+          contactPhone: dto.contactPhone?.trim() || null,
+          showContactPhonePublicly: type === "specialist" ? Boolean(dto.showContactPhonePublicly) : false,
+          ...(type === "parent" ? { parentProfile: { create: {} } } : {}),
+          ...(type === "specialist" ? { specialistProfile: { create: {} } } : {}),
+        },
+      });
+
+      if (type === "parent" && dto.parent) {
+        const childrenAges = Array.isArray(dto.parent.childrenAges) ? dto.parent.childrenAges : null;
+        const specialWishes = dto.parent.specialWishes?.trim() || null;
+        await tx.parentProfile.update({
+          where: { profileId: created.id },
+          data: { childrenAges: childrenAges ?? Prisma.JsonNull, specialWishes },
+        });
+      }
+      if (type === "specialist" && dto.specialist) {
+        const skills = Array.isArray(dto.specialist.skills) ? dto.specialist.skills : dto.specialist.skills ? [dto.specialist.skills] : [];
+        await tx.specialistProfile.update({
+          where: { profileId: created.id },
+          data: {
+            skills: skills.length ? (skills as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+            pricePerHour: dto.specialist.pricePerHour ?? null,
+            about: dto.specialist.about?.trim() || null,
+          },
+        });
+      }
+
+      await tx.user.updateMany({
+        where: { id: userId, activeProfileId: null },
+        data: { activeProfileId: created.id },
+      });
+
+      return created;
+    });
+
+    return profile;
+  }
+
   async getOwnedProfileOrThrow(userId: bigint, profileId: bigint) {
     const profile = await this.prisma.profile.findUnique({ where: { id: profileId } });
     if (!profile || profile.userId !== userId) throw new NotFoundException("Profile not found");

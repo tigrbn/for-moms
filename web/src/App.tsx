@@ -22,11 +22,13 @@ import { FeedScreen } from "./pages/FeedScreen";
 import { PublicProfileScreen } from "./pages/PublicProfileScreen";
 import { DocPage } from "./pages/DocPage";
 import { ConsentGateScreen } from "./pages/ConsentGateScreen";
+import { NewProfileScreen } from "./pages/NewProfileScreen";
 
 export default function App() {
   const { token, clearToken, error } = useTelegramAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | null>(null);
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
@@ -329,33 +331,68 @@ export default function App() {
             {meError && <ErrorBox error={meError} />}
 
             {me && (() => {
-              const consentRequired = me.consentedUserAgreement !== true || me.consentedPolicy !== true;
-              if (consentRequired) {
+              const consentGiven = me.consentedUserAgreement === true && me.consentedPolicy === true;
+              const hasProfiles = me.profiles.length > 0;
+
+              if (hasProfiles) {
                 return (
-                  <Routes>
-                    <Route path="/docs/:docType" element={<DocPage />} />
-                    <Route path="*" element={<ConsentGateScreen />} />
-                  </Routes>
+                  <>
+                    <Routes>
+                      <Route
+                        path="/"
+                        element={activeProfile ? <FeedScreen /> : <Navigate to="/profile" replace />}
+                      />
+                      <Route
+                        path="/requests"
+                        element={activeProfile ? <RequestsScreen /> : <Navigate to="/profile" replace />}
+                      />
+                      <Route
+                        path="/requests/new"
+                        element={activeProfile ? <NewRequestScreen /> : <Navigate to="/profile" replace />}
+                      />
+                      <Route
+                        path="/requests/:id"
+                        element={activeProfile ? <RequestDetailsScreen /> : <Navigate to="/profile" replace />}
+                      />
+                      <Route
+                        path="/offers"
+                        element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
+                      />
+                      <Route path="/profile" element={<ProfileScreen />} />
+                      <Route path="/profiles/:id" element={<PublicProfileScreen />} />
+                      <Route path="/docs/:docType" element={<DocPage />} />
+                      <Route
+                        path="*"
+                        element={
+                          activeProfile ? (
+                            <Navigate to="/" replace state={{ from: location.pathname }} />
+                          ) : (
+                            <Navigate to="/profile" replace />
+                          )
+                        }
+                      />
+                    </Routes>
+                  </>
                 );
               }
-              if (me.profiles.length === 0) {
+
+              if (!pendingRoleType) {
                 return (
                   <div className="card">
                     <div className="h2">Выберите роль</div>
-                    <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
+                    <p className="muted" style={{ marginTop: 8, marginBottom: 12 }}>
+                      Дальше нужно принять условия и заполнить профиль.
+                    </p>
+                    <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                       <button
                         className="btn"
-                        onClick={() => void createRole("parent").catch((e: unknown) => setMeError(e instanceof Error ? e.message : "Не удалось создать роль"))}
+                        onClick={() => setPendingRoleType("parent")}
                       >
                         {PARENT_ROLE_EMOJI} Родитель
                       </button>
                       <button
                         className="btn"
-                        onClick={() =>
-                          void createRole("specialist").catch((e: unknown) =>
-                            setMeError(e instanceof Error ? e.message : "Не удалось создать роль"),
-                          )
-                        }
+                        onClick={() => setPendingRoleType("specialist")}
                       >
                         👩‍🏫 Специалист
                       </button>
@@ -363,45 +400,17 @@ export default function App() {
                   </div>
                 );
               }
-              return (
-                <>
+
+              if (pendingRoleType && !consentGiven) {
+                return (
                   <Routes>
-                    <Route
-                      path="/"
-                      element={activeProfile ? <FeedScreen /> : <Navigate to="/profile" replace />}
-                    />
-                    <Route
-                      path="/requests"
-                      element={activeProfile ? <RequestsScreen /> : <Navigate to="/profile" replace />}
-                    />
-                    <Route
-                      path="/requests/new"
-                      element={activeProfile ? <NewRequestScreen /> : <Navigate to="/profile" replace />}
-                    />
-                    <Route
-                      path="/requests/:id"
-                      element={activeProfile ? <RequestDetailsScreen /> : <Navigate to="/profile" replace />}
-                    />
-                    <Route
-                      path="/offers"
-                      element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
-                    />
-                    <Route path="/profile" element={<ProfileScreen />} />
-                    <Route path="/profiles/:id" element={<PublicProfileScreen />} />
                     <Route path="/docs/:docType" element={<DocPage />} />
-                    <Route
-                      path="*"
-                      element={
-                        activeProfile ? (
-                          <Navigate to="/" replace state={{ from: location.pathname }} />
-                        ) : (
-                          <Navigate to="/profile" replace />
-                        )
-                      }
-                    />
+                    <Route path="*" element={<ConsentGateScreen />} />
                   </Routes>
-                </>
-              );
+                );
+              }
+
+              return <NewProfileScreen type={pendingRoleType} />;
             })()}
 
             {me && me.profiles.length > 0 && activeProfile && <BottomNav />}

@@ -206,12 +206,16 @@ export function RequestDetailsScreen() {
               <div className="spacer" />
               <div className="pill">{labelRequestStatus(data.status)}</div>
             </div>
-            {(data.parent.ratingCount != null && data.parent.ratingCount > 0) && (
-              <div className="profile-card-rating" style={{ marginTop: 6 }}>
-                <span className="rating-star">★</span>{" "}
-                {data.parent.ratingAvg ?? "0"} ({data.parent.ratingCount})
-              </div>
-            )}
+            <div className="profile-card-rating" style={{ marginTop: 6 }}>
+              {(data.parent.ratingCount != null && data.parent.ratingCount > 0) ? (
+                <>
+                  <span className="rating-star">★</span>{" "}
+                  {data.parent.ratingAvg ?? "0"} ({data.parent.ratingCount})
+                </>
+              ) : (
+                <span className="muted">Рейтинг заказчика: пока нет отзывов</span>
+              )}
+            </div>
             <div className="profile-card-meta-block">
               <div className="profile-card-meta-row">
                 <span className="profile-card-meta-label">Категория:</span>

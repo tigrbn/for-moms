@@ -40,6 +40,33 @@ export class ProfilesController {
     }
   }
 
+  @Post("with-data")
+  async createWithData(
+    @Req() req: Request,
+    @Body()
+    body: {
+      type: "parent" | "specialist";
+      displayName?: string | null;
+      gender?: string | null;
+      age?: number | null;
+      city?: string | null;
+      district?: string | null;
+      contactPhone?: string | null;
+      showContactPhonePublicly?: boolean;
+      parent?: { childrenAges?: number[] | null; specialWishes?: string | null };
+      specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null };
+    },
+  ) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    if (!body?.type) throw new BadRequestException("type is required");
+    const profile = await this.profiles.createProfileWithData(userId, body);
+    return {
+      id: profile.id.toString(),
+      type: profile.type,
+      isActive: profile.isActive,
+    };
+  }
+
   @Post()
   async create(@Req() req: Request, @Body() body: { type: ProfileType }) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
