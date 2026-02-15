@@ -26,7 +26,11 @@ export function ReviewsSlider({ reviews, authorFallbackLabel = "Пользова
     fromProfile?.displayName?.trim() ||
     [fromProfile?.firstName, fromProfile?.lastName].filter(Boolean).join(" ") ||
     "";
-  const authorName = !fromProfile || !namePart ? "Удалённый аккаунт" : namePart;
+  const authorName = !fromProfile
+    ? "Удалённый аккаунт"
+    : namePart
+      ? namePart
+      : authorFallbackLabel;
   const showAuthorAvatar = fromProfile && namePart;
   const authorAvatar = showAuthorAvatar
     ? getAvatarSrc(
