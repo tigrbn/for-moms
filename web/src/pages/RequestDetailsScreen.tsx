@@ -189,6 +189,7 @@ export function RequestDetailsScreen() {
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <div className={`card profile-card ${isCompleted ? "card--completed" : ""}`}>
+        <div className={isCompleted ? "card__content" : undefined}>
         <div className="profile-card-header">
           <div className="profile-card-avatar-wrap">
             <div className="profile-card-avatar">
@@ -263,6 +264,7 @@ export function RequestDetailsScreen() {
             <div className="profile-card-about-text">{data.description}</div>
           </div>
         )}
+        </div>
         {(activeProfileType === "parent" || isAdmin) && (
           <div className="row" style={{ marginTop: 16 }}>
             <button

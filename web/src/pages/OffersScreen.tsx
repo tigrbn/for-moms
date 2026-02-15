@@ -78,17 +78,35 @@ export function OffersScreen() {
               className={`card ${isCompleted ? "card--completed" : ""}`}
               style={{ background: "var(--tg-bg)" }}
             >
-              <div className="row row--status-right" style={{ gap: 8 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 800 }}><CategoryDisplay category={o.request.category} /></div>
+              {isCompleted ? (
+                <div className="card__content">
+                  <div className="row row--status-right" style={{ gap: 8 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800 }}><CategoryDisplay category={o.request.category} /></div>
+                    </div>
+                    <div className="spacer" />
+                    <div className="pill">{labelOfferStatus(o.status)}</div>
+                  </div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Район: {o.request.district ?? "—"} · Бюджет: {formatMoney(o.request.budget)}
+                  </div>
+                  {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
                 </div>
-                <div className="spacer" />
-                <div className="pill">{labelOfferStatus(o.status)}</div>
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Район: {o.request.district ?? "—"} · Бюджет: {formatMoney(o.request.budget)}
-              </div>
-              {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
+              ) : (
+                <>
+                  <div className="row row--status-right" style={{ gap: 8 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800 }}><CategoryDisplay category={o.request.category} /></div>
+                    </div>
+                    <div className="spacer" />
+                    <div className="pill">{labelOfferStatus(o.status)}</div>
+                  </div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Район: {o.request.district ?? "—"} · Бюджет: {formatMoney(o.request.budget)}
+                  </div>
+                  {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
+                </>
+              )}
               <div className="row" style={{ marginTop: 10 }}>
                 <Link className="btn secondary" to={`/requests/${o.requestId}`}>
                   Открыть заявку

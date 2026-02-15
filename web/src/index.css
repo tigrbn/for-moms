@@ -149,10 +149,13 @@ a {
   background: var(--tg-secondary-bg, #f4efff) !important;
 }
 
-/* Завершённые заявки (выполнены или отменены) — приглушённый вид, без opacity чтобы кнопки оставались яркими */
+/* Завершённые заявки: фон, цвет, opacity только у контента; кнопки без opacity */
 .card--completed {
   background: var(--disabled-bg, #eceaf5) !important;
   color: var(--text-secondary);
+}
+.card--completed .card__content {
+  opacity: 0.6;
 }
 .card--completed .feed-card-title,
 .card--completed .profile-card-title,
@@ -255,6 +258,16 @@ a {
 }
 .row--status-right .pill {
   flex-shrink: 0;
+}
+/* Длинный текст категории/специализации переносим, чтобы статус помещался */
+.row--status-right .request-card-category,
+.row--status-right .category-display,
+.row--status-right .feed-card-title,
+.feed-card-title-row .feed-card-title,
+.profile-card-title-row .profile-card-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .btn {
@@ -941,7 +954,7 @@ a {
 }
 /* Контент выполненной заявки в ленте: серый и полупрозрачный; кнопка остаётся яркой */
 .feed-card-request.card--completed .feed-card-request-content {
-  opacity: 0.7;
+  opacity: 0.6;
   color: var(--text-secondary);
 }
 .feed-card-request.card--completed .feed-card-request-content .feed-card-title,
@@ -1136,6 +1149,7 @@ a {
 .request-card-desc {
   font-weight: 400;
   color: #3a3a3a;
+  font-size: 14px;
 }
 .feed-card-top {
   font-size: 11px;
