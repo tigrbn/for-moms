@@ -53,7 +53,7 @@ export function OffersScreen() {
   return (
     <div className="card">
       <div className="h2">Мои отклики</div>
-      {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
+      {err && <div className="error-message" style={{ marginTop: 8 }} role="alert">{err}</div>}
       {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
       {items && items.length === 0 && (
         <div style={{ marginTop: 10 }}>

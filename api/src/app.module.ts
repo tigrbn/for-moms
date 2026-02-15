@@ -11,6 +11,8 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { BannersModule } from "./banners/banners.module";
 import { FeedModule } from "./feed/feed.module";
 import { UploadModule } from "./upload/upload.module";
+import { TelegramModule } from "./telegram/telegram.module";
+import { ContactModule } from "./contact/contact.module";
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { UploadModule } from "./upload/upload.module";
     BannersModule,
     FeedModule,
     UploadModule,
+    TelegramModule,
+    ContactModule,
   ],
 })
 export class AppModule {}

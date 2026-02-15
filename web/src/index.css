@@ -7,6 +7,7 @@
   --text-secondary: #8e8e93;
   --success: #6ed3b5;
   --warning: #ffb7a5;
+  --error: #b71c1c;
   --border-color: #e9e6f2;
   --disabled-bg: #eceaf5;
   --disabled-text: #b5b2c7;
@@ -750,12 +751,12 @@ a {
   margin-top: 12px;
   margin-bottom: 6px;
 }
-/* Полоса категорий на всю ширину карточки, обрезка по скруглению карточки */
+/* Полоса категорий: слева в край карточки, справа не выходим за wrap (overflow: hidden), чтобы не обрезало последний чип */
 .feed-categories-scroll {
   margin-left: -16px;
-  margin-right: -16px;
+  margin-right: 0;
   padding-left: 16px;
-  padding-right: 32px;
+  padding-right: 24px;
   padding-bottom: 10px;
   width: 100%;
   max-width: 100%;
@@ -771,7 +772,6 @@ a {
   position: relative;
   z-index: 1;
   min-height: 48px;
-  /* Чтобы на мобильных контейнер не растягивался под контент и появлялся скролл */
   min-width: 0;
 }
 .feed-categories-scroll::-webkit-scrollbar {
@@ -787,7 +787,7 @@ a {
   flex-wrap: nowrap;
   min-width: min-content;
   width: max-content;
-  padding-right: 24px;
+  padding-right: 16px;
 }
 .feed-category-chip {
   flex-shrink: 0;
@@ -1495,12 +1495,22 @@ a {
   transform: translateX(22px);
 }
 
+/* Сообщения об ошибках — красный цвет, чтобы пользователь сразу видел */
+.text-error,
+.error-message {
+  color: var(--error) !important;
+}
 .profile-edit-err {
   padding: 10px 12px;
   margin-bottom: 12px;
   background: rgba(198, 40, 40, 0.08);
   border-radius: var(--radius-sm);
   font-size: 14px;
+  color: var(--error);
+}
+.error-box .error-box-message {
+  color: var(--error);
+  margin-top: 8px;
 }
 .profile-edit-fields {
   display: flex;

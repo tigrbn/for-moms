@@ -18,6 +18,7 @@ import { NewRequestScreen } from "./pages/NewRequestScreen";
 import { RequestDetailsScreen } from "./pages/RequestDetailsScreen";
 import { OffersScreen } from "./pages/OffersScreen";
 import { ProfileScreen } from "./pages/ProfileScreen";
+import { ContactScreen } from "./pages/ContactScreen";
 import { FeedScreen } from "./pages/FeedScreen";
 import { PublicProfileScreen } from "./pages/PublicProfileScreen";
 import { DocPage } from "./pages/DocPage";
@@ -363,6 +364,7 @@ export default function App() {
                         element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
                       />
                       <Route path="/profile" element={<ProfileScreen />} />
+                      <Route path="/profile/contact" element={<ContactScreen />} />
                       <Route path="/profile/new/:roleType" element={<NewProfileByRoleRoute />} />
                       <Route path="/profiles/:id" element={<PublicProfileScreen />} />
                       <Route path="/docs/:docType" element={<DocPage />} />

@@ -89,7 +89,7 @@ export function RequestsScreen() {
     return (
       <div className="card">
         <div className="h2">Все заявки</div>
-        {archiveErr && <div className="muted" style={{ marginTop: 8 }}>{archiveErr}</div>}
+        {archiveErr && <div className="error-message" style={{ marginTop: 8 }} role="alert">{archiveErr}</div>}
         {loading && !archiveErr && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
         {!loading && archiveItems.length === 0 && (
           <div style={{ marginTop: 10 }}>
@@ -161,7 +161,7 @@ export function RequestsScreen() {
           + Создать
         </Link>
       </div>
-      {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
+      {err && <div className="error-message" style={{ marginTop: 8 }} role="alert">{err}</div>}
       {!items && !err && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
       {items && items.length === 0 && (
         <div style={{ marginTop: 10 }}>

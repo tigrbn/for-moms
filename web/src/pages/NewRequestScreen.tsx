@@ -49,7 +49,7 @@ export function NewRequestScreen() {
       <p className="muted" style={{ marginTop: 6, marginBottom: 0, fontSize: 13 }}>
         Сервис «Для мам» — посредник между заказчиками и специалистами. Трудовые и гражданско‑правовые отношения возникают между пользователями; сервис не является работодателем и не участвует в оказании услуг.
       </p>
-      {err && <div className="muted" style={{ marginTop: 8 }}>{err}</div>}
+      {err && <div className="error-message" style={{ marginTop: 8 }} role="alert">{err}</div>}
       <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
         <div className="field">
           <div className="label">Категория</div>

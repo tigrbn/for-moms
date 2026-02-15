@@ -166,7 +166,7 @@ export function NewProfileScreen({ type }: Props) {
           </p>
         </div>
         {err && (
-          <div className="profile-edit-err muted" role="alert">
+          <div className="profile-edit-err" role="alert">
             {err}
           </div>
         )}
