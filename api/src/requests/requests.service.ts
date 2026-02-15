@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
+import { isAdminUser } from "../common/admin";
 import { TelegramService } from "../telegram/telegram.service";
 
 @Injectable()
@@ -213,11 +214,15 @@ export class RequestsService {
   }
 
   async delete(userId: bigint, requestId: bigint) {
-    const active = await getActiveProfileOrThrow(this.prisma, userId);
-    if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
-
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
-    if (!request || request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
+    if (!request) throw new NotFoundException("Request not found");
+
+    const admin = await isAdminUser(this.prisma, userId);
+    if (!admin) {
+      const active = await getActiveProfileOrThrow(this.prisma, userId);
+      if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
+      if (request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
+    }
 
     await this.prisma.request.delete({ where: { id: requestId } });
   }

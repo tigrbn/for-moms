@@ -77,14 +77,14 @@ export function getCategoryIcon(category: string | null | undefined): string | n
   return null;
 }
 
-/** Текст категории для отображения: «Раздел: Подкатегория» для подкатегории, иначе название раздела или как есть */
+/** Текст категории для отображения: «Категория, Подкатегория» (например «Няня, Няня Выходного дня») для подкатегории, иначе название раздела */
 export function getCategoryDisplayText(category: string | null | undefined): string {
   if (!category?.trim()) return "—";
   const cat = category.trim();
   for (const section of CATEGORY_TREE) {
     if (section.id === cat) return section.label;
     const child = section.children.find((c) => c.id === cat);
-    if (child) return `${section.label}: ${child.label}`;
+    if (child) return `${section.label}, ${section.label} ${child.label}`;
   }
   return cat;
 }

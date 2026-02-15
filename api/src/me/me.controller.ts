@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, NotFoundException, Post, Re
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { isAdminUser } from "../common/admin";
 import type { Request } from "express";
 
 @Controller("me")
@@ -138,6 +139,8 @@ export class MeController {
       return base;
     });
 
+    const isAdmin = await isAdminUser(this.prisma, userId);
+
     return {
       user: {
         id: user.id.toString(),
@@ -151,6 +154,7 @@ export class MeController {
       activeProfileId: user.activeProfileId ? user.activeProfileId.toString() : null,
       consentedUserAgreement,
       consentedPolicy,
+      isAdmin,
     };
   }
 

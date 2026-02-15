@@ -23,7 +23,7 @@ type PostDetail = {
 
 export function PostDetailScreen() {
   const { id } = useParams<{ id: string }>();
-  const { authedGet, authedDelete, activeProfileId, setFeedReloadKey, navigate } = useApp();
+  const { authedGet, authedDelete, activeProfileId, setFeedReloadKey, navigate, isAdmin } = useApp();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -56,6 +56,7 @@ export function PostDetailScreen() {
   const tgUsername = author.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
   const isAuthor = Boolean(post.authorProfileId && activeProfileId && post.authorProfileId === activeProfileId);
+  const canDelete = isAuthor || isAdmin;
 
   const onDelete = async () => {
     if (!id || !confirm("Удалить объявление?")) return;
@@ -125,7 +126,7 @@ export function PostDetailScreen() {
         <Link className="btn secondary" to="/">
           В ленту
         </Link>
-        {isAuthor && (
+        {canDelete && (
           <button
             type="button"
             className="btn secondary"
@@ -133,7 +134,7 @@ export function PostDetailScreen() {
             onClick={() => void onDelete()}
             style={{ color: "var(--error)" }}
           >
-            {deleting ? "Удаление…" : "Удалить объявление"}
+            {deleting ? "Удаление…" : isAdmin ? "Удалить объявление (админ)" : "Удалить объявление"}
           </button>
         )}
       </div>

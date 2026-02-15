@@ -283,6 +283,7 @@ export default function App() {
       allTypes,
       parentNewOffersCount,
       refreshParentNewOffersCount,
+      isAdmin: me?.isAdmin ?? false,
     }),
     [
       token,

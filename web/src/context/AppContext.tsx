@@ -36,6 +36,8 @@ export type AppContextValue = {
   /** Количество непросмотренных откликов (для родителя). null = не загружено или не родитель. */
   parentNewOffersCount: number | null;
   refreshParentNewOffersCount: () => Promise<void>;
+  /** true для пользователя с админскими правами (например, username tigrbn) */
+  isAdmin: boolean;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);

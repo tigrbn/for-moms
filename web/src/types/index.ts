@@ -25,6 +25,8 @@ export type MeResponse = {
   activeProfileId: string | null;
   consentedUserAgreement?: boolean;
   consentedPolicy?: boolean;
+  /** true для пользователя с админскими правами (например, username tigrbn) */
+  isAdmin?: boolean;
 };
 
 export type FeedResponse =

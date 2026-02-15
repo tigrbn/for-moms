@@ -14,7 +14,7 @@ import type { RequestDetails as RequestDetailsType, ReviewListItem } from "../ty
 export function RequestDetailsScreen() {
   const params = useParams();
   const requestId = params.id!;
-  const { activeProfileId, activeProfileType, authedGet, authedPost, authedDelete, navigate, refreshParentNewOffersCount } = useApp();
+  const { activeProfileId, activeProfileType, authedGet, authedPost, authedDelete, navigate, refreshParentNewOffersCount, isAdmin } = useApp();
   const [data, setData] = useState<RequestDetailsType | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -219,10 +219,7 @@ export function RequestDetailsScreen() {
               )}
             </div>
             <div className="profile-card-meta-block">
-              <div className="profile-card-meta-row">
-                <span className="profile-card-meta-label">Категория:</span>
-                <span className="profile-card-meta-value"><CategoryDisplay category={data.category} /></span>
-              </div>
+              <CategoryDisplay category={data.category} />
               {activeProfileType === "specialist" && data.parent.childrenAges != null && data.parent.childrenAges.length > 0 && (
                 <div className="profile-card-meta-row">
                   <span className="profile-card-meta-label">Возраст детей:</span>
@@ -266,7 +263,7 @@ export function RequestDetailsScreen() {
             <div className="profile-card-about-text">{data.description}</div>
           </div>
         )}
-        {activeProfileType === "parent" && (
+        {(activeProfileType === "parent" || isAdmin) && (
           <div className="row" style={{ marginTop: 16 }}>
             <button
               type="button"
@@ -281,7 +278,7 @@ export function RequestDetailsScreen() {
                 }
               }}
             >
-              Удалить заявку
+              {isAdmin ? "Удалить заявку (админ)" : "Удалить заявку"}
             </button>
           </div>
         )}

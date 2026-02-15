@@ -3,6 +3,7 @@ import type { Request } from "express";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
+import { isAdminUser } from "../common/admin";
 
 @Controller("posts")
 export class PostsController {
@@ -89,11 +90,14 @@ export class PostsController {
   @Delete(":id")
   async delete(@Req() req: Request, @Param("id") id: string) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
-    const active = await getActiveProfileOrThrow(this.prisma, userId);
     const postId = BigInt(id);
     const post = await this.prisma.feedPost.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException("Объявление не найдено");
-    if (post.profileId !== active.id) throw new ForbiddenException("Можно удалить только своё объявление");
+    const admin = await isAdminUser(this.prisma, userId);
+    if (!admin) {
+      const active = await getActiveProfileOrThrow(this.prisma, userId);
+      if (post.profileId !== active.id) throw new ForbiddenException("Можно удалить только своё объявление");
+    }
     await this.prisma.feedPost.delete({ where: { id: postId } });
     return { ok: true };
   }

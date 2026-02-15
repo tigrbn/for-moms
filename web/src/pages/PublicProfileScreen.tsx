@@ -107,12 +107,7 @@ export function PublicProfileScreen() {
               </p>
             )}
             <div className="profile-card-meta-block">
-              {p.type === "specialist" && (
-                <div className="profile-card-meta-row">
-                  <span className="profile-card-meta-label">Категория:</span>
-                  <span className="profile-card-meta-value"><CategoryDisplay category={category} /></span>
-                </div>
-              )}
+              {p.type === "specialist" && <CategoryDisplay category={category} />}
               <div className="profile-card-meta-row">
                 <span className="profile-card-meta-label">город, район:</span>
                 <span className="profile-card-meta-value">

@@ -1115,12 +1115,39 @@ a {
 .feed-card-category {
   font-size: 13px;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 .feed-card-category strong {
   font-weight: 700;
   color: var(--tg-link, var(--primary));
+}
+/* Категория и подкатегория — две строки в стиле мета-поля (чёрный текст категории, серый подкатегории) */
+.category-display {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.category-display-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.category-display-label {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.category-display-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.category-display-value--muted {
+  color: var(--text-secondary);
+  font-weight: 400;
 }
 .feed-card-meta {
   font-size: 13px;
