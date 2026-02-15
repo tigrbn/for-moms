@@ -2,17 +2,30 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { getAvatarSrc } from "../lib/avatar";
+import { formatPhoneMask, formatPhoneToDigits } from "../lib/format";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 import { CATEGORY_TREE } from "../constants/feed";
 
 export function ProfileScreen() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { activeProfile, me, authedPatch, authedDelete, refreshMe } = useApp();
-  if (!activeProfile) return null;
+  const {
+    activeProfile,
+    me,
+    authedPatch,
+    authedDelete,
+    refreshMe,
+    ensureActiveProfile,
+    missingRole,
+    addMissingRole,
+    setMeError,
+  } = useApp();
 
-  const profileId = activeProfile.id;
-  const type = activeProfile.type;
+  if (!me) return <div className="card">Загрузка…</div>;
+  if (me.profiles.length === 0) return null;
+
+  const profileId = activeProfile?.id;
+  const type = activeProfile?.type;
   const telegramPhotoUrl = me?.user?.photoUrl ?? null;
   const profileAvatarSrc = getAvatarSrc(activeProfile.avatarUrl, telegramPhotoUrl, activeProfile.gender);
 
@@ -48,7 +61,7 @@ export function ProfileScreen() {
     setAge(activeProfile.age != null ? String(activeProfile.age) : "");
     setCity(activeProfile.city ?? "");
     setDistrict(activeProfile.district ?? "");
-    setContactPhone(activeProfile.contactPhone ?? "");
+    setContactPhone(formatPhoneMask(activeProfile.contactPhone ?? ""));
     setShowContactPhonePublicly(Boolean(activeProfile.showContactPhonePublicly));
     if (activeProfile.type === "parent") {
       const parent = activeProfile.parent;
@@ -112,7 +125,7 @@ export function ProfileScreen() {
         age: ageNum != null && Number.isFinite(ageNum) ? ageNum : null,
         city: city.trim() || null,
         district: district.trim() || null,
-        contactPhone: contactPhone.trim() || null,
+        contactPhone: formatPhoneToDigits(contactPhone).trim() || null,
         showContactPhonePublicly: type === "specialist" ? showContactPhonePublicly : undefined,
       });
       if (type === "parent") {
@@ -144,8 +157,92 @@ export function ProfileScreen() {
     }
   };
 
+  const roles = me.profiles
+    .filter((p) => p.type === "parent" || p.type === "specialist")
+    .map((p) => ({
+      ...p,
+      title:
+        p.type === "parent"
+          ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(p.gender)}`
+          : "👩‍🏫 Специалист",
+    }));
+
+  const rolesBlock = (
+    <div className="card roles-page">
+      <div className="row">
+        <div className="h2">Профили</div>
+        <div className="spacer" />
+        {missingRole && (
+          <button className="btn btn-primary roles-page-btn" onClick={() => void addMissingRole()}>
+            + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "👩‍🏫 Специалист"}
+          </button>
+        )}
+      </div>
+      <div className="muted roles-page-desc">Выберите активный профиль или удалите ненужный.</div>
+      <div className="roles-list">
+        {roles.map((p) => {
+          const isActive = p.id === me.activeProfileId;
+          return (
+            <div key={p.id} className="roles-card-wrap">
+              <div className="card roles-card" style={{ background: "var(--tg-bg)" }}>
+                <div className="roles-card-inner">
+                  <div className="roles-card-left">
+                    <div className="roles-card-title">{p.title}</div>
+                    <div className="muted roles-card-desc">
+                      {p.displayName ?? "—"} · {p.city ?? "—"} · {p.district ?? "—"}
+                    </div>
+                  </div>
+                  <div className="roles-card-right">
+                    {isActive ? (
+                      <span className="pill pill--active-green">Активен</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn roles-page-btn"
+                        onClick={() => void ensureActiveProfile(p.id)}
+                      >
+                        Сделать активным
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn danger roles-delete-btn roles-page-btn"
+                onClick={async () => {
+                  const roleName = p.type === "parent" ? getParentRoleLabel(p.gender) : "Специалист";
+                  if (
+                    !confirm(
+                      `Удалить аккаунт «${roleName}»? Все данные этого профиля будут удалены безвозвратно.`,
+                    )
+                  )
+                    return;
+                  try {
+                    await authedDelete(`/profiles/${p.id}`);
+                    await refreshMe();
+                    if (me?.activeProfileId === p.id) navigate("/profile", { replace: true });
+                  } catch (e: unknown) {
+                    setMeError(e instanceof Error ? e.message : "Не удалось удалить");
+                  }
+                }}
+              >
+                Удалить аккаунт
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  if (!activeProfile) {
+    return <div style={{ display: "grid", gap: 12 }}>{rolesBlock}</div>;
+  }
+
   if (!isEditing) {
     return (
+      <div style={{ display: "grid", gap: 12 }}>
       <div className="card profile-view-card">
         <div className="profile-view-header">
           <div
@@ -253,10 +350,13 @@ export function ProfileScreen() {
           </button>
         </div>
       </div>
+      {rolesBlock}
+      </div>
     );
   }
 
   return (
+    <div style={{ display: "grid", gap: 12 }}>
     <div className="card profile-edit-card">
       <div className="profile-edit-header">
         <h2 className="h2" style={{ margin: 0 }}>
@@ -329,7 +429,7 @@ export function ProfileScreen() {
           <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
             {me?.user?.username
               ? "Логин подтягивается из Telegram."
-              : "Задайте имя пользователя в Telegram: Настройки → Имя пользователя. Или укажите номер телефона ниже — заказчик увидит его после принятия отклика."}
+              : "Задайте имя пользователя в Telegram: Настройки → Имя пользователя. Или укажите номер телефона ниже — его увидит специалист после принятия отклика."}
           </p>
         </div>
         <div className="field">
@@ -337,14 +437,14 @@ export function ProfileScreen() {
           <input
             className="input"
             value={contactPhone}
-            onChange={(e) => setContactPhone(e.target.value)}
-            placeholder="+7 999 123-45-67"
+            onChange={(e) => setContactPhone(formatPhoneMask(e.target.value))}
+            placeholder="+7 9__ ___ __ __"
             inputMode="tel"
           />
           <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
             {type === "specialist"
-              ? "Если разрешите показ ниже — номер будет виден в анкете и в карточках откликов. Иначе заказчик увидит его только после принятия отклика."
-              : "Заказчик увидит номер только после принятия вашего отклика."}
+              ? "Если разрешите показ ниже — номер будет виден в анкете и в карточках откликов. Иначе родитель увидит его только после принятия вашего отклика."
+              : "По этому номеру смогут связаться специалисты после того, как вы примете их отклик."}
           </p>
         </div>
         {type === "specialist" && (
@@ -446,7 +546,7 @@ export function ProfileScreen() {
                 if (me && me.profiles.length <= 1) {
                   navigate("/", { replace: true });
                 } else {
-                  navigate("/roles", { replace: true });
+                  navigate("/profile", { replace: true });
                 }
               } catch (e: unknown) {
                 setErr(e instanceof Error ? e.message : "Не удалось отменить");
@@ -461,6 +561,8 @@ export function ProfileScreen() {
           {cancelling ? "Отмена…" : "Отмена"}
         </button>
       </div>
+    </div>
+    {rolesBlock}
     </div>
   );
 }

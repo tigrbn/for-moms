@@ -16,17 +16,26 @@ export function NewRequestScreen() {
 
   const onSubmit = async () => {
     setErr(null);
+    const desc = description.trim();
+    if (!desc) {
+      setErr("Заполните описание заявки");
+      return;
+    }
+    if (desc.length < 10) {
+      setErr("Описание должно быть не короче 10 символов");
+      return;
+    }
     setSaving(true);
     try {
       const created = await authedPost<{ id: string }>("/requests", {
         category,
         district: district || null,
         budget: budget ? Number(budget) : null,
-        description: description || null,
+        description: desc || null,
       });
       navigate(`/requests/${created.id}`);
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Failed to create request");
+      setErr(e instanceof Error ? e.message : "Не удалось создать заявку");
     } finally {
       setSaving(false);
     }
@@ -66,8 +75,8 @@ export function NewRequestScreen() {
           <input className="input" value={budget} onChange={(e) => setBudget(e.target.value)} inputMode="numeric" />
         </div>
         <div className="field">
-          <div className="label">Описание</div>
-          <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <div className="label">Описание <span className="muted">(не короче 10 символов)</span></div>
+          <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Опишите задачу, пожелания, возраст ребёнка и т.п." />
         </div>
         <div className="row">
           <button className="btn btn-primary" onClick={() => void onSubmit()} disabled={saving}>

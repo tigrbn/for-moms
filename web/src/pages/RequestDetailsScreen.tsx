@@ -55,16 +55,30 @@ export function RequestDetailsScreen() {
 
   const sendOffer = async () => {
     setActionErr(null);
+    const comment = offerComment.trim();
+    if (!comment) {
+      setActionErr("Напишите комментарий к отклику");
+      return;
+    }
+    if (comment.length < 10) {
+      setActionErr("Комментарий должен быть не короче 10 символов");
+      return;
+    }
+    const priceNum = offerPrice.trim() === "" ? NaN : Number(offerPrice);
+    if (Number.isNaN(priceNum) || priceNum < 0) {
+      setActionErr("Укажите цену (число 0 или больше)");
+      return;
+    }
     setSending(true);
     try {
       await authedPost(`/requests/${requestId}/offers`, {
-        priceOffer: offerPrice ? Number(offerPrice) : null,
-        comment: offerComment || null,
+        priceOffer: priceNum,
+        comment,
       });
       const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
       setData(r);
     } catch (e: unknown) {
-      setActionErr(e instanceof Error ? e.message : "Failed to send offer");
+      setActionErr(e instanceof Error ? e.message : "Не удалось отправить отклик");
     } finally {
       setSending(false);
     }
@@ -146,8 +160,7 @@ export function RequestDetailsScreen() {
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <div className={`card profile-card card--status-top ${isCompleted ? "card--completed" : ""}`}>
-        <div className="pill pill--top-right">{labelRequestStatus(data.status)}</div>
+      <div className={`card profile-card ${isCompleted ? "card--completed" : ""}`}>
         <div className="profile-card-header">
           <div className="profile-card-avatar-wrap">
             <div className="profile-card-avatar">
@@ -164,6 +177,8 @@ export function RequestDetailsScreen() {
               <h2 className="h2 profile-card-title" style={{ margin: 0 }}>
                 {parentName}
               </h2>
+              <div className="spacer" />
+              <div className="pill">{labelRequestStatus(data.status)}</div>
             </div>
             <div className="profile-card-meta-block">
               <div className="profile-card-meta-row">
@@ -219,11 +234,13 @@ export function RequestDetailsScreen() {
           const myOffer = data.offers.find((o) => o.specialistProfileId === activeProfileId);
           if (myOffer) {
             return (
-              <div className="card" style={{ background: "var(--tg-bg)" }}>
-                <div className="h2">Вы уже откликнулись</div>
-                <div className="muted" style={{ marginTop: 8 }}>
-                  Цена: {formatMoney(myOffer.priceOffer)} · {labelOfferStatus(myOffer.status)}
+              <div className="card card--filled">
+                <div className="row" style={{ alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                  <div className="h2" style={{ margin: 0 }}>Вы уже откликнулись</div>
+                  <div className="spacer" />
+                  <div className="pill">{labelOfferStatus(myOffer.status)}</div>
                 </div>
+                <div className="muted" style={{ marginTop: 8 }}>Цена: {formatMoney(myOffer.priceOffer)}</div>
                 {myOffer.comment && <div style={{ marginTop: 8 }}>{myOffer.comment}</div>}
               </div>
             );
@@ -233,12 +250,12 @@ export function RequestDetailsScreen() {
               <div className="h2">Откликнуться</div>
               <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
                 <div className="field">
-                  <div className="label">Цена (₽)</div>
-                  <input className="input" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} inputMode="numeric" />
+                  <div className="label">Цена (₽) <span className="muted">(обязательно)</span></div>
+                  <input className="input" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} inputMode="numeric" placeholder="0 или сумма в рублях" />
                 </div>
                 <div className="field">
-                  <div className="label">Комментарий</div>
-                  <textarea className="textarea" value={offerComment} onChange={(e) => setOfferComment(e.target.value)} />
+                  <div className="label">Комментарий <span className="muted">(не короче 10 символов)</span></div>
+                  <textarea className="textarea" value={offerComment} onChange={(e) => setOfferComment(e.target.value)} placeholder="Напишите, почему вы подходите, опыт, условия" />
                 </div>
                 <div className="row offer-actions-row">
                   <button className="btn btn-primary" disabled={sending} onClick={() => void sendOffer()}>
@@ -318,13 +335,28 @@ export function RequestDetailsScreen() {
                       <span className="offer-card-meta-value">{o.specialist.age}</span>
                     </div>
                   )}
+                  {(o.specialist.contactPhone != null && o.specialist.contactPhone.trim() !== "") && (
+                    <div className="offer-card-meta-row offer-card-contact-phone-row">
+                      <span className="offer-card-meta-label">
+                        <span className="offer-card-phone-icon" aria-hidden>
+                          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                          </svg>
+                        </span>
+                        Номер для связи:
+                      </span>
+                      <a className="offer-card-meta-value offer-card-phone-link" href={`tel:${o.specialist.contactPhone.replace(/\s/g, "")}`}>
+                        {o.specialist.contactPhone}
+                      </a>
+                    </div>
+                  )}
                   <div className="offer-card-meta-row" style={{ marginTop: 4 }}>
                     <span className="offer-card-meta-label">Цена:</span>
                     <span className="offer-card-meta-value">{formatMoney(o.priceOffer)}</span>
                   </div>
                 </div>
                 {o.comment && <div style={{ marginTop: 8 }}>{o.comment}</div>}
-                <div className="row" style={{ marginTop: 10 }}>
+                <div className="row offer-card-actions-row" style={{ marginTop: 10 }}>
                   {!accepted ? (
                     <>
                       <button className="btn btn-success" onClick={() => void acceptOffer(o.id)} disabled={o.status !== "pending"}>
@@ -337,7 +369,6 @@ export function RequestDetailsScreen() {
                   ) : (
                     <div className="muted">Исполнитель уже выбран</div>
                   )}
-                  <div className="spacer" />
                   {o.specialist.username && (
                     <a className="btn btn-telegram btn-with-icon" href={`https://t.me/${o.specialist.username}`} target="_blank" rel="noreferrer">
                       <span className="btn-icon-telegram" aria-hidden>
@@ -349,12 +380,6 @@ export function RequestDetailsScreen() {
                     </a>
                   )}
                 </div>
-                {o.specialist.contactPhone && (
-                  <div className="offer-card-contact-phone" style={{ marginTop: 10 }}>
-                    <span className="offer-card-meta-label">Телефон:</span>{" "}
-                    <a href={`tel:${o.specialist.contactPhone.replace(/\s/g, "")}`}>{o.specialist.contactPhone}</a>
-                  </div>
-                )}
               </div>
             ))}
           </div>

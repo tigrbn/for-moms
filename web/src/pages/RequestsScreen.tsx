@@ -182,10 +182,9 @@ export function RequestsScreen() {
             return (
             <div
               key={r.id}
-              className={`card card--status-top ${isCompleted ? "card--completed" : ""}`}
+              className={`card ${isCompleted ? "card--completed" : ""}`}
               style={{ background: "var(--tg-bg)" }}
             >
-              <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
               <div className="row" style={{ alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 800 }}>{r.category}</div>
                 {r.newOffersCount > 0 && (
@@ -193,6 +192,8 @@ export function RequestsScreen() {
                     {r.newOffersCount > 99 ? "99+" : r.newOffersCount}
                   </span>
                 )}
+                <div className="spacer" />
+                <div className="pill">{labelRequestStatus(r.status)}</div>
               </div>
               <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>{formatDate(r.createdAt)}</div>
               <div className="request-card-meta muted" style={{ marginTop: 6 }}>

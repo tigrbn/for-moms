@@ -9,14 +9,17 @@ export class RequestsService {
   async create(userId: bigint, dto: { category: string; childAge?: number | null; description?: string | null; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null }) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
     if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
-    if (!dto?.category) throw new BadRequestException("category is required");
+    if (!dto?.category?.trim()) throw new BadRequestException("Укажите категорию");
+    const desc = dto?.description?.trim();
+    if (!desc) throw new BadRequestException("Заполните описание заявки");
+    if (desc.length < 10) throw new BadRequestException("Описание должно быть не короче 10 символов");
 
     return this.prisma.request.create({
       data: {
         parentProfileId: active.id,
         category: dto.category,
         childAge: dto.childAge ?? null,
-        description: dto.description ?? null,
+        description: desc,
         startAt: dto.startAt ? new Date(dto.startAt) : null,
         durationMin: dto.durationMin ?? null,
         budget: dto.budget ?? null,
@@ -117,6 +120,12 @@ export class RequestsService {
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request || request.parentProfileId !== active.id) throw new NotFoundException("Request not found");
 
+    if (dto.description !== undefined) {
+      const desc = dto.description?.trim();
+      if (!desc) throw new BadRequestException("Описание не может быть пустым");
+      if (desc.length < 10) throw new BadRequestException("Описание должно быть не короче 10 символов");
+    }
+
     const nextStatus = dto.status;
     const completedAt = nextStatus === "done" ? new Date() : undefined;
 
@@ -125,7 +134,7 @@ export class RequestsService {
       data: {
         category: dto.category ?? undefined,
         childAge: dto.childAge ?? undefined,
-        description: dto.description ?? undefined,
+        description: dto.description !== undefined ? (dto.description?.trim() || null) : undefined,
         startAt: dto.startAt ? new Date(dto.startAt) : undefined,
         durationMin: dto.durationMin ?? undefined,
         budget: dto.budget ?? undefined,

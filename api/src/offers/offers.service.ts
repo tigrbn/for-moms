@@ -121,14 +121,23 @@ export class OffersService {
     if (!request) throw new NotFoundException("Request not found");
     if (request.status !== "active") throw new BadRequestException("Request is not active");
 
+    const comment = dto?.comment?.trim();
+    if (!comment) throw new BadRequestException("Напишите комментарий к отклику");
+    if (comment.length < 10) throw new BadRequestException("Комментарий должен быть не короче 10 символов");
+
+    const price = dto?.priceOffer;
+    if (price == null || price === undefined) throw new BadRequestException("Укажите цену");
+    const priceNum = Number(price);
+    if (Number.isNaN(priceNum) || priceNum < 0) throw new BadRequestException("Укажите корректную цену (0 или больше)");
+
     let createdOrUpdated = null as any;
     try {
       createdOrUpdated = await this.prisma.offer.create({
         data: {
           requestId,
           specialistProfileId: active.id,
-          priceOffer: dto.priceOffer ?? null,
-          comment: dto.comment ?? null,
+          priceOffer: priceNum,
+          comment,
         },
       });
     } catch (e: any) {
@@ -143,8 +152,8 @@ export class OffersService {
         createdOrUpdated = await this.prisma.offer.update({
           where: { id: existing.id },
           data: {
-            priceOffer: dto.priceOffer ?? null,
-            comment: dto.comment ?? null,
+            priceOffer: priceNum,
+            comment,
             // Allow "resend" after reject/cancel by moving back to pending
             status: existing.status === "rejected" || existing.status === "cancelled" ? "pending" : undefined,
           },

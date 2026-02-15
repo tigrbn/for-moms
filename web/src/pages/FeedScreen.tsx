@@ -6,7 +6,7 @@ import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
-import { FEED_CATEGORIES, getCategoryIcon } from "../constants/feed";
+import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon } from "../constants/feed";
 import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
 
@@ -50,6 +50,8 @@ export function FeedScreen() {
     feedError,
     feedCategory,
     setFeedCategory,
+    feedSubcategory,
+    setFeedSubcategory,
     setFeed,
     setFeedError,
     setFeedReloadKey,
@@ -57,6 +59,11 @@ export function FeedScreen() {
     missingRole,
     addMissingRole,
   } = useApp();
+
+  const currentSection = CATEGORY_TREE.find((s) => s.id === feedCategory);
+  const subcategoryOptions = currentSection
+    ? [{ id: "", label: "Все" }, ...currentSection.children]
+    : [];
 
   const contentItems = feed?.items.filter((it) => it.kind !== "banner") ?? [];
   const contentCount = contentItems.length;
@@ -70,7 +77,7 @@ export function FeedScreen() {
   );
   useEffect(() => {
     setFeedPage(1);
-  }, [contentCount]);
+  }, [contentCount, feedCategory, feedSubcategory]);
 
   const feedSubtitle =
     activeProfileType === "specialist"
@@ -111,6 +118,7 @@ export function FeedScreen() {
                 className={`feed-category-chip ${feedCategory === c.id ? "active" : ""}`}
                 onClick={() => {
                   setFeedCategory(c.id);
+                  setFeedSubcategory("");
                   setFeedReloadKey((x) => x + 1);
                 }}
               >
@@ -120,6 +128,31 @@ export function FeedScreen() {
             ))}
           </div>
         </div>
+        {currentSection && subcategoryOptions.length > 0 && (
+          <>
+            <div className="feed-categories-label" style={{ marginTop: 10 }}>Подкатегория</div>
+            <div className="feed-categories-scroll" role="region" aria-label="Подкатегории">
+              <div className="feed-categories">
+                {subcategoryOptions.map((opt) => {
+                  const isActive = opt.id === "" ? !feedSubcategory : feedSubcategory === opt.id;
+                  return (
+                    <button
+                      key={opt.id || "all-sub"}
+                      type="button"
+                      className={`feed-category-chip feed-category-chip--sub ${isActive ? "active" : ""}`}
+                      onClick={() => {
+                        setFeedSubcategory(opt.id);
+                        setFeedReloadKey((x) => x + 1);
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {feedError && (
@@ -223,9 +256,8 @@ export function FeedScreen() {
               return (
                 <div
                   key={`r-${r.id}-${idx}`}
-                  className={`card feed-card feed-card-request card--status-top ${isCompleted ? "card--completed" : ""}`}
+                  className={`card feed-card feed-card-request ${isCompleted ? "card--completed" : ""}`}
                 >
-                  <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
                   <div className="feed-card-header">
                     <div className="feed-card-avatar-wrap">
                       <div className="feed-card-avatar">
@@ -240,6 +272,8 @@ export function FeedScreen() {
                     <div className="feed-card-title-block">
                       <div className="feed-card-title-row">
                         <div className="feed-card-title">{requestAuthorName}</div>
+                        <div className="spacer" />
+                        <div className="pill">{labelRequestStatus(r.status)}</div>
                       </div>
                       <div className="feed-card-meta-block">
                         <div className="feed-card-category">

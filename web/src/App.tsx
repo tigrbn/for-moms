@@ -20,7 +20,6 @@ import { OffersScreen } from "./pages/OffersScreen";
 import { ProfileScreen } from "./pages/ProfileScreen";
 import { FeedScreen } from "./pages/FeedScreen";
 import { PublicProfileScreen } from "./pages/PublicProfileScreen";
-import { RolesScreen } from "./pages/RolesScreen";
 
 export default function App() {
   const { token, clearToken, error } = useTelegramAuth();
@@ -34,6 +33,7 @@ export default function App() {
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [feedCategory, setFeedCategory] = useState("");
+  const [feedSubcategory, setFeedSubcategory] = useState("");
   const [feedReloadKey, setFeedReloadKey] = useState(0);
   const [parentNewOffersCount, setParentNewOffersCount] = useState<number | null>(null);
   const [reauthing, setReauthing] = useState(false);
@@ -100,7 +100,8 @@ export default function App() {
       setFeedError(null);
       try {
         const qs = new URLSearchParams();
-        if (feedCategory.trim()) qs.set("category", feedCategory.trim());
+        const effectiveCategory = feedSubcategory.trim() || feedCategory.trim();
+        if (effectiveCategory) qs.set("category", effectiveCategory);
         const path = qs.toString() ? `/feed?${qs.toString()}` : "/feed";
         const data = await getJSON<FeedResponse>(path, token);
         setFeed(data);
@@ -118,7 +119,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token, me?.activeProfileId, feedCategory, feedReloadKey]);
+  }, [token, me?.activeProfileId, feedCategory, feedSubcategory, feedReloadKey]);
 
   useEffect(() => {
     if (token) setReauthing(false);
@@ -247,6 +248,8 @@ export default function App() {
       setFeedError,
       feedCategory,
       setFeedCategory,
+      feedSubcategory,
+      setFeedSubcategory,
       feedReloadKey,
       setFeedReloadKey,
       activeProfile,
@@ -278,6 +281,7 @@ export default function App() {
       feed,
       feedError,
       feedCategory,
+      feedSubcategory,
       feedReloadKey,
       activeProfile,
       ensureActiveProfile,
@@ -303,7 +307,7 @@ export default function App() {
           logo={mainLogoImg}
           rightNode={
             me && activeProfile ? (
-              <Link to="/roles" className="topbar-role-link" title="Роли — переключить или настроить">
+              <Link to="/profile" className="topbar-role-link" title="Профиль — переключить или настроить">
                 <span className="topbar-role-emoji">{activeProfile.type === "parent" ? "👨‍👩‍👧‍👦" : "👩‍🏫"}</span>
                 <span className="topbar-role-label">
                   {activeProfile.type === "parent" ? getParentRoleLabel(activeProfile.gender) : "Специалист"}
@@ -359,32 +363,44 @@ export default function App() {
               </div>
             )}
 
-            {me && me.profiles.length > 0 && !me.activeProfileId && <RolesScreen />}
-
-            {me && me.activeProfileId && activeProfile && (
+            {me && me.profiles.length > 0 && (
               <Routes>
-                  <Route path="/" element={<FeedScreen />} />
-                  <Route path="/requests" element={<RequestsScreen />} />
-                  <Route path="/requests/new" element={<NewRequestScreen />} />
-                  <Route path="/requests/:id" element={<RequestDetailsScreen />} />
-                  <Route path="/offers" element={<OffersScreen />} />
-                  <Route path="/roles" element={<RolesScreen />} />
                   <Route
-                    path="/profile"
+                    path="/"
+                    element={activeProfile ? <FeedScreen /> : <Navigate to="/profile" replace />}
+                  />
+                  <Route
+                    path="/requests"
+                    element={activeProfile ? <RequestsScreen /> : <Navigate to="/profile" replace />}
+                  />
+                  <Route
+                    path="/requests/new"
+                    element={activeProfile ? <NewRequestScreen /> : <Navigate to="/profile" replace />}
+                  />
+                  <Route
+                    path="/requests/:id"
+                    element={activeProfile ? <RequestDetailsScreen /> : <Navigate to="/profile" replace />}
+                  />
+                  <Route
+                    path="/offers"
+                    element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
+                  />
+                  <Route path="/profile" element={<ProfileScreen />} />
+                  <Route path="/profiles/:id" element={<PublicProfileScreen />} />
+                  <Route
+                    path="*"
                     element={
-                      activeProfile?.type === "parent" || activeProfile?.type === "specialist" ? (
-                        <ProfileScreen />
+                      activeProfile ? (
+                        <Navigate to="/" replace state={{ from: location.pathname }} />
                       ) : (
-                        <Navigate to="/roles" replace />
+                        <Navigate to="/profile" replace />
                       )
                     }
                   />
-                  <Route path="/profiles/:id" element={<PublicProfileScreen />} />
-                  <Route path="*" element={<Navigate to="/" replace state={{ from: location.pathname }} />} />
                 </Routes>
             )}
 
-            {me && me.activeProfileId && activeProfile && <BottomNav />}
+            {me && me.profiles.length > 0 && activeProfile && <BottomNav />}
           </AppContext.Provider>
         )}
       </div>

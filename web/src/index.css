@@ -142,6 +142,11 @@ a {
   right: 12px;
 }
 
+/* Карточка с явным фоном (если --tg-bg прозрачный, например в Mini App) */
+.card--filled {
+  background: var(--tg-secondary-bg, #f4efff) !important;
+}
+
 /* Завершённые заявки (выполнены или отменены) — приглушённый вид */
 .card--completed {
   background: var(--disabled-bg, #eceaf5) !important;
@@ -299,10 +304,17 @@ a {
 }
 
 .btn.btn-success {
-  background: var(--success);
-  color: #1a5c4d;
-  border: 1px solid rgba(26, 92, 77, 0.4);
-  box-shadow: 0 2px 8px rgba(110, 211, 181, 0.35);
+  background: #16a34a;
+  color: #ffffff;
+  border: 1px solid #15803d;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+.btn.btn-success:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #166534;
+}
+.btn.btn-success:disabled {
+  opacity: 0.6;
 }
 
 .btn.ghost {
@@ -612,6 +624,25 @@ a {
   color: var(--primary);
   font-weight: 500;
 }
+.offer-card-phone-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.offer-card-contact-phone-row .offer-card-phone-link {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+.offer-card-contact-phone-row .offer-card-phone-link:hover {
+  text-decoration: underline;
+}
+.offer-card-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 
 /* Блок статуса (специалист): онлайн + личный кабинет */
 .status-block {
@@ -769,6 +800,13 @@ a {
   background: var(--primary);
   color: #ffffff;
   border-color: var(--primary);
+}
+.feed-category-chip--sub {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  font-size: 12px;
 }
 
 .feed-content {

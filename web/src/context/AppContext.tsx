@@ -15,6 +15,8 @@ export type AppContextValue = {
   setFeedError: (s: string | null) => void;
   feedCategory: string;
   setFeedCategory: (s: string) => void;
+  feedSubcategory: string;
+  setFeedSubcategory: (s: string) => void;
   feedReloadKey: number;
   setFeedReloadKey: (fn: (x: number) => number) => void;
   activeProfile: MeResponse["profiles"][0] | null;

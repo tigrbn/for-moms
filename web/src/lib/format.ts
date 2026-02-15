@@ -3,6 +3,29 @@ export function formatMoney(x: number | null | undefined): string {
   return `${x} ₽`;
 }
 
+/** Маска российского номера: +7 9XX XXX XX XX. Из ввода оставляем только цифры, 8 в начале заменяем на 7. */
+export function formatPhoneMask(value: string): string {
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("8")) digits = "7" + digits.slice(1);
+  if (digits.startsWith("7")) digits = digits.slice(1);
+  digits = digits.slice(0, 10);
+  if (digits.length === 0) return "";
+  const d = digits;
+  if (d.length <= 3) return "+7 " + d;
+  if (d.length <= 6) return "+7 " + d.slice(0, 3) + " " + d.slice(3);
+  if (d.length <= 8) return "+7 " + d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6);
+  return "+7 " + d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6, 8) + " " + d.slice(8, 10);
+}
+
+/** Из отображаемого номера с маской извлечь цифры для сохранения (7XXXXXXXXXX). */
+export function formatPhoneToDigits(displayValue: string): string {
+  const digits = displayValue.replace(/\D/g, "");
+  if (digits.length === 0) return "";
+  if (digits.startsWith("8")) return "7" + digits.slice(1, 11);
+  if (digits.startsWith("7")) return digits.slice(0, 11);
+  return "7" + digits.slice(0, 10);
+}
+
 /** Дата и время без секунд (например 14:43) */
 export function formatDate(iso?: string | null): string {
   if (!iso) return "—";
