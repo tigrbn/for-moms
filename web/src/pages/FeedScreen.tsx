@@ -6,6 +6,7 @@ import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
+import { ImageSlider } from "../components/ImageSlider";
 import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
@@ -274,6 +275,7 @@ export function FeedScreen() {
             if (it.kind === "other_post") {
               const { post } = it;
               const preview = post.content.length > 150 ? post.content.slice(0, 150) + "…" : post.content;
+              const images = post.images ?? [];
               return (
                 <div key={`op-${post.id}-${idx}`} className="card feed-card feed-card-other">
                   <div className="feed-card-header">
@@ -291,6 +293,9 @@ export function FeedScreen() {
                       </div>
                     </div>
                   </div>
+                  {images.length > 0 && (
+                    <ImageSlider images={images} alt="" height={140} className="feed-card-other-images" />
+                  )}
                   <div className="feed-card-desc" style={{ whiteSpace: "pre-wrap" }}>{preview}</div>
                   <div className="feed-card-request-row">
                     <Link className="btn feed-card-btn feed-card-btn-open" to={`/posts/${post.id}`}>

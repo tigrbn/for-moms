@@ -3,10 +3,17 @@ import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { StubCard } from "../components/StubCard";
 import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
-import { formatMoney, formatDate } from "../lib/format";
+import { formatMoney, formatDate, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getCategoryDisplayText } from "../constants/feed";
 import type { RequestMineItem, OfferMineItem } from "../types";
+
+type PostMineItem = {
+  id: string;
+  content: string;
+  images?: string[];
+  createdAt: string;
+};
 
 /** Уникальные заявки из откликов специалиста: по одной карточке на requestId, с последним откликом */
 function useSpecialistArchive(authedGet: <T>(path: string) => Promise<T>) {
@@ -42,12 +49,49 @@ function useSpecialistArchive(authedGet: <T>(path: string) => Promise<T>) {
 }
 
 export function RequestsScreen() {
-  const { activeProfileType, activeProfileId, authedGet, parentNewOffersCount } = useApp();
+  const { activeProfileType, activeProfileId, authedGet, authedDelete, parentNewOffersCount, setFeedReloadKey } = useApp();
   const [items, setItems] = useState<RequestMineItem[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [archivePage, setArchivePage] = useState(1);
   const [requestsPage, setRequestsPage] = useState(1);
+  const [myPosts, setMyPosts] = useState<PostMineItem[] | null>(null);
+  const [postsErr, setPostsErr] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const specialistArchive = useSpecialistArchive(authedGet);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPostsErr(null);
+    setMyPosts(null);
+    const run = async () => {
+      try {
+        const data = await authedGet<PostMineItem[]>("/posts/mine");
+        if (!cancelled) setMyPosts(Array.isArray(data) ? data : []);
+      } catch (e: unknown) {
+        if (!cancelled) setPostsErr(e instanceof Error ? e.message : "Не удалось загрузить объявления");
+        if (!cancelled) setMyPosts([]);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeProfileId, authedGet]);
+
+  const deletePost = async (postId: string) => {
+    if (!confirm("Удалить объявление?")) return;
+    setDeletingId(postId);
+    setPostsErr(null);
+    try {
+      await authedDelete(`/posts/${postId}`);
+      setMyPosts((prev) => (prev ?? []).filter((p) => p.id !== postId));
+      setFeedReloadKey((k) => k + 1);
+    } catch (e: unknown) {
+      setPostsErr(e instanceof Error ? e.message : "Не удалось удалить");
+    } finally {
+      setDeletingId(null);
+    }
+  };
   const archiveItems = specialistArchive.items;
   const archiveTotalPages = Math.max(1, Math.ceil(archiveItems.length / ITEMS_PER_PAGE));
   const archivePaginated = useMemo(
@@ -87,6 +131,7 @@ export function RequestsScreen() {
   if (activeProfileType === "specialist") {
     const { loading, err: archiveErr } = specialistArchive;
     return (
+      <div style={{ display: "grid", gap: 12 }}>
       <div className="card">
         <div className="h2">Все заявки</div>
         {archiveErr && <div className="error-message" style={{ marginTop: 8 }} role="alert">{archiveErr}</div>}
@@ -141,11 +186,45 @@ export function RequestsScreen() {
         </>
         )}
       </div>
+      <div className="card">
+        <div className="h2" style={{ marginBottom: 8 }}>Мои объявления</div>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>Объявления в разделе «Другое» в ленте.</p>
+        {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
+        {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
+        {myPosts?.length === 0 && !postsErr && <div className="muted">Объявлений пока нет. Добавить можно в ленте, выбрав категорию «Другое».</div>}
+        {myPosts && myPosts.length > 0 && (
+          <div style={{ display: "grid", gap: 10 }}>
+            {myPosts.map((p) => {
+              const preview = p.content.length > 80 ? p.content.slice(0, 80) + "…" : p.content;
+              return (
+                <div key={p.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                  <div className="muted" style={{ fontSize: 13 }}>{formatRequestCreatedAt(p.createdAt)}</div>
+                  <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>{preview}</div>
+                  <div className="row" style={{ marginTop: 10, gap: 8 }}>
+                    <Link className="btn secondary" to={`/posts/${p.id}`}>Открыть</Link>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      disabled={deletingId === p.id}
+                      onClick={() => void deletePost(p.id)}
+                      style={{ color: "var(--error)" }}
+                    >
+                      {deletingId === p.id ? "Удаление…" : "Удалить"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      </div>
     );
   }
 
   const showNewOffersBadge = parentNewOffersCount != null && parentNewOffersCount > 0;
   return (
+    <div style={{ display: "grid", gap: 12 }}>
     <div className="card">
       <div className="row">
         <div className="h2" style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -220,6 +299,39 @@ export function RequestsScreen() {
         />
         </>
       )}
+    </div>
+    <div className="card">
+      <div className="h2" style={{ marginBottom: 8 }}>Мои объявления</div>
+      <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>Объявления в разделе «Другое» в ленте.</p>
+      {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
+      {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
+      {myPosts?.length === 0 && !postsErr && <div className="muted">Объявлений пока нет. Добавить можно в ленте, выбрав категорию «Другое».</div>}
+      {myPosts && myPosts.length > 0 && (
+        <div style={{ display: "grid", gap: 10 }}>
+          {myPosts.map((p) => {
+            const preview = p.content.length > 80 ? p.content.slice(0, 80) + "…" : p.content;
+            return (
+              <div key={p.id} className="card" style={{ background: "var(--tg-bg)" }}>
+                <div className="muted" style={{ fontSize: 13 }}>{formatRequestCreatedAt(p.createdAt)}</div>
+                <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>{preview}</div>
+                <div className="row" style={{ marginTop: 10, gap: 8 }}>
+                  <Link className="btn secondary" to={`/posts/${p.id}`}>Открыть</Link>
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    disabled={deletingId === p.id}
+                    onClick={() => void deletePost(p.id)}
+                    style={{ color: "var(--error)" }}
+                  >
+                    {deletingId === p.id ? "Удаление…" : "Удалить"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
     </div>
   );
 }

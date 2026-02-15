@@ -51,11 +51,17 @@ export class FeedController {
       });
       const postItems = posts.map((post) => {
         const p = post.profile;
+        const images = Array.isArray(post.images)
+          ? (post.images as string[])
+          : typeof post.images === "string"
+            ? [post.images]
+            : [];
         return {
           kind: "other_post" as const,
           post: {
             id: post.id.toString(),
             content: post.content,
+            images,
             createdAt: post.createdAt.toISOString(),
             author: {
               displayName: p.displayName ?? "Пользователь",

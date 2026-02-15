@@ -37,6 +37,7 @@ export type FeedResponse =
             post: {
               id: string;
               content: string;
+              images?: string[];
               createdAt: string;
               author: {
                 displayName: string;
@@ -74,6 +75,7 @@ export type FeedResponse =
             post: {
               id: string;
               content: string;
+              images?: string[];
               createdAt: string;
               author: {
                 displayName: string;

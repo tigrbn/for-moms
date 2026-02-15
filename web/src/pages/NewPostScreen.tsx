@@ -1,15 +1,50 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { uploadFile } from "../shared/api";
+import { compressImage } from "../lib/imageCompress";
 
 const MIN_LENGTH = 10;
+const MAX_IMAGES = 10;
 
 export function NewPostScreen() {
-  const { authedPost, setFeedReloadKey } = useApp();
+  const { authedPost, setFeedReloadKey, token } = useApp();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || !token) return;
+    e.target.value = "";
+    const remaining = MAX_IMAGES - imageUrls.length;
+    if (remaining <= 0) return;
+    setUploading(true);
+    setErr(null);
+    try {
+      const toAdd: string[] = [];
+      for (let i = 0; i < Math.min(files.length, remaining); i++) {
+        const file = files[i];
+        if (!file.type.startsWith("image/")) continue;
+        const compressed = await compressImage(file);
+        const { url } = await uploadFile("/upload", compressed, token);
+        toAdd.push(url);
+      }
+      setImageUrls((prev) => [...prev, ...toAdd].slice(0, MAX_IMAGES));
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Не удалось загрузить фото");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +60,10 @@ export function NewPostScreen() {
     }
     setSaving(true);
     try {
-      const data = await authedPost<{ id?: string; ok?: boolean; error?: string }>("/posts", { content: text });
+      const data = await authedPost<{ id?: string; ok?: boolean; error?: string }>("/posts", {
+        content: text,
+        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+      });
       if (data.ok === false && data.error) {
         setErr(data.error);
         return;
@@ -59,6 +97,67 @@ export function NewPostScreen() {
             style={{ resize: "vertical", minHeight: 100 }}
             minLength={MIN_LENGTH}
           />
+        </div>
+        <div className="field">
+          <div className="label">Фото <span className="muted">(до {MAX_IMAGES}, тяжёлые сжимаются)</span></div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            style={{ display: "none" }}
+            onChange={onFileChange}
+          />
+          {imageUrls.length < MAX_IMAGES && (
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? "Загрузка…" : "+ Добавить фото"}
+            </button>
+          )}
+          {imageUrls.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+              {imageUrls.map((url, i) => (
+                <div key={url} style={{ position: "relative" }}>
+                  <img
+                    src={url}
+                    alt=""
+                    style={{
+                      width: 72,
+                      height: 72,
+                      objectFit: "cover",
+                      borderRadius: 8,
+                      display: "block",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    aria-label="Удалить фото"
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "rgba(0,0,0,0.6)",
+                      color: "#fff",
+                      fontSize: 14,
+                      lineHeight: 1,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         {err && (
           <div className="error-message" role="alert">

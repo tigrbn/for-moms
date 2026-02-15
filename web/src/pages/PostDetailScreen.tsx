@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
+import { ImageSlider } from "../components/ImageSlider";
 import { getAvatarSrc } from "../lib/avatar";
 import { formatRequestCreatedAt } from "../lib/format";
 
 type PostDetail = {
   id: string;
   content: string;
+  images?: string[];
   createdAt: string;
+  authorProfileId?: string;
   author: {
     displayName: string;
     avatarUrl?: string | null;
@@ -20,9 +23,10 @@ type PostDetail = {
 
 export function PostDetailScreen() {
   const { id } = useParams<{ id: string }>();
-  const { authedGet } = useApp();
+  const { authedGet, authedDelete, activeProfileId, setFeedReloadKey, navigate } = useApp();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -51,6 +55,22 @@ export function PostDetailScreen() {
   const avatarSrc = getAvatarSrc(author.avatarUrl, author.photoUrl, null);
   const tgUsername = author.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
+  const isAuthor = Boolean(post.authorProfileId && activeProfileId && post.authorProfileId === activeProfileId);
+
+  const onDelete = async () => {
+    if (!id || !confirm("Удалить объявление?")) return;
+    setDeleting(true);
+    setErr(null);
+    try {
+      await authedDelete(`/posts/${id}`);
+      setFeedReloadKey((k) => k + 1);
+      navigate("/requests", { replace: true });
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Не удалось удалить");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -73,6 +93,9 @@ export function PostDetailScreen() {
         <div className="profile-card-about-text" style={{ whiteSpace: "pre-wrap", marginTop: 12 }}>
           {post.content}
         </div>
+        {post.images && post.images.length > 0 && (
+          <ImageSlider images={post.images} alt="Фото объявления" height={280} />
+        )}
         {(author.contactPhone || tgUrl) && (
           <div className="profile-view-dl" style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-color)" }}>
             {author.contactPhone && (
@@ -98,10 +121,21 @@ export function PostDetailScreen() {
           </div>
         )}
       </div>
-      <div className="row">
+      <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
         <Link className="btn secondary" to="/">
           В ленту
         </Link>
+        {isAuthor && (
+          <button
+            type="button"
+            className="btn secondary"
+            disabled={deleting}
+            onClick={() => void onDelete()}
+            style={{ color: "var(--error)" }}
+          >
+            {deleting ? "Удаление…" : "Удалить объявление"}
+          </button>
+        )}
       </div>
     </div>
   );
