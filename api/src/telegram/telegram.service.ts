@@ -60,12 +60,14 @@ export class TelegramService {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
+      const body = await res.text().catch(() => "");
       if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        this.log.warn(`sendMessage failed: ${res.status} ${body}`);
+        this.log.warn(`Telegram sendMessage failed: ${res.status} ${body}`);
+        return;
       }
+      this.log.log(`Telegram message sent to chat ${chatId}`);
     } catch (e: any) {
-      this.log.warn(`sendMessage error: ${e?.message ?? String(e)}`);
+      this.log.warn(`Telegram sendMessage error: ${e?.message ?? String(e)}`);
     }
   }
 }

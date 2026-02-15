@@ -33,6 +33,20 @@ export type FeedResponse =
       items: Array<
         | { kind: "banner"; id: string; imageUrl: string; targetUrl?: string | null }
         | {
+            kind: "other_post";
+            post: {
+              id: string;
+              content: string;
+              createdAt: string;
+              author: {
+                displayName: string;
+                avatarUrl?: string | null;
+                photoUrl?: string | null;
+                username?: string | null;
+              };
+            };
+          }
+        | {
             kind: "specialist_profile";
             isPromoted: boolean;
             profile: {
@@ -55,6 +69,20 @@ export type FeedResponse =
       role: "specialist";
       items: Array<
         | { kind: "banner"; id: string; imageUrl: string; targetUrl?: string | null }
+        | {
+            kind: "other_post";
+            post: {
+              id: string;
+              content: string;
+              createdAt: string;
+              author: {
+                displayName: string;
+                avatarUrl?: string | null;
+                photoUrl?: string | null;
+                username?: string | null;
+              };
+            };
+          }
         | {
             kind: "request";
             request: {

@@ -23,6 +23,8 @@ import { FeedScreen } from "./pages/FeedScreen";
 import { PublicProfileScreen } from "./pages/PublicProfileScreen";
 import { DocPage } from "./pages/DocPage";
 import { NewProfileScreen } from "./pages/NewProfileScreen";
+import { NewPostScreen } from "./pages/NewPostScreen";
+import { PostDetailScreen } from "./pages/PostDetailScreen";
 import { useParams } from "react-router-dom";
 
 function NewProfileByRoleRoute() {
@@ -367,6 +369,8 @@ export default function App() {
                       <Route path="/profile/contact" element={<ContactScreen />} />
                       <Route path="/profile/new/:roleType" element={<NewProfileByRoleRoute />} />
                       <Route path="/profiles/:id" element={<PublicProfileScreen />} />
+                      <Route path="/posts/new" element={<NewPostScreen />} />
+                      <Route path="/posts/:id" element={<PostDetailScreen />} />
                       <Route path="/docs/:docType" element={<DocPage />} />
                       <Route
                         path="*"

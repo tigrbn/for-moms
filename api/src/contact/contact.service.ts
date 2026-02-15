@@ -36,9 +36,10 @@ export class ContactService {
   ): Promise<void> {
     const chatId = this.devChatId;
     if (!chatId) {
-      this.log.warn("TELEGRAM_DEV_CHAT_ID is not set; contact message not sent");
+      this.log.warn("TELEGRAM_DEV_CHAT_ID is not set or invalid; contact message not sent");
       return;
     }
+    this.log.log(`Sending contact message to developer chat ${chatId}`);
 
     const categoryLabel =
       dto.category === "bug" ? "Сообщить об ошибке" : "Заказать разработку";

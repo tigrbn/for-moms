@@ -1,13 +1,28 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { formatPhoneMask, formatPhoneToDigits } from "../lib/format";
 
 type ContactCategory = "bug" | "order";
+
+const MIN_MESSAGE_LENGTH = 10;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_MIN_DIGITS = 10;
 
 const CATEGORIES: { id: ContactCategory; label: string }[] = [
   { id: "bug", label: "Сообщить об ошибке" },
   { id: "order", label: "Заказать свой проект" },
 ];
+
+function validateEmail(value: string): boolean {
+  return EMAIL_REGEX.test(value.trim());
+}
+
+function validatePhoneDigits(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  const normalized = digits.startsWith("8") ? "7" + digits.slice(1) : digits.startsWith("7") ? digits.slice(1) : digits;
+  return normalized.length >= PHONE_MIN_DIGITS;
+}
 
 export function ContactScreen() {
   const [searchParams] = useSearchParams();
@@ -33,15 +48,32 @@ export function ContactScreen() {
       setErr("Напишите текст обращения");
       return;
     }
+    if (text.length < MIN_MESSAGE_LENGTH) {
+      setErr(`Текст сообщения должен быть не короче ${MIN_MESSAGE_LENGTH} символов`);
+      return;
+    }
+    if (category === "order") {
+      const email = contactEmail.trim();
+      const phone = contactPhone.trim();
+      if (email && !validateEmail(email)) {
+        setErr("Укажите корректный email");
+        return;
+      }
+      if (phone && !validatePhoneDigits(phone)) {
+        setErr("Укажите корректный номер телефона (не менее 10 цифр)");
+        return;
+      }
+    }
     setSending(true);
     try {
+      const phoneForApi = contactPhone.trim() ? formatPhoneToDigits(contactPhone) : undefined;
       await authedPost<{ ok: boolean }>("/contact", {
         category,
         message: text,
-        ...(category === "order" && (contactEmail.trim() || contactPhone.trim())
+        ...(category === "order" && (contactEmail.trim() || phoneForApi)
           ? {
               contactEmail: contactEmail.trim() || undefined,
-              contactPhone: contactPhone.trim() || undefined,
+              contactPhone: phoneForApi,
             }
           : {}),
       });
@@ -91,7 +123,7 @@ export function ContactScreen() {
         </div>
 
         <div className="field">
-          <div className="label">Текст сообщения</div>
+          <div className="label">Текст сообщения <span className="muted">(не короче {MIN_MESSAGE_LENGTH} символов)</span></div>
           <textarea
             className="input"
             value={message}
@@ -99,6 +131,7 @@ export function ContactScreen() {
             placeholder="Опишите проблему или задачу..."
             rows={4}
             style={{ resize: "vertical", minHeight: 80 }}
+            minLength={MIN_MESSAGE_LENGTH}
           />
         </div>
 
@@ -120,8 +153,9 @@ export function ContactScreen() {
                 className="input"
                 type="tel"
                 value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                placeholder="+7 (999) 123-45-67"
+                onChange={(e) => setContactPhone(formatPhoneMask(e.target.value))}
+                placeholder="+7 999 123 45 67"
+                inputMode="tel"
               />
             </div>
           </>

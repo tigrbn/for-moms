@@ -36,6 +36,42 @@ export class FeedController {
       targetUrl: b.targetUrl ?? null,
     }));
 
+    const categoryNorm = category?.trim() ?? "";
+    if (categoryNorm === "Другое") {
+      const posts = await this.prisma.feedPost.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          profile: {
+            include: {
+              user: { select: { username: true, photoUrl: true } },
+            },
+          },
+        },
+      });
+      const postItems = posts.map((post) => {
+        const p = post.profile;
+        return {
+          kind: "other_post" as const,
+          post: {
+            id: post.id.toString(),
+            content: post.content,
+            createdAt: post.createdAt.toISOString(),
+            author: {
+              displayName: p.displayName ?? "Пользователь",
+              avatarUrl: p.avatarUrl ?? null,
+              photoUrl: p.user?.photoUrl ?? null,
+              username: p.user?.username ?? null,
+            },
+          },
+        };
+      });
+      return {
+        role: active.type as "parent" | "specialist",
+        items: [...bannerItems, ...postItems],
+      };
+    }
+
     if (active.type === "specialist") {
       const where: any = { status: "active" };
       if (district?.trim()) {

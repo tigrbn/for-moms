@@ -176,10 +176,27 @@ export function FeedScreen() {
 
       {feed && (
         <div className="feed-content">
+          {feedCategory === "Другое" && (
+            <div style={{ marginBottom: 8 }}>
+              <Link className="btn btn-primary" to="/posts/new">
+                + Добавить объявление
+              </Link>
+            </div>
+          )}
           {contentCount === 0 && (
             <StubCard
-              title={role === "specialist" ? "💛 Заявок пока нет" : "💛 Специалистов пока нет"}
-              desc="Но они появляются регулярно — попробуйте выбрать другую категорию."
+              title={
+                feedCategory === "Другое"
+                  ? "💬 Объявлений пока нет"
+                  : role === "specialist"
+                    ? "💛 Заявок пока нет"
+                    : "💛 Специалистов пока нет"
+              }
+              desc={
+                feedCategory === "Другое"
+                  ? "Напишите первое объявление — его увидят и мамы, и специалисты."
+                  : "Но они появляются регулярно — попробуйте выбрать другую категорию."
+              }
             >
               <div className="row feed-empty-row">
                 <button
@@ -192,11 +209,15 @@ export function FeedScreen() {
                 >
                   Показать все
                 </button>
-                {missingRole && (
+                {feedCategory === "Другое" ? (
+                  <Link className="btn btn-primary" to="/posts/new">
+                    + Добавить объявление
+                  </Link>
+                ) : missingRole ? (
                   <button type="button" className="btn btn-primary" onClick={() => void addMissingRole()}>
                     + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "Специалист"}
                   </button>
-                )}
+                ) : null}
               </div>
             </StubCard>
           )}
@@ -246,6 +267,36 @@ export function FeedScreen() {
                   <Link className="btn feed-card-btn feed-card-btn-open" to={`/profiles/${p.id}`}>
                     Открыть анкету
                   </Link>
+                </div>
+              );
+            }
+
+            if (it.kind === "other_post") {
+              const { post } = it;
+              const preview = post.content.length > 150 ? post.content.slice(0, 150) + "…" : post.content;
+              return (
+                <div key={`op-${post.id}-${idx}`} className="card feed-card feed-card-other">
+                  <div className="feed-card-header">
+                    <div className="feed-card-avatar-wrap">
+                      <div className="feed-card-avatar">
+                        <img src={getAvatarSrc(post.author.avatarUrl, post.author.photoUrl, null)} alt="" />
+                      </div>
+                    </div>
+                    <div className="feed-card-title-block">
+                      <div className="feed-card-title-row">
+                        <div className="feed-card-title">{post.author.displayName}</div>
+                        <span className="feed-card-request-time muted" style={{ marginLeft: 8 }}>
+                          {formatRequestCreatedAt(post.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="feed-card-desc" style={{ whiteSpace: "pre-wrap" }}>{preview}</div>
+                  <div className="feed-card-request-row">
+                    <Link className="btn feed-card-btn feed-card-btn-open" to={`/posts/${post.id}`}>
+                      Открыть
+                    </Link>
+                  </div>
                 </div>
               );
             }

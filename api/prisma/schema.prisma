@@ -20,6 +20,18 @@ model Banner {
   @@map("banners")
 }
 
+model FeedPost {
+  id         BigInt   @id @default(autoincrement())
+  profileId  BigInt   @map("profile_id")
+  content    String
+  createdAt  DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([createdAt], map: "idx_feed_posts_created_at")
+  @@map("feed_posts")
+}
+
 model ConsentLog {
   id              BigInt   @id @default(autoincrement())
   userId          BigInt   @map("user_id")
@@ -88,6 +100,7 @@ model Profile {
   reviewsTo          Review[]            @relation("ReviewsTo")
   specialistPortfolio SpecialistPortfolio[]
   specialistProfile  SpecialistProfile?
+  feedPosts          FeedPost[]
   usersAsActive      User[]              @relation("UserActiveProfile")
 
   @@unique([userId, type])

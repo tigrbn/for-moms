@@ -1,6 +1,7 @@
 import categoryNanny from "../assets/img/category/няня.png";
 import categoryTutor from "../assets/img/category/репетитор.png";
 import categoryLeisure from "../assets/img/category/досуг.png";
+import categoryOther from "../assets/img/category/другое.png";
 
 /** Раздел и его подкатегории (для выбора в заявках и профиле) */
 export interface CategorySection {
@@ -53,10 +54,11 @@ export const CATEGORY_TREE: CategorySection[] = [
   },
 ];
 
-/** Категории для фильтра ленты (разделы + «Все») */
+/** Категории для фильтра ленты (разделы + «Все» + «Другое») */
 export const FEED_CATEGORIES = [
   { id: "", label: "Все", icon: null as string | null },
   ...CATEGORY_TREE.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
+  { id: "Другое", label: "Другое", icon: categoryOther },
 ];
 
 /** Все подкатегории по порядку (для списков выбора) */

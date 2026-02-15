@@ -13,6 +13,7 @@ import { FeedModule } from "./feed/feed.module";
 import { UploadModule } from "./upload/upload.module";
 import { TelegramModule } from "./telegram/telegram.module";
 import { ContactModule } from "./contact/contact.module";
+import { PostsModule } from "./posts/posts.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ContactModule } from "./contact/contact.module";
     UploadModule,
     TelegramModule,
     ContactModule,
+    PostsModule,
   ],
 })
 export class AppModule {}
