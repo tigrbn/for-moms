@@ -6,7 +6,7 @@ type Props = {
   inline?: boolean;
 };
 
-/** Две строки в стиле мета-поля: Категория (чёрный) и Подкатегория (серый). */
+/** Две строки в одном стиле: Категория и Специализация. */
 export function CategoryDisplay({ category, inline }: Props) {
   const parts = getCategoryParts(category);
   if (!parts) return <>{category ?? "—"}</>;
@@ -18,9 +18,9 @@ export function CategoryDisplay({ category, inline }: Props) {
         <span className="category-display-value">{parts.parent}</span>
       </div>
       {parts.sub ? (
-        <div className="category-display-row category-display-row--sub">
-          <span className="category-display-label">Подкатегория:</span>
-          <span className="category-display-value category-display-value--muted">{parts.parent} {parts.sub}</span>
+        <div className="category-display-row">
+          <span className="category-display-label">Специализация:</span>
+          <span className="category-display-value">{parts.parent} {parts.sub}</span>
         </div>
       ) : null}
     </div>
