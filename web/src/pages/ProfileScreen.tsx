@@ -522,6 +522,13 @@ export function ProfileScreen() {
       {reviewsBlock}
       {rolesBlock}
       <div className="card profile-docs-links">
+        <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Связаться с разработчиком</div>
+        <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
+          <li><Link to="/profile/contact">Сообщить об ошибке</Link></li>
+          <li><Link to="/profile/contact?category=order">Заказать свой проект</Link></li>
+        </ul>
+      </div>
+      <div className="card profile-docs-links">
         <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Принятые документы</div>
         <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
           <li><Link to="/docs/agreement">Пользовательское соглашение</Link></li>

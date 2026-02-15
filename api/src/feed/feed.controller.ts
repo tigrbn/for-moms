@@ -108,6 +108,16 @@ export class FeedController {
         return arr.some((s: unknown) => String(s).toLowerCase().includes(cat));
       });
     }
+    // Не показывать анкеты с незаполненными данными: имя и хотя бы одна категория (навык)
+    specialists = specialists.filter((p) => {
+      const name = p.displayName?.trim();
+      if (!name) return false;
+      const skills = p.specialistProfile?.skills;
+      if (!skills) return false;
+      const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+      const hasSkill = arr.some((s: unknown) => String(s).trim() !== "");
+      return hasSkill;
+    });
     const specialistItems = specialists.slice(0, 50).map((p) => {
       const skills = p.specialistProfile?.skills;
       const skillArr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
