@@ -133,7 +133,7 @@ export class ReviewsService {
             displayName: true,
             avatarUrl: true,
             gender: true,
-            user: { select: { photoUrl: true, firstName: true, lastName: true } },
+            user: { select: { photoUrl: true, firstName: true, lastName: true, deletedAt: true } },
           },
         },
         request: { select: { category: true } },

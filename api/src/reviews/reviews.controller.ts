@@ -27,23 +27,28 @@ export class ReviewsController {
   @Get("profiles/:id/reviews")
   async list(@Param("id") id: string) {
     const items = await this.reviews.listForProfile(BigInt(id));
-    return items.map((r) => ({
-      id: r.id.toString(),
-      rating: r.rating,
-      text: r.text,
-      createdAt: r.createdAt.toISOString(),
-      requestCategory: r.request?.category ?? null,
-      fromProfile: {
-        id: r.fromProfile.id.toString(),
-        type: r.fromProfile.type,
-        displayName: r.fromProfile.displayName ?? null,
-        avatarUrl: r.fromProfile.avatarUrl ?? null,
-        photoUrl: r.fromProfile.user?.photoUrl ?? null,
-        gender: r.fromProfile.gender ?? null,
-        firstName: r.fromProfile.user?.firstName ?? null,
-        lastName: r.fromProfile.user?.lastName ?? null,
-      },
-    }));
+    return items.map((r) => {
+      const authorDeleted = r.fromProfile.user?.deletedAt != null;
+      return {
+        id: r.id.toString(),
+        rating: r.rating,
+        text: r.text,
+        createdAt: r.createdAt.toISOString(),
+        requestCategory: r.request?.category ?? null,
+        fromProfile: authorDeleted
+          ? null
+          : {
+              id: r.fromProfile.id.toString(),
+              type: r.fromProfile.type,
+              displayName: r.fromProfile.displayName ?? null,
+              avatarUrl: r.fromProfile.avatarUrl ?? null,
+              photoUrl: r.fromProfile.user?.photoUrl ?? null,
+              gender: r.fromProfile.gender ?? null,
+              firstName: r.fromProfile.user?.firstName ?? null,
+              lastName: r.fromProfile.user?.lastName ?? null,
+            },
+      };
+    });
   }
 }
 

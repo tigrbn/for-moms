@@ -225,7 +225,7 @@ export function NewProfileScreen({ type }: Props) {
           </div>
           <div className="field">
             <label className="label">Город *</label>
-            <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Москва" />
+            <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Якутск" />
           </div>
           <div className="field">
             <label className="label">Район *</label>

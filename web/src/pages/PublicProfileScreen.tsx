@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
-import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
-import { formatDate } from "../lib/format";
+import { ReviewsSlider } from "../components/ReviewsSlider";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon } from "../constants/feed";
 import { getParentRoleLabel } from "../lib/labels";
@@ -17,8 +16,6 @@ export function PublicProfileScreen() {
   const [err, setErr] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
   const [reviewsErr, setReviewsErr] = useState<string | null>(null);
-  const [reviewsPage, setReviewsPage] = useState(1);
-
   useEffect(() => {
     const run = async () => {
       setErr(null);
@@ -66,14 +63,6 @@ export function PublicProfileScreen() {
   }, [profileId, token, authedGet]);
 
   const reviewsList = reviews ?? [];
-  const reviewsTotalPages = Math.max(1, Math.ceil(reviewsList.length / ITEMS_PER_PAGE));
-  const reviewsPaginated = useMemo(
-    () => reviewsList.slice((reviewsPage - 1) * ITEMS_PER_PAGE, reviewsPage * ITEMS_PER_PAGE),
-    [reviewsList, reviewsPage],
-  );
-  useEffect(() => {
-    setReviewsPage(1);
-  }, [reviewsList.length]);
 
   if (err) return <ErrorBox error={err} />;
   if (!p) return <div className="card">Загрузка…</div>;
@@ -210,61 +199,7 @@ export function PublicProfileScreen() {
           </div>
         )}
         {reviews && reviews.length > 0 && (
-          <>
-          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-            {reviewsPaginated.map((r) => {
-              const authorName =
-                r.fromProfile.displayName?.trim() ||
-                [r.fromProfile.firstName, r.fromProfile.lastName].filter(Boolean).join(" ") ||
-                "Пользователь";
-              const authorAvatar = getAvatarSrc(
-                r.fromProfile.avatarUrl ?? null,
-                r.fromProfile.photoUrl ?? null,
-                r.fromProfile.gender ?? null,
-              );
-              const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
-              return (
-                <div key={r.id} className="card review-card" style={{ background: "var(--tg-bg)" }}>
-                  <div className="row" style={{ alignItems: "center", gap: 12 }}>
-                    <img
-                      src={authorAvatar}
-                      alt=""
-                      style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800 }}>{authorName}</div>
-                      {r.requestCategory && (
-                        <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-                          {categoryIcon && (
-                            <img
-                              src={categoryIcon}
-                              alt=""
-                              style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 4 }}
-                            />
-                          )}
-                          {r.requestCategory}
-                        </div>
-                      )}
-                    </div>
-                    <div className="review-card-rating" style={{ fontWeight: 900 }}>
-                      <span className="rating-star">★</span> {r.rating}
-                    </div>
-                  </div>
-                  <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-                    {formatDate(r.createdAt)}
-                  </div>
-                  {r.text && <div className="review-card-text" style={{ marginTop: 6 }}>{r.text}</div>}
-                </div>
-              );
-            })}
-          </div>
-          <PaginationBar
-            currentPage={reviewsPage}
-            totalPages={reviewsTotalPages}
-            onPrev={() => setReviewsPage((p) => Math.max(1, p - 1))}
-            onNext={() => setReviewsPage((p) => Math.min(reviewsTotalPages, p + 1))}
-          />
-        </>
+          <ReviewsSlider reviews={reviewsList} authorFallbackLabel="Пользователь" />
         )}
       </div>
     </div>

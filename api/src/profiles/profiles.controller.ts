@@ -132,6 +132,7 @@ export class ProfilesController {
       pricePerHour?: number | null;
       workDistricts?: string[] | null;
       about?: string | null;
+      notifyNewRequestsInCategory?: boolean;
     },
   ) {
     this.logger.log(`PATCH /profiles/${id}/specialist body=${JSON.stringify(body)}`);
@@ -146,6 +147,7 @@ export class ProfilesController {
       pricePerHour: specialist.pricePerHour,
       workDistricts: specialist.workDistricts,
       about: specialist.about,
+      notifyNewRequestsInCategory: specialist.notifyNewRequestsInCategory,
     };
   }
 

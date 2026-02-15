@@ -41,7 +41,7 @@ function useSpecialistArchive(authedGet: <T>(path: string) => Promise<T>) {
 }
 
 export function RequestsScreen() {
-  const { activeProfileType, activeProfileId, authedGet, authedDelete, parentNewOffersCount } = useApp();
+  const { activeProfileType, activeProfileId, authedGet, parentNewOffersCount } = useApp();
   const [items, setItems] = useState<RequestMineItem[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [archivePage, setArchivePage] = useState(1);
@@ -206,21 +206,6 @@ export function RequestsScreen() {
                 <Link className="btn secondary" to={`/requests/${r.id}`}>
                   Открыть
                 </Link>
-                <button
-                  type="button"
-                  className="btn danger"
-                  onClick={async () => {
-                    if (!confirm("Удалить заявку?")) return;
-                    try {
-                      await authedDelete(`/requests/${r.id}`);
-                      setItems((prev) => (prev ?? []).filter((x) => x.id !== r.id));
-                    } catch (e: unknown) {
-                      setErr(e instanceof Error ? e.message : "Не удалось удалить");
-                    }
-                  }}
-                >
-                  Удалить
-                </button>
               </div>
             </div>
           );

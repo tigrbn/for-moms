@@ -59,13 +59,13 @@ export class MeController {
     // Числа для IN: BigInt в raw-запросах Prisma может ломать привязку параметров
     const profileIdsNum = profileIds.map((id) => Number(id));
 
-    type SpecialistRow = { profile_id: bigint; skills: unknown; price_per_hour: number | null; about: string | null };
+    type SpecialistRow = { profile_id: bigint; skills: unknown; price_per_hour: number | null; about: string | null; notify_new_requests_in_category: boolean };
     type ParentRow = { profile_id: bigint; children_ages: unknown; special_wishes: string | null };
 
     const specialists: SpecialistRow[] =
       profileIdsNum.length > 0
         ? await this.prisma.$queryRaw<SpecialistRow[]>(
-            Prisma.sql`SELECT profile_id, skills, price_per_hour, about FROM specialist_profiles WHERE profile_id IN (${Prisma.join(profileIdsNum)})`,
+            Prisma.sql`SELECT profile_id, skills, price_per_hour, about, COALESCE(notify_new_requests_in_category, false) AS notify_new_requests_in_category FROM specialist_profiles WHERE profile_id IN (${Prisma.join(profileIdsNum)})`,
           )
         : [];
     const parents: ParentRow[] =
@@ -119,6 +119,7 @@ export class MeController {
             skills: spec ? parseSkills(spec.skills) : [],
             pricePerHour: spec?.price_per_hour ?? null,
             about: spec?.about ?? null,
+            notifyNewRequestsInCategory: spec?.notify_new_requests_in_category ?? false,
           },
         };
       }

@@ -19,7 +19,7 @@ export type MeResponse = {
     district?: string | null;
     contactPhone?: string | null;
     showContactPhonePublicly?: boolean;
-    specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null };
+    specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null; notifyNewRequestsInCategory?: boolean };
     parent?: { childrenAges: number[] | null; specialWishes?: string | null };
   }>;
   activeProfileId: string | null;
@@ -172,6 +172,7 @@ export type ReviewListItem = {
   text?: string | null;
   createdAt: string;
   requestCategory?: string | null;
+  /** null — автор отзыва удалил аккаунт; отзыв участвует в рейтинге */
   fromProfile: {
     id: string;
     type: "parent" | "specialist";
@@ -181,7 +182,7 @@ export type ReviewListItem = {
     gender?: string | null;
     firstName?: string | null;
     lastName?: string | null;
-  };
+  } | null;
 };
 
 export type PublicProfile = {

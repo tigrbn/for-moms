@@ -150,29 +150,31 @@ model SpecialistPortfolio {
 }
 
 model SpecialistProfile {
-  profileId       BigInt @id @map("profile_id")
-  skills          Json?
-  experienceYears Int?   @map("experience_years")
-  ageGroups       Json?  @map("age_groups")
-  pricePerHour    Int?   @map("price_per_hour")
-  workDistricts   Json?  @map("work_districts")
-  about           String?
+  profileId                   BigInt   @id @map("profile_id")
+  skills                      Json?
+  experienceYears             Int?     @map("experience_years")
+  ageGroups                   Json?    @map("age_groups")
+  pricePerHour                Int?     @map("price_per_hour")
+  workDistricts               Json?    @map("work_districts")
+  about                       String?
+  notifyNewRequestsInCategory Boolean  @default(false) @map("notify_new_requests_in_category")
 
-  profile         Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profile                     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("specialist_profiles")
 }
 
 model User {
-  id              BigInt   @id @default(autoincrement())
-  telegramId      BigInt   @unique @map("telegram_id")
-  firstName       String?  @map("first_name")
-  lastName        String?  @map("last_name")
+  id              BigInt    @id @default(autoincrement())
+  telegramId      BigInt    @unique @map("telegram_id")
+  firstName       String?   @map("first_name")
+  lastName        String?   @map("last_name")
   username        String?
-  photoUrl        String?  @map("photo_url")
-  createdAt       DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
-  updatedAt       DateTime @default(now()) @db.Timestamptz(6) @map("updated_at")
-  activeProfileId BigInt?  @map("active_profile_id")
+  photoUrl        String?   @map("photo_url")
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime  @default(now()) @db.Timestamptz(6) @map("updated_at")
+  deletedAt       DateTime? @db.Timestamptz(6) @map("deleted_at")
+  activeProfileId BigInt?   @map("active_profile_id")
 
   profiles        Profile[] @relation("UserProfiles")
   activeProfile   Profile?  @relation("UserActiveProfile", fields: [activeProfileId], references: [id], onDelete: SetNull, onUpdate: NoAction)

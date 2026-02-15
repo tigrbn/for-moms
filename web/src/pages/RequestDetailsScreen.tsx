@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
+import { ReviewsSlider } from "../components/ReviewsSlider";
 import { formatMoney, formatDate, formatOfferCreatedAt, formatPhoneForDisplay, formatPhoneToDigits } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
@@ -276,58 +277,12 @@ export function RequestDetailsScreen() {
             <div className="muted" style={{ marginTop: 8 }}>Пока нет отзывов от специалистов.</div>
           )}
           {parentReviews && parentReviews.length > 0 && (
-            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-              {parentReviews.slice(0, 5).map((r) => {
-                const authorName =
-                  r.fromProfile.displayName?.trim() ||
-                  [r.fromProfile.firstName, r.fromProfile.lastName].filter(Boolean).join(" ") ||
-                  "Специалист";
-                const authorAvatar = getAvatarSrc(
-                  r.fromProfile.avatarUrl ?? null,
-                  r.fromProfile.photoUrl ?? null,
-                  r.fromProfile.gender ?? null,
-                );
-                const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
-                return (
-                  <div key={r.id} className="card review-card" style={{ background: "var(--tg-bg)" }}>
-                    <div className="row" style={{ alignItems: "center", gap: 12 }}>
-                      <img
-                        src={authorAvatar}
-                        alt=""
-                        style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 800 }}>{authorName}</div>
-                        {r.requestCategory && (
-                          <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-                            {categoryIcon && (
-                              <img
-                                src={categoryIcon}
-                                alt=""
-                                style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 4 }}
-                              />
-                            )}
-                            {r.requestCategory}
-                          </div>
-                        )}
-                      </div>
-                      <div className="review-card-rating" style={{ fontWeight: 900 }}>
-                        <span className="rating-star">★</span> {r.rating}
-                      </div>
-                    </div>
-                    <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-                      {formatDate(r.createdAt)}
-                    </div>
-                    {r.text && <div className="review-card-text" style={{ marginTop: 6 }}>{r.text}</div>}
-                  </div>
-                );
-              })}
-              {parentReviews.length > 5 && (
-                <p className="muted" style={{ marginTop: 4, marginBottom: 0, fontSize: 13 }}>
-                  <Link to={`/profiles/${data.parent.profileId}`}>Остальные отзывы — в профиле заказчика</Link>
-                </p>
-              )}
-            </div>
+            <>
+              <ReviewsSlider reviews={parentReviews} authorFallbackLabel="Специалист" />
+              <p className="muted" style={{ marginTop: 10, marginBottom: 0, fontSize: 13 }}>
+                <Link to={`/profiles/${data.parent.profileId}`}>Профиль заказчика и все отзывы</Link>
+              </p>
+            </>
           )}
         </div>
       )}

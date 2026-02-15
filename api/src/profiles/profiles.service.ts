@@ -246,6 +246,7 @@ export class ProfilesService {
       pricePerHour?: number | null;
       workDistricts?: string[] | null;
       about?: string | null;
+      notifyNewRequestsInCategory?: boolean;
     },
   ) {
     const profile = await this.getOwnedProfileOrThrow(userId, profileId);
@@ -266,6 +267,7 @@ export class ProfilesService {
     const workDistricts =
       data.workDistricts === undefined ? undefined : (data.workDistricts === null ? Prisma.JsonNull : data.workDistricts) as Prisma.InputJsonValue | undefined;
     const about = data.about !== undefined ? data.about : undefined;
+    const notifyNewRequestsInCategory = data.notifyNewRequestsInCategory;
 
     return this.prisma.specialistProfile.upsert({
       where: { profileId },
@@ -277,6 +279,7 @@ export class ProfilesService {
         pricePerHour,
         workDistricts,
         about,
+        notifyNewRequestsInCategory: notifyNewRequestsInCategory ?? false,
       },
       update: {
         skills: skillsJson,
@@ -285,6 +288,7 @@ export class ProfilesService {
         pricePerHour,
         workDistricts,
         about,
+        ...(notifyNewRequestsInCategory !== undefined && { notifyNewRequestsInCategory }),
       },
     });
   }

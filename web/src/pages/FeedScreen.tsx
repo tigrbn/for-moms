@@ -279,19 +279,17 @@ export function FeedScreen() {
                     <div className="feed-card-title-block">
                       <div className="feed-card-title-row">
                         <div className="feed-card-title">{requestAuthorName}</div>
+                        {parent && (parent.ratingCount ?? 0) > 0 && (
+                          <div className="feed-card-rating" style={{ flexShrink: 0 }}>
+                            <span className="rating-star">★</span> {parent.ratingAvg ?? "0"} ({parent.ratingCount})
+                          </div>
+                        )}
                         <div className="spacer" />
                         <div className="pill">{labelRequestStatus(r.status)}</div>
                       </div>
                       <div className="feed-card-meta-block">
-                        <div className="feed-card-title-row" style={{ alignItems: "center", gap: 8 }}>
-                          <div className="feed-card-category">
-                            <span>Категория: <strong>{r.category}</strong></span>
-                          </div>
-                          {parent && (parent.ratingCount ?? 0) > 0 && (
-                            <div className="feed-card-rating">
-                              <span className="rating-star">★</span> {parent.ratingAvg ?? "0"} ({parent.ratingCount})
-                            </div>
-                          )}
+                        <div className="feed-card-category">
+                          <span>Категория: <strong>{r.category}</strong></span>
                         </div>
                         <div className="feed-card-meta feed-card-meta-vertical muted">
                           {r.district && <span>район: {r.district}</span>}

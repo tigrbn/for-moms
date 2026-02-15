@@ -750,7 +750,7 @@ a {
   margin-left: -16px;
   margin-right: -16px;
   padding-left: 16px;
-  padding-right: 16px;
+  padding-right: 32px;
   padding-bottom: 10px;
   width: 100%;
   max-width: 100%;
@@ -782,7 +782,7 @@ a {
   flex-wrap: nowrap;
   min-width: min-content;
   width: max-content;
-  padding-right: 8px;
+  padding-right: 24px;
 }
 .feed-category-chip {
   flex-shrink: 0;
@@ -921,6 +921,9 @@ a {
 .feed-card-request {
   background: #ffffff;
 }
+.feed-card-request.card--completed {
+  background: var(--disabled-bg, #e8e8e8) !important;
+}
 .feed-card-request-row {
   display: flex;
   align-items: center;
@@ -1034,6 +1037,60 @@ a {
   line-height: 1.45;
 }
 
+/* Слайдер отзывов: один отзыв на экран, свайп и точки */
+.reviews-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 12px;
+}
+.reviews-slider-track {
+  touch-action: pan-y;
+  user-select: none;
+  min-height: 80px;
+}
+.reviews-slider-card {
+  margin: 0;
+}
+.reviews-slider-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.reviews-slider-btn {
+  min-width: 44px;
+  padding: 8px 12px;
+  font-size: 18px;
+  line-height: 1;
+}
+.reviews-slider-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.reviews-slider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.reviews-slider-dot:hover {
+  background: var(--border-color);
+}
+.reviews-slider-dot.active {
+  background: var(--tg-theme-button-color, var(--primary));
+  border-color: var(--tg-theme-button-color, var(--primary));
+  transform: scale(1.2);
+}
+
 /* Карточка заявки в разделе «Все заявки» — серый текст вертикально */
 .request-card-meta {
   display: flex;
@@ -1080,15 +1137,20 @@ a {
   min-width: 130px;
   padding: 8px 16px;
   font-size: 14px;
-  background: #ffffff;
-  color: var(--primary);
-  border: 1px solid var(--primary);
+  font-weight: 700;
+  background: var(--tg-theme-button-color, var(--primary));
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
   box-shadow: none;
 }
 .feed-card-btn-open:hover {
-  background: color-mix(in srgb, var(--primary) 8%, #fff);
-  color: var(--primary);
-  border-color: var(--primary);
+  opacity: 0.95;
+  background: var(--tg-theme-button-color, var(--primary));
+  color: var(--tg-theme-button-text-color, #fff);
+}
+.feed-card-request.card--completed .feed-card-btn-open {
+  background: var(--tg-theme-button-color, var(--primary));
+  color: var(--tg-theme-button-text-color, #fff);
 }
 .feed-card-request-category {
   font-weight: 900;

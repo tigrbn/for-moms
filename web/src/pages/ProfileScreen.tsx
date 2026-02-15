@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { getAvatarSrc } from "../lib/avatar";
-import { formatPhoneMask, formatPhoneToDigits } from "../lib/format";
+import { formatPhoneMask, formatPhoneToDigits, formatDate } from "../lib/format";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
-import { CATEGORY_TREE } from "../constants/feed";
+import { CATEGORY_TREE, getCategoryIcon } from "../constants/feed";
+import { PaginationBar } from "../components/PaginationBar";
+import type { ReviewListItem } from "../types";
+
+const REVIEWS_PER_PAGE = 3;
 
 export function ProfileScreen() {
   const location = useLocation();
@@ -14,12 +18,17 @@ export function ProfileScreen() {
     me,
     authedPatch,
     authedDelete,
+    authedGet,
     refreshMe,
     ensureActiveProfile,
     missingRole,
     addMissingRole,
     setMeError,
   } = useApp();
+
+  const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
+  const [reviewsErr, setReviewsErr] = useState<string | null>(null);
+  const [reviewsPage, setReviewsPage] = useState(1);
 
   if (!me) return <div className="card">Загрузка…</div>;
   if (me.profiles.length === 0) return null;
@@ -88,6 +97,35 @@ export function ProfileScreen() {
       }
     }
   }, [activeProfile]);
+
+  useEffect(() => {
+    if (!profileId || !authedGet) return;
+    let cancelled = false;
+    setReviewsErr(null);
+    setReviews(null);
+    const run = async () => {
+      try {
+        const list = await authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`);
+        if (!cancelled) setReviews(Array.isArray(list) ? list : []);
+      } catch (e: unknown) {
+        if (!cancelled) setReviewsErr(e instanceof Error ? e.message : "Не удалось загрузить отзывы");
+        if (!cancelled) setReviews([]);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [profileId, authedGet]);
+
+  useEffect(() => setReviewsPage(1), [profileId]);
+
+  const reviewsList = reviews ?? [];
+  const reviewsTotalPages = Math.max(1, Math.ceil(reviewsList.length / REVIEWS_PER_PAGE));
+  const reviewsPaginated = useMemo(
+    () => reviewsList.slice((reviewsPage - 1) * REVIEWS_PER_PAGE, reviewsPage * REVIEWS_PER_PAGE),
+    [reviewsList, reviewsPage],
+  );
 
   const save = async () => {
     setErr(null);
@@ -167,6 +205,107 @@ export function ProfileScreen() {
           ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(p.gender)}`
           : "👩‍🏫 Специалист",
     }));
+
+  const renderReviewCard = (r: ReviewListItem) => {
+    const fromProfile = r.fromProfile;
+    const namePart =
+      fromProfile?.displayName?.trim() ||
+      [fromProfile?.firstName, fromProfile?.lastName].filter(Boolean).join(" ") ||
+      "";
+    const authorName = !fromProfile || !namePart ? "Удалённый аккаунт" : namePart;
+    const authorAvatar =
+      fromProfile && namePart
+        ? getAvatarSrc(
+            fromProfile.avatarUrl ?? null,
+            fromProfile.photoUrl ?? null,
+            fromProfile.gender ?? null,
+          )
+        : null;
+    const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
+    return (
+      <div key={r.id} className="card review-card" style={{ background: "var(--tg-bg)" }}>
+        <div className="row" style={{ alignItems: "center", gap: 12 }}>
+          {authorAvatar ? (
+            <img
+              src={authorAvatar}
+              alt=""
+              style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "var(--border-color)",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                color: "var(--text-secondary)",
+              }}
+              aria-hidden
+            >
+              —
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800 }}>{authorName}</div>
+            {r.requestCategory && (
+              <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                {categoryIcon && (
+                  <img
+                    src={categoryIcon}
+                    alt=""
+                    style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 4 }}
+                  />
+                )}
+                {r.requestCategory}
+              </div>
+            )}
+          </div>
+          <div className="review-card-rating" style={{ fontWeight: 900 }}>
+            <span className="rating-star">★</span> {r.rating}
+          </div>
+        </div>
+        <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+          {formatDate(r.createdAt)}
+        </div>
+        {r.text && <div className="review-card-text" style={{ marginTop: 6 }}>{r.text}</div>}
+      </div>
+    );
+  };
+
+  const reviewsBlock = profileId ? (
+    <div className="card">
+      <div className="h2">Отзывы</div>
+      <p className="muted" style={{ marginTop: 6, marginBottom: 0, fontSize: 13 }}>
+        Отзывы о вас после завершённых заявок. По {REVIEWS_PER_PAGE} на страницу.{" "}
+        {profileId && (
+          <Link to={`/profiles/${profileId}`}>Все отзывы в публичном профиле</Link>
+        )}
+      </p>
+      {reviewsErr && <div className="muted" style={{ marginTop: 8 }}>{reviewsErr}</div>}
+      {reviews === null && !reviewsErr && <div className="muted" style={{ marginTop: 8 }}>Загрузка…</div>}
+      {reviews && reviews.length === 0 && (
+        <div className="muted" style={{ marginTop: 8 }}>Пока нет отзывов.</div>
+      )}
+      {reviews && reviews.length > 0 && (
+        <>
+          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+            {reviewsPaginated.map(renderReviewCard)}
+          </div>
+          <PaginationBar
+            currentPage={reviewsPage}
+            totalPages={reviewsTotalPages}
+            onPrev={() => setReviewsPage((p) => Math.max(1, p - 1))}
+            onNext={() => setReviewsPage((p) => Math.min(reviewsTotalPages, p + 1))}
+          />
+        </>
+      )}
+    </div>
+  ) : null;
 
   const rolesBlock = (
     <div className="card roles-page">
@@ -350,7 +489,33 @@ export function ProfileScreen() {
             Редактировать
           </button>
         </div>
+        {type === "specialist" && profileId && (
+          <div className="profile-notify-toggle" style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-color)" }}>
+            <label className="profile-toggle-label" style={{ cursor: "pointer", flexWrap: "wrap" }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 14 }}>
+                Разрешить боту присылать в Telegram сообщения о новых заявках по моей категории
+              </span>
+              <input
+                type="checkbox"
+                className="profile-toggle-input"
+                role="switch"
+                checked={activeProfile.specialist?.notifyNewRequestsInCategory ?? false}
+                onChange={async (e) => {
+                  const value = e.target.checked;
+                  try {
+                    await authedPatch(`/profiles/${profileId}/specialist`, { notifyNewRequestsInCategory: value });
+                    await refreshMe();
+                  } catch {
+                    setMeError("Не удалось сохранить настройку");
+                  }
+                }}
+              />
+              <span className="profile-toggle-slider" />
+            </label>
+          </div>
+        )}
       </div>
+      {reviewsBlock}
       {rolesBlock}
       <div className="card profile-docs-links">
         <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Принятые документы</div>
@@ -419,7 +584,7 @@ export function ProfileScreen() {
             className="input"
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            placeholder="Москва"
+            placeholder="Якутск"
           />
         </div>
         <div className="field">
@@ -470,6 +635,29 @@ export function ProfileScreen() {
                 className="profile-toggle-input"
                 checked={showContactPhonePublicly}
                 onChange={(e) => setShowContactPhonePublicly(e.target.checked)}
+              />
+              <span className="profile-toggle-slider" />
+            </label>
+          </div>
+        )}
+        {type === "specialist" && profileId && (
+          <div className="field">
+            <label className="label profile-toggle-label" style={{ cursor: "pointer" }}>
+              <span>Разрешить боту присылать в Telegram сообщения о новых заявках по моей категории</span>
+              <input
+                type="checkbox"
+                className="profile-toggle-input"
+                role="switch"
+                checked={activeProfile.specialist?.notifyNewRequestsInCategory ?? false}
+                onChange={async (e) => {
+                  const value = e.target.checked;
+                  try {
+                    await authedPatch(`/profiles/${profileId}/specialist`, { notifyNewRequestsInCategory: value });
+                    await refreshMe();
+                  } catch {
+                    setMeError("Не удалось сохранить настройку");
+                  }
+                }}
               />
               <span className="profile-toggle-slider" />
             </label>
@@ -576,6 +764,7 @@ export function ProfileScreen() {
         </button>
       </div>
     </div>
+    {reviewsBlock}
     {rolesBlock}
     <div className="card profile-docs-links">
       <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Принятые документы</div>
