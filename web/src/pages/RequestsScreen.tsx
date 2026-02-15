@@ -275,7 +275,9 @@ export function RequestsScreen() {
                 <div className="spacer" />
                 <div className="pill">{labelRequestStatus(r.status)}</div>
               </div>
-              <div className="request-card-date" style={{ marginTop: 4, fontSize: 13 }}>{formatDate(r.createdAt)}</div>
+              <div className="request-card-date" style={{ marginTop: 4, fontSize: 13 }}>
+                <span className="request-meta-label">Дата создания:</span> {formatDate(r.createdAt)}
+              </div>
               <div className="request-card-meta" style={{ marginTop: 6 }}>
                 <div><span className="request-meta-label">Район:</span> {r.district ?? "—"}</div>
                 <div><span className="request-meta-label">Бюджет:</span> {formatMoney(r.budget)}</div>

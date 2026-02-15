@@ -1102,16 +1102,16 @@ a {
   flex-direction: column;
   gap: 2px;
   font-size: 13px;
-  color: #000;
+  color: #3a3a3a;
 }
 .request-meta-label {
-  font-weight: 700;
-  color: #000;
+  font-weight: 600;
+  color: #3a3a3a;
 }
 .request-card-date,
 .request-card-desc {
   font-weight: 400;
-  color: #000;
+  color: #3a3a3a;
 }
 .feed-card-top {
   font-size: 11px;
@@ -1148,13 +1148,13 @@ a {
   gap: 4px 6px;
 }
 .category-display-label {
-  font-weight: 700;
-  color: #000;
+  font-weight: 600;
+  color: #3a3a3a;
   flex-shrink: 0;
 }
 .category-display-value {
   font-weight: 400;
-  color: #000;
+  color: #3a3a3a;
 }
 .category-display-value--muted {
   color: var(--text-secondary);
@@ -1217,14 +1217,14 @@ a {
   font-size: 14px;
   line-height: 1.4;
   font-weight: 400;
-  color: #000;
+  color: #3a3a3a;
 }
 .feed-card-desc {
   margin-top: 10px;
   font-size: 14px;
   line-height: 1.4;
   font-weight: 400;
-  color: #000;
+  color: #3a3a3a;
 }
 
 /* Карточка анкеты (страница профиля) */
@@ -1308,13 +1308,13 @@ a {
   gap: 4px 6px;
 }
 .profile-card-meta-label {
-  font-weight: 700;
-  color: #000;
+  font-weight: 600;
+  color: #3a3a3a;
   flex-shrink: 0;
 }
 .profile-card-meta-value {
   font-weight: 400;
-  color: #000;
+  color: #3a3a3a;
 }
 .profile-card-meta-value--price {
   font-weight: 700;
@@ -1327,15 +1327,15 @@ a {
 }
 .profile-card-about-title {
   font-size: 14px;
-  font-weight: 700;
-  color: #000;
+  font-weight: 600;
+  color: #3a3a3a;
   margin-bottom: 6px;
 }
 .profile-card-about-text {
   font-size: 14px;
   line-height: 1.45;
   font-weight: 400;
-  color: #000;
+  color: #3a3a3a;
   white-space: pre-wrap;
 }
 .profile-card-extra {
