@@ -60,7 +60,7 @@ export function RequestDetailsScreen() {
   }, [requestId, activeProfileId, authedGet, refreshParentNewOffersCount]);
 
   useEffect(() => {
-    if (!data?.parent?.profileId) {
+    if (!data?.parent?.profileId || activeProfileId === data.parent.profileId) {
       setParentReviews(null);
       setParentReviewsErr(null);
       return;
@@ -79,7 +79,7 @@ export function RequestDetailsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [data?.parent?.profileId, authedGet]);
+  }, [data?.parent?.profileId, activeProfileId, authedGet]);
 
   const sendOffer = async () => {
     setActionErr(null);
@@ -284,8 +284,8 @@ export function RequestDetailsScreen() {
         )}
       </div>
 
-      {/* Отзывы о заказчике (от специалистов) — чтобы специалист мог решить, отправлять ли отклик */}
-      {data?.parent?.profileId && (
+      {/* Отзывы о заказчике — только для специалистов (не показываем создателю заявки) */}
+      {data?.parent?.profileId && activeProfileId !== data.parent.profileId && (
         <div className="card">
           <div className="h2" style={{ margin: 0 }}>Отзывы о заказчике</div>
           <p className="muted" style={{ marginTop: 6, marginBottom: 0 }}>

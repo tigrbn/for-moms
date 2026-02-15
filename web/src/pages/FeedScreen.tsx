@@ -255,14 +255,18 @@ export function FeedScreen() {
                         <div className="feed-card-category">
                           <CategoryDisplay category={p.category ?? null} />
                         </div>
-                        <div className="feed-card-meta feed-card-meta-vertical muted">
-                          {p.city && <span>город: {p.city}</span>}
-                          {p.district && <span>район: {p.district}</span>}
-                          {!p.city && !p.district && <span>—</span>}
+                        <div className="category-display">
+                          <div className="category-display-row">
+                            <span className="category-display-label">город, район:</span>
+                            <span className="category-display-value">{[p.city, p.district].filter(Boolean).join(", ") || "—"}</span>
+                          </div>
+                          {p.pricePerHour != null && (
+                            <div className="category-display-row">
+                              <span className="category-display-label">цена за час:</span>
+                              <span className="category-display-value profile-card-meta-value--price">{p.pricePerHour} ₽/час</span>
+                            </div>
+                          )}
                         </div>
-                        {p.pricePerHour != null && (
-                          <div className="feed-card-price">цена за час: {p.pricePerHour} ₽/час</div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -349,10 +353,15 @@ export function FeedScreen() {
                         <div className="feed-card-category">
                           <CategoryDisplay category={r.category} />
                         </div>
-                        <div className="feed-card-meta feed-card-meta-vertical muted">
-                          {r.district && <span>район: {r.district}</span>}
-                          {r.budget != null && <span>бюджет: {formatMoney(r.budget)}</span>}
-                          {!r.district && r.budget == null && <span>—</span>}
+                        <div className="category-display">
+                          <div className="category-display-row">
+                            <span className="category-display-label">Район:</span>
+                            <span className="category-display-value">{r.district ?? "—"}</span>
+                          </div>
+                          <div className="category-display-row">
+                            <span className="category-display-label">Бюджет:</span>
+                            <span className="category-display-value">{r.budget != null ? formatMoney(r.budget) : "—"}</span>
+                          </div>
                         </div>
                       </div>
                     </div>

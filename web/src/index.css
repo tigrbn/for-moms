@@ -1117,17 +1117,17 @@ a {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 4px;
 }
 .feed-card-category strong {
   font-weight: 700;
   color: var(--tg-link, var(--primary));
 }
-/* Категория и подкатегория — две строки в стиле мета-поля (чёрный текст категории, серый подкатегории) */
+/* Мета-блоки: единый размер текста (13px) и отступ между строками (4px) */
 .category-display {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   font-size: 13px;
   line-height: 1.4;
 }
@@ -1283,10 +1283,10 @@ a {
   margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .profile-card-meta-row {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
   display: flex;
   align-items: baseline;
@@ -1326,10 +1326,11 @@ a {
   margin-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .profile-card-extra .profile-card-meta-row {
   margin-top: 0;
+  font-size: 13px;
 }
 .profile-card-actions {
   margin-top: 16px;
