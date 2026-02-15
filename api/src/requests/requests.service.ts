@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 import { isAdminUser } from "../common/admin";
@@ -7,6 +7,8 @@ import { TelegramService } from "../telegram/telegram.service";
 
 @Injectable()
 export class RequestsService {
+  private readonly logger = new Logger(RequestsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
@@ -70,14 +72,20 @@ export class RequestsService {
       "Откройте заявку в Mini App, чтобы откликнуться.",
     ].join("\n");
 
+    let sent = 0;
     for (const p of specialists) {
       if (!p.specialistProfile?.notifyNewRequestsInCategory) continue;
-      if (!p.user?.telegramId) continue;
+      if (!p.user?.telegramId) {
+        this.logger.warn(`Specialist profile ${p.id}: no telegramId, skipping notification`);
+        continue;
+      }
       if (!skillsIncludesCategory(p.specialistProfile.skills)) continue;
       await this.telegram.sendMessage(p.user.telegramId, text, {
         buttons: webAppUrl ? [{ text: "Открыть заявку", web_app: { url: webAppUrl } }] : undefined,
       });
+      sent++;
     }
+    this.logger.log(`New request ${requestId} category=${categoryTrim} parent=${parentCategory}: notified ${sent} specialist(s)`);
   }
 
   async mine(userId: bigint) {

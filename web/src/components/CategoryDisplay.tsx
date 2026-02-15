@@ -14,7 +14,7 @@ export function CategoryDisplay({ category, inline }: Props) {
   return (
     <div className="category-display">
       <div className="category-display-row">
-        <span className="category-display-label">Категория:</span>
+        <span className="category-display-label">Основное:</span>
         <span className="category-display-value">{parts.parent}</span>
       </div>
       {parts.sub ? (
