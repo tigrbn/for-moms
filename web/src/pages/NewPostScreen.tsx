@@ -14,31 +14,55 @@ export function NewPostScreen() {
   const [content, setContent] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0); // сколько фото сейчас загружается
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files?.length || !token) return;
-    e.target.value = "";
+    if (!files?.length || !token) {
+      e.target.value = "";
+      return;
+    }
     const remaining = MAX_IMAGES - imageUrls.length;
-    if (remaining <= 0) return;
-    setUploading(true);
+    if (remaining <= 0) {
+      e.target.value = "";
+      return;
+    }
+    const toProcess = Math.min(files.length, remaining);
     setErr(null);
+    setUploading(true);
+    setUploadingCount(toProcess);
     try {
-      const toAdd: string[] = [];
-      for (let i = 0; i < Math.min(files.length, remaining); i++) {
+      for (let i = 0; i < toProcess; i++) {
         const file = files[i];
-        if (!file.type.startsWith("image/")) continue;
-        const compressed = await compressImage(file);
-        const { url } = await uploadFile("/upload", compressed, token);
-        toAdd.push(url);
+        // На мобильных тип может быть пустым или image/heic — всё равно пробуем
+        if (file.type && !file.type.startsWith("image/")) continue;
+        let fileToUpload: File;
+        try {
+          fileToUpload = await compressImage(file);
+        } catch {
+          // Если сжатие не удалось (например HEIC), пробуем загрузить как есть, если тип подходит
+          const ok = /^image\/(jpeg|png|gif|webp)$/i.test(file.type);
+          if (!ok) {
+            setErr("Не удалось обработать фото. Выберите JPEG или PNG.");
+            setUploadingCount((c) => c - 1);
+            continue;
+          }
+          fileToUpload = file;
+        }
+        const { url } = await uploadFile("/upload", fileToUpload, token);
+        setImageUrls((prev) => [...prev, url].slice(0, MAX_IMAGES));
+        setUploadingCount((c) => c - 1);
+        setErr(null);
       }
-      setImageUrls((prev) => [...prev, ...toAdd].slice(0, MAX_IMAGES));
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Не удалось загрузить фото");
+      setUploadingCount(0);
     } finally {
       setUploading(false);
+      setUploadingCount(0);
+      setTimeout(() => { e.target.value = ""; }, 0);
     }
   };
 
@@ -103,7 +127,7 @@ export function NewPostScreen() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/*"
             multiple
             style={{ display: "none" }}
             onChange={onFileChange}
@@ -115,10 +139,12 @@ export function NewPostScreen() {
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
             >
-              {uploading ? "Загрузка…" : "+ Добавить фото"}
+              {uploading
+                ? (uploadingCount > 0 ? `Загрузка… (${uploadingCount})` : "Загрузка…")
+                : "+ Добавить фото"}
             </button>
           )}
-          {imageUrls.length > 0 && (
+          {(imageUrls.length > 0 || uploadingCount > 0) && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
               {imageUrls.map((url, i) => (
                 <div key={url} style={{ position: "relative" }}>
@@ -156,6 +182,26 @@ export function NewPostScreen() {
                   </button>
                 </div>
               ))}
+              {uploadingCount > 0 &&
+                Array.from({ length: uploadingCount }, (_, i) => (
+                  <div
+                    key={`uploading-${i}`}
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 8,
+                      background: "var(--color-bg-muted, #eee)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--color-muted, #666)",
+                      fontSize: 18,
+                    }}
+                    aria-hidden
+                  >
+                    …
+                  </div>
+                ))}
             </div>
           )}
         </div>

@@ -36,11 +36,10 @@ export class FeedController {
       targetUrl: b.targetUrl ?? null,
     }));
 
-    const categoryNorm = category?.trim() ?? "";
-    if (categoryNorm === "Другое") {
+    async function getOtherPostItems() {
       const posts = await this.prisma.feedPost.findMany({
         orderBy: { createdAt: "desc" },
-        take: 50,
+        take: 20,
         include: {
           profile: {
             include: {
@@ -49,7 +48,7 @@ export class FeedController {
           },
         },
       });
-      const postItems = posts.map((post) => {
+      return posts.map((post) => {
         const p = post.profile;
         const images = Array.isArray(post.images)
           ? (post.images as string[])
@@ -72,11 +71,18 @@ export class FeedController {
           },
         };
       });
+    }
+
+    const categoryNorm = category?.trim() ?? "";
+    if (categoryNorm === "Другое") {
+      const postItems = await getOtherPostItems.call(this);
       return {
         role: active.type as "parent" | "specialist",
         items: [...bannerItems, ...postItems],
       };
     }
+
+    const isCategoryAll = categoryNorm === "";
 
     if (active.type === "specialist") {
       const where: any = { status: "active" };
@@ -121,6 +127,13 @@ export class FeedController {
           },
         },
       }));
+      if (isCategoryAll) {
+        const postItems = await getOtherPostItems.call(this);
+        return {
+          role: "specialist" as const,
+          items: [...bannerItems, ...requestItems, ...postItems],
+        };
+      }
       return {
         role: "specialist" as const,
         items: [...bannerItems, ...requestItems],
@@ -182,6 +195,13 @@ export class FeedController {
         },
       };
     });
+    if (isCategoryAll) {
+      const postItems = await getOtherPostItems.call(this);
+      return {
+        role: "parent" as const,
+        items: [...bannerItems, ...specialistItems, ...postItems],
+      };
+    }
     return {
       role: "parent" as const,
       items: [...bannerItems, ...specialistItems],
