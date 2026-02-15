@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { TelegramService } from "../telegram/telegram.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly telegram: TelegramService,
+  ) {}
 
   async create(
     userId: bigint,
@@ -87,7 +91,34 @@ export class ReviewsService {
       return review;
     });
 
+    void this.notifyAboutNewReview(toProfileId, active.displayName ?? "Кто-то", dto.rating);
     return created;
+  }
+
+  private async notifyAboutNewReview(toProfileId: bigint, fromDisplayName: string, rating: number) {
+    const toProfile = await this.prisma.profile.findUnique({
+      where: { id: toProfileId },
+      include: { user: { select: { telegramId: true } } },
+    });
+    if (!toProfile?.user?.telegramId) return;
+
+    const stars = "⭐".repeat(rating);
+    const webAppUrl = this.telegram.buildWebAppUrl(`/profile`);
+    const isParent = toProfile.type === "parent";
+    const title = isParent
+      ? "💬 Специалист оставил отзыв о работе с вами"
+      : "💬 Вам оставили отзыв";
+    const text = [
+      title,
+      "",
+      `${fromDisplayName} поставил(а) оценку: ${stars} (${rating}/5)`,
+      "",
+      "Посмотреть отзыв можно в своём профиле.",
+    ].join("\n");
+
+    await this.telegram.sendMessage(toProfile.user.telegramId, text, {
+      buttons: webAppUrl ? [{ text: "Открыть профиль", web_app: { url: webAppUrl } }] : undefined,
+    });
   }
 
   async listForProfile(profileId: bigint) {

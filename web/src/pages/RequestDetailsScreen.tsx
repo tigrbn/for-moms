@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
-import { formatMoney, formatDate, formatOfferCreatedAt } from "../lib/format";
+import { formatMoney, formatDate, formatOfferCreatedAt, formatPhoneForDisplay, formatPhoneToDigits } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon } from "../constants/feed";
-import type { RequestDetails as RequestDetailsType } from "../types";
+import type { RequestDetails as RequestDetailsType, ReviewListItem } from "../types";
 
 export function RequestDetailsScreen() {
   const params = useParams();
@@ -27,6 +27,8 @@ export function RequestDetailsScreen() {
   const [reviewOk, setReviewOk] = useState<string | null>(null);
 
   const [offersPage, setOffersPage] = useState(1);
+  const [parentReviews, setParentReviews] = useState<ReviewListItem[] | null>(null);
+  const [parentReviewsErr, setParentReviewsErr] = useState<string | null>(null);
   const offers = data?.offers ?? [];
   const offersTotalPages = Math.max(1, Math.ceil(offers.length / ITEMS_PER_PAGE));
   const offersPaginated = useMemo(
@@ -42,6 +44,8 @@ export function RequestDetailsScreen() {
       setErr(null);
       setData(null);
       setReviewOk(null);
+      setParentReviews(null);
+      setParentReviewsErr(null);
       try {
         const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
         setData(r);
@@ -52,6 +56,28 @@ export function RequestDetailsScreen() {
     };
     void run();
   }, [requestId, activeProfileId, authedGet, refreshParentNewOffersCount]);
+
+  useEffect(() => {
+    if (!data?.parent?.profileId) {
+      setParentReviews(null);
+      setParentReviewsErr(null);
+      return;
+    }
+    const profileId = data.parent.profileId;
+    let cancelled = false;
+    setParentReviewsErr(null);
+    setParentReviews(null);
+    authedGet<ReviewListItem[]>(`/profiles/${profileId}/reviews`)
+      .then((list) => {
+        if (!cancelled) setParentReviews(list);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setParentReviewsErr(e instanceof Error ? e.message : "Не удалось загрузить отзывы");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [data?.parent?.profileId, authedGet]);
 
   const sendOffer = async () => {
     setActionErr(null);
@@ -180,6 +206,12 @@ export function RequestDetailsScreen() {
               <div className="spacer" />
               <div className="pill">{labelRequestStatus(data.status)}</div>
             </div>
+            {(data.parent.ratingCount != null && data.parent.ratingCount > 0) && (
+              <div className="profile-card-rating" style={{ marginTop: 6 }}>
+                <span className="rating-star">★</span>{" "}
+                {data.parent.ratingAvg ?? "0"} ({data.parent.ratingCount})
+              </div>
+            )}
             <div className="profile-card-meta-block">
               <div className="profile-card-meta-row">
                 <span className="profile-card-meta-label">Категория:</span>
@@ -226,6 +258,75 @@ export function RequestDetailsScreen() {
           </div>
         )}
       </div>
+
+      {/* Отзывы о заказчике (от специалистов) — чтобы специалист мог решить, отправлять ли отклик */}
+      {data?.parent?.profileId && (
+        <div className="card">
+          <div className="h2" style={{ margin: 0 }}>Отзывы о заказчике</div>
+          <p className="muted" style={{ marginTop: 6, marginBottom: 0 }}>
+            Отзывы других специалистов о работе с этим заказчиком.
+          </p>
+          {parentReviewsErr && <div className="muted" style={{ marginTop: 8 }}>{parentReviewsErr}</div>}
+          {parentReviews === null && !parentReviewsErr && <div className="muted" style={{ marginTop: 8 }}>Загрузка отзывов…</div>}
+          {parentReviews && parentReviews.length === 0 && (
+            <div className="muted" style={{ marginTop: 8 }}>Пока нет отзывов от специалистов.</div>
+          )}
+          {parentReviews && parentReviews.length > 0 && (
+            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+              {parentReviews.slice(0, 5).map((r) => {
+                const authorName =
+                  r.fromProfile.displayName?.trim() ||
+                  [r.fromProfile.firstName, r.fromProfile.lastName].filter(Boolean).join(" ") ||
+                  "Специалист";
+                const authorAvatar = getAvatarSrc(
+                  r.fromProfile.avatarUrl ?? null,
+                  r.fromProfile.photoUrl ?? null,
+                  r.fromProfile.gender ?? null,
+                );
+                const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
+                return (
+                  <div key={r.id} className="card review-card" style={{ background: "var(--tg-bg)" }}>
+                    <div className="row" style={{ alignItems: "center", gap: 12 }}>
+                      <img
+                        src={authorAvatar}
+                        alt=""
+                        style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 800 }}>{authorName}</div>
+                        {r.requestCategory && (
+                          <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                            {categoryIcon && (
+                              <img
+                                src={categoryIcon}
+                                alt=""
+                                style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 4 }}
+                              />
+                            )}
+                            {r.requestCategory}
+                          </div>
+                        )}
+                      </div>
+                      <div className="review-card-rating" style={{ fontWeight: 900 }}>
+                        <span className="rating-star">★</span> {r.rating}
+                      </div>
+                    </div>
+                    <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                      {formatDate(r.createdAt)}
+                    </div>
+                    {r.text && <div className="review-card-text" style={{ marginTop: 6 }}>{r.text}</div>}
+                  </div>
+                );
+              })}
+              {parentReviews.length > 5 && (
+                <p className="muted" style={{ marginTop: 4, marginBottom: 0, fontSize: 13 }}>
+                  <Link to={`/profiles/${data.parent.profileId}`}>Остальные отзывы — в профиле заказчика</Link>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {actionErr && <ErrorBox error={actionErr} />}
 
@@ -337,17 +438,17 @@ export function RequestDetailsScreen() {
                   )}
                   {(o.specialist.contactPhone != null && o.specialist.contactPhone.trim() !== "") && (
                     <div className="offer-card-meta-row offer-card-contact-phone-row">
-                      <span className="offer-card-meta-label">
+                      <span className="offer-card-meta-label">Номер для связи:</span>
+                      <span className="offer-card-meta-value offer-card-phone-value">
                         <span className="offer-card-phone-icon" aria-hidden>
                           <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
                             <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
                           </svg>
                         </span>
-                        Номер для связи:
+                        <a className="offer-card-phone-link" href={`tel:+${formatPhoneToDigits(o.specialist.contactPhone)}`}>
+                          {formatPhoneForDisplay(o.specialist.contactPhone)}
+                        </a>
                       </span>
-                      <a className="offer-card-meta-value offer-card-phone-link" href={`tel:${o.specialist.contactPhone.replace(/\s/g, "")}`}>
-                        {o.specialist.contactPhone}
-                      </a>
                     </div>
                   )}
                   <div className="offer-card-meta-row" style={{ marginTop: 4 }}>

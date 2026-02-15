@@ -30,6 +30,14 @@ export class MeController {
       throw new NotFoundException("User not found");
     }
 
+    const consentLogs = await this.prisma.consentLog.findMany({
+      where: { userId },
+      select: { consentType: true },
+    });
+    const consentTypes = new Set(consentLogs.map((c) => c.consentType));
+    const consentedUserAgreement = consentTypes.has("user_agreement");
+    const consentedPolicy = consentTypes.has("policy");
+
     // Raw query гарантирует получение всех колонок (age, district и т.д.) независимо от версии Prisma Client
     const profilesRaw = await this.prisma.$queryRaw<
       Array<{
@@ -140,7 +148,25 @@ export class MeController {
       },
       profiles,
       activeProfileId: user.activeProfileId ? user.activeProfileId.toString() : null,
+      consentedUserAgreement,
+      consentedPolicy,
     };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("consent")
+  async recordConsent(
+    @Req() req: Request,
+    @Body() body: { userAgreement?: boolean; policy?: boolean; version?: string },
+  ) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const version = (body?.version ?? "v1.0").toString();
+    const toCreate: { userId: bigint; consentType: string; documentVersion: string }[] = [];
+    if (body?.userAgreement) toCreate.push({ userId, consentType: "user_agreement", documentVersion: version });
+    if (body?.policy) toCreate.push({ userId, consentType: "policy", documentVersion: version });
+    if (toCreate.length === 0) throw new BadRequestException("At least one of userAgreement or policy must be true");
+    await this.prisma.consentLog.createMany({ data: toCreate });
+    return { ok: true };
   }
 
   @UseGuards(JwtAuthGuard)

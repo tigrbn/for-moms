@@ -23,6 +23,8 @@ export type MeResponse = {
     parent?: { childrenAges: number[] | null; specialWishes?: string | null };
   }>;
   activeProfileId: string | null;
+  consentedUserAgreement?: boolean;
+  consentedPolicy?: boolean;
 };
 
 export type FeedResponse =
@@ -71,6 +73,8 @@ export type FeedResponse =
                 avatarUrl?: string | null;
                 photoUrl?: string | null;
                 gender?: string | null;
+                ratingAvg?: string;
+                ratingCount?: number;
               } | null;
             };
           }
@@ -133,6 +137,8 @@ export type RequestDetails = {
     username?: string | null;
     firstName?: string | null;
     lastName?: string | null;
+    ratingAvg?: string;
+    ratingCount?: number;
   };
   offers: Array<{
     id: string;

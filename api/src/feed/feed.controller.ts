@@ -74,6 +74,8 @@ export class FeedController {
             avatarUrl: r.parent.avatarUrl ?? null,
             photoUrl: r.parent.user?.photoUrl ?? null,
             gender: r.parent.gender ?? null,
+            ratingAvg: r.parent.ratingAvg != null ? String(r.parent.ratingAvg) : "0",
+            ratingCount: r.parent.ratingCount ?? 0,
           },
         },
       }));

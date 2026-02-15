@@ -104,6 +104,8 @@ export class RequestsController {
         username: r.parent.user?.username ?? null,
         firstName: r.parent.user?.firstName ?? null,
         lastName: r.parent.user?.lastName ?? null,
+        ratingAvg: r.parent.ratingAvg != null ? String(r.parent.ratingAvg) : "0",
+        ratingCount: r.parent.ratingCount ?? 0,
       },
       offers: r.offers.map((o) => ({
         id: o.id.toString(),

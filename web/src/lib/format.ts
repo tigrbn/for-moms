@@ -17,6 +17,19 @@ export function formatPhoneMask(value: string): string {
   return "+7 " + d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6, 8) + " " + d.slice(8, 10);
 }
 
+/** Номер для отображения: всегда в формате +7 ... (российский номер). */
+export function formatPhoneForDisplay(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 0) return raw.trim() || "+7";
+  let d = digits.startsWith("8") ? "7" + digits.slice(1) : digits;
+  if (d.startsWith("7") && d.length > 1) d = d.slice(1);
+  d = d.slice(0, 10);
+  if (d.length <= 3) return "+7 " + d;
+  if (d.length <= 6) return "+7 " + d.slice(0, 3) + " " + d.slice(3);
+  if (d.length <= 8) return "+7 " + d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6);
+  return "+7 " + d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6, 8) + " " + d.slice(8, 10);
+}
+
 /** Из отображаемого номера с маской извлечь цифры для сохранения (7XXXXXXXXXX). */
 export function formatPhoneToDigits(displayValue: string): string {
   const digits = displayValue.replace(/\D/g, "");

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { getJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
@@ -10,7 +10,7 @@ import type { MeResponse, FeedResponse } from "./types";
 import { AppContext } from "./context/AppContext";
 import { TopBar } from "./components/TopBar";
 import { ErrorBox } from "./components/ErrorBox";
-import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "./lib/labels";
+import { PARENT_ROLE_EMOJI } from "./lib/labels";
 import { BottomNav } from "./components/BottomNav";
 
 import { RequestsScreen } from "./pages/RequestsScreen";
@@ -20,6 +20,8 @@ import { OffersScreen } from "./pages/OffersScreen";
 import { ProfileScreen } from "./pages/ProfileScreen";
 import { FeedScreen } from "./pages/FeedScreen";
 import { PublicProfileScreen } from "./pages/PublicProfileScreen";
+import { DocPage } from "./pages/DocPage";
+import { ConsentGateScreen } from "./pages/ConsentGateScreen";
 
 export default function App() {
   const { token, clearToken, error } = useTelegramAuth();
@@ -303,20 +305,7 @@ export default function App() {
   return (
     <div className={`app safe${inputFocused ? " input-focused" : ""}`}>
       <div className="container">
-        <TopBar
-          logo={mainLogoImg}
-          rightNode={
-            me && activeProfile ? (
-              <Link to="/profile" className="topbar-role-link" title="Профиль — переключить или настроить">
-                <span className="topbar-role-emoji">{activeProfile.type === "parent" ? "👨‍👩‍👧‍👦" : "👩‍🏫"}</span>
-                <span className="topbar-role-label">
-                  {activeProfile.type === "parent" ? getParentRoleLabel(activeProfile.gender) : "Специалист"}
-                </span>
-                <span className="topbar-role-gear">⚙</span>
-              </Link>
-            ) : undefined
-          }
-        />
+        <TopBar logo={mainLogoImg} />
 
         {error && <ErrorBox error={error} />}
         {reauthing && (
@@ -339,66 +328,81 @@ export default function App() {
             {(meLoading || !me) && <div className="card">Загрузка профиля…</div>}
             {meError && <ErrorBox error={meError} />}
 
-            {me && me.profiles.length === 0 && (
-              <div className="card">
-                <div className="h2">Выберите роль</div>
-                <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
-                  <button
-                    className="btn"
-                    onClick={() => void createRole("parent").catch((e: unknown) => setMeError(e instanceof Error ? e.message : "Не удалось создать роль"))}
-                  >
-                    {PARENT_ROLE_EMOJI} Родитель
-                  </button>
-                  <button
-                    className="btn"
-                    onClick={() =>
-                      void createRole("specialist").catch((e: unknown) =>
-                        setMeError(e instanceof Error ? e.message : "Не удалось создать роль"),
-                      )
-                    }
-                  >
-                    👩‍🏫 Специалист
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {me && me.profiles.length > 0 && (
-              <Routes>
-                  <Route
-                    path="/"
-                    element={activeProfile ? <FeedScreen /> : <Navigate to="/profile" replace />}
-                  />
-                  <Route
-                    path="/requests"
-                    element={activeProfile ? <RequestsScreen /> : <Navigate to="/profile" replace />}
-                  />
-                  <Route
-                    path="/requests/new"
-                    element={activeProfile ? <NewRequestScreen /> : <Navigate to="/profile" replace />}
-                  />
-                  <Route
-                    path="/requests/:id"
-                    element={activeProfile ? <RequestDetailsScreen /> : <Navigate to="/profile" replace />}
-                  />
-                  <Route
-                    path="/offers"
-                    element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
-                  />
-                  <Route path="/profile" element={<ProfileScreen />} />
-                  <Route path="/profiles/:id" element={<PublicProfileScreen />} />
-                  <Route
-                    path="*"
-                    element={
-                      activeProfile ? (
-                        <Navigate to="/" replace state={{ from: location.pathname }} />
-                      ) : (
-                        <Navigate to="/profile" replace />
-                      )
-                    }
-                  />
-                </Routes>
-            )}
+            {me && (() => {
+              const consentRequired = me.consentedUserAgreement !== true || me.consentedPolicy !== true;
+              if (consentRequired) {
+                return (
+                  <Routes>
+                    <Route path="/docs/:docType" element={<DocPage />} />
+                    <Route path="*" element={<ConsentGateScreen />} />
+                  </Routes>
+                );
+              }
+              if (me.profiles.length === 0) {
+                return (
+                  <div className="card">
+                    <div className="h2">Выберите роль</div>
+                    <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
+                      <button
+                        className="btn"
+                        onClick={() => void createRole("parent").catch((e: unknown) => setMeError(e instanceof Error ? e.message : "Не удалось создать роль"))}
+                      >
+                        {PARENT_ROLE_EMOJI} Родитель
+                      </button>
+                      <button
+                        className="btn"
+                        onClick={() =>
+                          void createRole("specialist").catch((e: unknown) =>
+                            setMeError(e instanceof Error ? e.message : "Не удалось создать роль"),
+                          )
+                        }
+                      >
+                        👩‍🏫 Специалист
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <>
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={activeProfile ? <FeedScreen /> : <Navigate to="/profile" replace />}
+                    />
+                    <Route
+                      path="/requests"
+                      element={activeProfile ? <RequestsScreen /> : <Navigate to="/profile" replace />}
+                    />
+                    <Route
+                      path="/requests/new"
+                      element={activeProfile ? <NewRequestScreen /> : <Navigate to="/profile" replace />}
+                    />
+                    <Route
+                      path="/requests/:id"
+                      element={activeProfile ? <RequestDetailsScreen /> : <Navigate to="/profile" replace />}
+                    />
+                    <Route
+                      path="/offers"
+                      element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
+                    />
+                    <Route path="/profile" element={<ProfileScreen />} />
+                    <Route path="/profiles/:id" element={<PublicProfileScreen />} />
+                    <Route path="/docs/:docType" element={<DocPage />} />
+                    <Route
+                      path="*"
+                      element={
+                        activeProfile ? (
+                          <Navigate to="/" replace state={{ from: location.pathname }} />
+                        ) : (
+                          <Navigate to="/profile" replace />
+                        )
+                      }
+                    />
+                  </Routes>
+                </>
+              );
+            })()}
 
             {me && me.profiles.length > 0 && activeProfile && <BottomNav />}
           </AppContext.Provider>
