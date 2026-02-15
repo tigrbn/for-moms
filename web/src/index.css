@@ -1096,12 +1096,22 @@ a {
   transform: scale(1.2);
 }
 
-/* Карточка заявки в разделе «Все заявки» — серый текст вертикально */
+/* Карточка заявки: подписи жирный чёрный, текст обычный чёрный */
 .request-card-meta {
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 13px;
+  color: #000;
+}
+.request-meta-label {
+  font-weight: 700;
+  color: #000;
+}
+.request-card-date,
+.request-card-desc {
+  font-weight: 400;
+  color: #000;
 }
 .feed-card-top {
   font-size: 11px;
@@ -1138,12 +1148,13 @@ a {
   gap: 4px 6px;
 }
 .category-display-label {
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: #000;
   flex-shrink: 0;
 }
 .category-display-value {
-  color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 400;
+  color: #000;
 }
 .category-display-value--muted {
   color: var(--text-secondary);
@@ -1205,12 +1216,15 @@ a {
   margin-top: 10px;
   font-size: 14px;
   line-height: 1.4;
-  color: var(--text-primary);
+  font-weight: 400;
+  color: #000;
 }
 .feed-card-desc {
   margin-top: 10px;
   font-size: 14px;
   line-height: 1.4;
+  font-weight: 400;
+  color: #000;
 }
 
 /* Карточка анкеты (страница профиля) */
@@ -1294,12 +1308,13 @@ a {
   gap: 4px 6px;
 }
 .profile-card-meta-label {
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: #000;
   flex-shrink: 0;
 }
 .profile-card-meta-value {
-  color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 400;
+  color: #000;
 }
 .profile-card-meta-value--price {
   font-weight: 700;
@@ -1313,13 +1328,14 @@ a {
 .profile-card-about-title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-secondary);
+  color: #000;
   margin-bottom: 6px;
 }
 .profile-card-about-text {
   font-size: 14px;
   line-height: 1.45;
-  color: var(--text-primary);
+  font-weight: 400;
+  color: #000;
   white-space: pre-wrap;
 }
 .profile-card-extra {

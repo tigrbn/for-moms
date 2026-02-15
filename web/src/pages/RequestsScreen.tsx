@@ -266,7 +266,7 @@ export function RequestsScreen() {
               style={{ background: "var(--tg-bg)" }}
             >
               <div className="row" style={{ alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 800 }}><CategoryDisplay category={r.category} /></div>
+                <div className="request-card-category"><CategoryDisplay category={r.category} /></div>
                 {r.newOffersCount > 0 && (
                   <span className="nav-badge nav-badge--inline" aria-label={`Новых откликов: ${r.newOffersCount}`}>
                     {r.newOffersCount > 99 ? "99+" : r.newOffersCount}
@@ -275,13 +275,13 @@ export function RequestsScreen() {
                 <div className="spacer" />
                 <div className="pill">{labelRequestStatus(r.status)}</div>
               </div>
-              <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>{formatDate(r.createdAt)}</div>
-              <div className="request-card-meta muted" style={{ marginTop: 6 }}>
-                <div>Район: {r.district ?? "—"}</div>
-                <div>Бюджет: {formatMoney(r.budget)}</div>
-                <div>Откликов: {r.offersCount}</div>
+              <div className="request-card-date" style={{ marginTop: 4, fontSize: 13 }}>{formatDate(r.createdAt)}</div>
+              <div className="request-card-meta" style={{ marginTop: 6 }}>
+                <div><span className="request-meta-label">Район:</span> {r.district ?? "—"}</div>
+                <div><span className="request-meta-label">Бюджет:</span> {formatMoney(r.budget)}</div>
+                <div><span className="request-meta-label">Откликов:</span> {r.offersCount}</div>
               </div>
-              {r.description && <div style={{ marginTop: 8 }}>{r.description}</div>}
+              {r.description && <div className="request-card-desc" style={{ marginTop: 8 }}>{r.description}</div>}
               <div className="row" style={{ marginTop: 10 }}>
                 <Link className="btn secondary" to={`/requests/${r.id}`}>
                   Открыть
