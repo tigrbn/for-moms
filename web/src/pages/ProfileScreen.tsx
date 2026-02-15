@@ -27,7 +27,7 @@ export function ProfileScreen() {
   const profileId = activeProfile?.id;
   const type = activeProfile?.type;
   const telegramPhotoUrl = me?.user?.photoUrl ?? null;
-  const profileAvatarSrc = getAvatarSrc(activeProfile.avatarUrl, telegramPhotoUrl, activeProfile.gender);
+  const profileAvatarSrc = getAvatarSrc(activeProfile?.avatarUrl ?? null, telegramPhotoUrl, activeProfile?.gender ?? null);
 
   const openedWithEditRef = useRef(Boolean((location.state as { openEdit?: boolean })?.openEdit));
   const [isEditing, setIsEditing] = useState(openedWithEditRef.current);
@@ -37,15 +37,15 @@ export function ProfileScreen() {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.pathname, location.state, navigate]);
-  const [displayName, setDisplayName] = useState(activeProfile.displayName ?? "");
+  const [displayName, setDisplayName] = useState(activeProfile?.displayName ?? "");
   const [gender, setGender] = useState<string>(
-    activeProfile.gender === "male" || activeProfile.gender === "female" ? activeProfile.gender : "",
+    activeProfile?.gender === "male" || activeProfile?.gender === "female" ? activeProfile?.gender ?? "" : "",
   );
-  const [age, setAge] = useState(activeProfile.age != null ? String(activeProfile.age) : "");
-  const [city, setCity] = useState(activeProfile.city ?? "");
-  const [district, setDistrict] = useState(activeProfile.district ?? "");
-  const [contactPhone, setContactPhone] = useState(activeProfile.contactPhone ?? "");
-  const [showContactPhonePublicly, setShowContactPhonePublicly] = useState(Boolean(activeProfile.showContactPhonePublicly));
+  const [age, setAge] = useState(activeProfile?.age != null ? String(activeProfile.age) : "");
+  const [city, setCity] = useState(activeProfile?.city ?? "");
+  const [district, setDistrict] = useState(activeProfile?.district ?? "");
+  const [contactPhone, setContactPhone] = useState(activeProfile?.contactPhone ?? "");
+  const [showContactPhonePublicly, setShowContactPhonePublicly] = useState(Boolean(activeProfile?.showContactPhonePublicly));
   const [childrenAges, setChildrenAges] = useState("");
   const [specialWishes, setSpecialWishes] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
@@ -56,6 +56,7 @@ export function ProfileScreen() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!activeProfile) return;
     setDisplayName(activeProfile.displayName ?? "");
     setGender(activeProfile.gender === "male" || activeProfile.gender === "female" ? activeProfile.gender : "");
     setAge(activeProfile.age != null ? String(activeProfile.age) : "");
