@@ -1446,3 +1446,10 @@ a {
   border-color: color-mix(in srgb, var(--text-secondary) 85%, #000);
   color: #fff;
 }
+.profile-docs-links a {
+  color: var(--primary);
+  text-decoration: none;
+}
+.profile-docs-links a:hover {
+  text-decoration: underline;
+}
