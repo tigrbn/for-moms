@@ -78,8 +78,10 @@ export function OffersScreen() {
               className={`card ${isCompleted ? "card--completed" : ""}`}
               style={{ background: "var(--tg-bg)" }}
             >
-              <div className="row">
-                <div style={{ fontWeight: 800 }}><CategoryDisplay category={o.request.category} /></div>
+              <div className="row row--status-right" style={{ gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800 }}><CategoryDisplay category={o.request.category} /></div>
+                </div>
                 <div className="spacer" />
                 <div className="pill">{labelOfferStatus(o.status)}</div>
               </div>

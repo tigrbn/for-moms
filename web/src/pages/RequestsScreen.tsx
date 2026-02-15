@@ -265,13 +265,15 @@ export function RequestsScreen() {
               className={`card ${isCompleted ? "card--completed" : ""}`}
               style={{ background: "var(--tg-bg)" }}
             >
-              <div className="row" style={{ alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <div className="request-card-category"><CategoryDisplay category={r.category} /></div>
-                {r.newOffersCount > 0 && (
-                  <span className="nav-badge nav-badge--inline" aria-label={`Новых откликов: ${r.newOffersCount}`}>
-                    {r.newOffersCount > 99 ? "99+" : r.newOffersCount}
-                  </span>
-                )}
+              <div className="row row--status-right" style={{ gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="request-card-category"><CategoryDisplay category={r.category} /></div>
+                  {r.newOffersCount > 0 && (
+                    <span className="nav-badge nav-badge--inline" aria-label={`Новых откликов: ${r.newOffersCount}`}>
+                      {r.newOffersCount > 99 ? "99+" : r.newOffersCount}
+                    </span>
+                  )}
+                </div>
                 <div className="spacer" />
                 <div className="pill">{labelRequestStatus(r.status)}</div>
               </div>

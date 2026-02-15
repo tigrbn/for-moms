@@ -245,6 +245,16 @@ a {
 
 .spacer {
   flex: 1;
+  min-width: 0;
+}
+
+/* Строка со статусом: статус строго справа, напротив первой строки */
+.row--status-right {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+.row--status-right .pill {
+  flex-shrink: 0;
 }
 
 .btn {
@@ -929,6 +939,17 @@ a {
 .feed-card-request.card--completed {
   background: var(--disabled-bg, #e8e8e8) !important;
 }
+/* Контент выполненной заявки в ленте: серый и полупрозрачный; кнопка остаётся яркой */
+.feed-card-request.card--completed .feed-card-request-content {
+  opacity: 0.7;
+  color: var(--text-secondary);
+}
+.feed-card-request.card--completed .feed-card-request-content .feed-card-title,
+.feed-card-request.card--completed .feed-card-request-content .category-display-label,
+.feed-card-request.card--completed .feed-card-request-content .category-display-value,
+.feed-card-request.card--completed .feed-card-request-content .feed-card-desc {
+  color: var(--text-secondary);
+}
 .feed-card-request-row {
   display: flex;
   align-items: center;
@@ -1009,6 +1030,9 @@ a {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+.feed-card-title-row .pill {
+  flex-shrink: 0;
 }
 .feed-card-title {
   font-weight: 900;
@@ -1214,7 +1238,7 @@ a {
 }
 .feed-card-request .feed-card-desc {
   margin-top: 10px;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
   font-weight: 400;
   color: #3a3a3a;
@@ -1282,6 +1306,9 @@ a {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+.profile-card-title-row .pill {
+  flex-shrink: 0;
 }
 .profile-card-title {
   font-size: 1.25rem;

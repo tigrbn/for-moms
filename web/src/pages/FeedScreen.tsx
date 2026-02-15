@@ -327,46 +327,93 @@ export function FeedScreen() {
                   key={`r-${r.id}-${idx}`}
                   className={`card feed-card feed-card-request ${isCompleted ? "card--completed" : ""}`}
                 >
-                  <div className="feed-card-header">
-                    <div className="feed-card-avatar-wrap">
-                      <div className="feed-card-avatar">
-                        <img src={requestAvatarSrc} alt="" />
-                      </div>
-                      {requestCategoryIcon && (
-                        <div className="feed-card-category-badge" title={getCategoryDisplayText(r.category)}>
-                          <img src={requestCategoryIcon} alt="" />
+                  {isCompleted ? (
+                    <div className="feed-card-request-content">
+                      <div className="feed-card-header">
+                        <div className="feed-card-avatar-wrap">
+                          <div className="feed-card-avatar">
+                            <img src={requestAvatarSrc} alt="" />
+                          </div>
+                          {requestCategoryIcon && (
+                            <div className="feed-card-category-badge" title={getCategoryDisplayText(r.category)}>
+                              <img src={requestCategoryIcon} alt="" />
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="feed-card-title-block">
+                          <div className="feed-card-title-row">
+                            <div className="feed-card-title">{requestAuthorName}</div>
+                            {parent && (parent.ratingCount ?? 0) > 0 && (
+                              <div className="feed-card-rating" style={{ flexShrink: 0 }}>
+                                <span className="rating-star">★</span> {parent.ratingAvg ?? "0"} ({parent.ratingCount})
+                              </div>
+                            )}
+                            <div className="spacer" />
+                            <div className="pill">{labelRequestStatus(r.status)}</div>
+                          </div>
+                          <div className="feed-card-meta-block">
+                            <div className="feed-card-category">
+                              <CategoryDisplay category={r.category} />
+                            </div>
+                            <div className="category-display">
+                              <div className="category-display-row">
+                                <span className="category-display-label">Район:</span>
+                                <span className="category-display-value">{r.district ?? "—"}</span>
+                              </div>
+                              <div className="category-display-row">
+                                <span className="category-display-label">Бюджет:</span>
+                                <span className="category-display-value">{r.budget != null ? formatMoney(r.budget) : "—"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {r.description && <div className="feed-card-desc">{r.description}</div>}
                     </div>
-                    <div className="feed-card-title-block">
-                      <div className="feed-card-title-row">
-                        <div className="feed-card-title">{requestAuthorName}</div>
-                        {parent && (parent.ratingCount ?? 0) > 0 && (
-                          <div className="feed-card-rating" style={{ flexShrink: 0 }}>
-                            <span className="rating-star">★</span> {parent.ratingAvg ?? "0"} ({parent.ratingCount})
+                  ) : (
+                    <>
+                      <div className="feed-card-header">
+                        <div className="feed-card-avatar-wrap">
+                          <div className="feed-card-avatar">
+                            <img src={requestAvatarSrc} alt="" />
                           </div>
-                        )}
-                        <div className="spacer" />
-                        <div className="pill">{labelRequestStatus(r.status)}</div>
-                      </div>
-                      <div className="feed-card-meta-block">
-                        <div className="feed-card-category">
-                          <CategoryDisplay category={r.category} />
+                          {requestCategoryIcon && (
+                            <div className="feed-card-category-badge" title={getCategoryDisplayText(r.category)}>
+                              <img src={requestCategoryIcon} alt="" />
+                            </div>
+                          )}
                         </div>
-                        <div className="category-display">
-                          <div className="category-display-row">
-                            <span className="category-display-label">Район:</span>
-                            <span className="category-display-value">{r.district ?? "—"}</span>
+                        <div className="feed-card-title-block">
+                          <div className="feed-card-title-row">
+                            <div className="feed-card-title">{requestAuthorName}</div>
+                            {parent && (parent.ratingCount ?? 0) > 0 && (
+                              <div className="feed-card-rating" style={{ flexShrink: 0 }}>
+                                <span className="rating-star">★</span> {parent.ratingAvg ?? "0"} ({parent.ratingCount})
+                              </div>
+                            )}
+                            <div className="spacer" />
+                            <div className="pill">{labelRequestStatus(r.status)}</div>
                           </div>
-                          <div className="category-display-row">
-                            <span className="category-display-label">Бюджет:</span>
-                            <span className="category-display-value">{r.budget != null ? formatMoney(r.budget) : "—"}</span>
+                          <div className="feed-card-meta-block">
+                            <div className="feed-card-category">
+                              <CategoryDisplay category={r.category} />
+                            </div>
+                            <div className="category-display">
+                              <div className="category-display-row">
+                                <span className="category-display-label">Район:</span>
+                                <span className="category-display-value">{r.district ?? "—"}</span>
+                              </div>
+                              <div className="category-display-row">
+                                <span className="category-display-label">Бюджет:</span>
+                                <span className="category-display-value">{r.budget != null ? formatMoney(r.budget) : "—"}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  {r.description && <div className="feed-card-desc">{r.description}</div>}
+                      {r.description && <div className="feed-card-desc">{r.description}</div>}
+                    </>
+                  )}
                   <div className="feed-card-request-row">
                     <Link className="btn feed-card-btn feed-card-btn-open" to={`/requests/${r.id}`}>
                       Открыть заявку
