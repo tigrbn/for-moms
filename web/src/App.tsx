@@ -22,6 +22,15 @@ import { FeedScreen } from "./pages/FeedScreen";
 import { PublicProfileScreen } from "./pages/PublicProfileScreen";
 import { DocPage } from "./pages/DocPage";
 import { NewProfileScreen } from "./pages/NewProfileScreen";
+import { useParams } from "react-router-dom";
+
+function NewProfileByRoleRoute() {
+  const { roleType } = useParams<{ roleType: string }>();
+  if (roleType !== "parent" && roleType !== "specialist") {
+    return <Navigate to="/profile" replace />;
+  }
+  return <NewProfileScreen type={roleType} />;
+}
 
 export default function App() {
   const { token, clearToken, error } = useTelegramAuth();
@@ -227,14 +236,11 @@ export default function App() {
     return null;
   }, [allTypes]);
 
-  const addMissingRole = useCallback(async () => {
-    if (!missingRole) return;
-    try {
-      await createRole(missingRole);
-    } catch (e: unknown) {
-      setMeError(e instanceof Error ? e.message : "Не удалось добавить роль");
-    }
-  }, [missingRole, createRole]);
+  const addMissingRole = useCallback((): Promise<void> => {
+    if (!missingRole) return Promise.resolve();
+    navigate(`/profile/new/${missingRole}`);
+    return Promise.resolve();
+  }, [missingRole, navigate]);
 
   const contextValue = useMemo(
     () => ({
@@ -357,6 +363,7 @@ export default function App() {
                         element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
                       />
                       <Route path="/profile" element={<ProfileScreen />} />
+                      <Route path="/profile/new/:roleType" element={<NewProfileByRoleRoute />} />
                       <Route path="/profiles/:id" element={<PublicProfileScreen />} />
                       <Route path="/docs/:docType" element={<DocPage />} />
                       <Route

@@ -48,18 +48,24 @@ function validateSpecialist(
   city: string,
   district: string,
   specialistCategory: string,
+  pricePerHour: string,
   about: string,
 ): { ok: boolean; message?: string } {
   const nameOk = displayName.trim().length > 0;
   const cityOk = city.trim().length > 0;
   const districtOk = district.trim().length > 0;
-  const categoryOrAboutOk = specialistCategory.trim().length > 0 || about.trim().length > 0;
-  if (!nameOk || !cityOk || !districtOk || !categoryOrAboutOk) {
+  const categoryOk = specialistCategory.trim().length > 0;
+  const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+  const priceOk = priceNum != null && Number.isFinite(priceNum) && priceNum > 0;
+  const aboutOk = about.trim().length > 0;
+  if (!nameOk || !cityOk || !districtOk || !categoryOk || !priceOk || !aboutOk) {
     const parts: string[] = [];
     if (!nameOk) parts.push("имя для отображения");
     if (!cityOk) parts.push("город");
     if (!districtOk) parts.push("район");
-    if (!categoryOrAboutOk) parts.push("категорию или «О себе»");
+    if (!categoryOk) parts.push("категорию");
+    if (!priceOk) parts.push("цену за час");
+    if (!aboutOk) parts.push("«О себе»");
     return { ok: false, message: `Заполните обязательные поля: ${parts.join(", ")}` };
   }
   return { ok: true };
@@ -87,7 +93,7 @@ export function NewProfileScreen({ type }: Props) {
   const validation =
     type === "parent"
       ? validateParent(displayName, gender, age, city, district, childrenAges)
-      : validateSpecialist(displayName, city, district, specialistCategory, about);
+      : validateSpecialist(displayName, city, district, specialistCategory, pricePerHour, about);
   const canSave = agreeUserAgreement && agreePolicy && validation.ok;
 
   const save = async () => {
@@ -284,7 +290,7 @@ export function NewProfileScreen({ type }: Props) {
           {type === "specialist" && (
             <>
               <div className="field">
-                <label className="label">Категория</label>
+                <label className="label">Категория <span className="muted">(обязательно)</span></label>
                 <select className="input" value={specialistCategory} onChange={(e) => setSpecialistCategory(e.target.value)}>
                   <option value="">Не выбрано</option>
                   {CATEGORY_TREE.map((section) => (
@@ -300,7 +306,7 @@ export function NewProfileScreen({ type }: Props) {
                 </select>
               </div>
               <div className="field">
-                <label className="label">Цена за час (₽)</label>
+                <label className="label">Цена за час (₽) <span className="muted">(обязательно)</span></label>
                 <input
                   className="input"
                   value={pricePerHour}
@@ -310,7 +316,7 @@ export function NewProfileScreen({ type }: Props) {
                 />
               </div>
               <div className="field">
-                <label className="label">О себе</label>
+                <label className="label">О себе <span className="muted">(обязательно)</span></label>
                 <textarea
                   className="textarea"
                   value={about}
@@ -318,7 +324,7 @@ export function NewProfileScreen({ type }: Props) {
                   placeholder="Опыт, образование, чем можете помочь"
                   rows={4}
                 />
-                <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>Нужно заполнить категорию или «О себе» (хотя бы одно).</p>
+                <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>Без этих данных заказчик не сможет выбрать вас в анкете.</p>
               </div>
             </>
           )}

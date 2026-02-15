@@ -101,6 +101,26 @@ export class ProfilesService {
       throw new BadRequestException("Invalid profile type");
     }
 
+    if (type === "specialist") {
+      const spec = dto.specialist;
+      const skills = spec && Array.isArray(spec.skills) ? spec.skills : spec?.skills ? [spec.skills] : [];
+      const hasCategory = skills.length > 0 && skills.some((s) => String(s).trim().length > 0);
+      const priceOk =
+        spec?.pricePerHour != null &&
+        Number.isFinite(Number(spec.pricePerHour)) &&
+        Number(spec.pricePerHour) > 0;
+      const aboutOk = typeof spec?.about === "string" && spec.about.trim().length > 0;
+      if (!hasCategory || !priceOk || !aboutOk) {
+        const parts: string[] = [];
+        if (!hasCategory) parts.push("категория");
+        if (!priceOk) parts.push("цена за час");
+        if (!aboutOk) parts.push("о себе");
+        throw new BadRequestException(
+          `Для профиля специалиста обязательны: ${parts.join(", ")}`,
+        );
+      }
+    }
+
     const profile = await this.prisma.$transaction(async (tx) => {
       const created = await tx.profile.create({
         data: {

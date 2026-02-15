@@ -11,40 +11,7 @@ import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
 
 export function FeedScreen() {
-  const categoriesScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = categoriesScrollRef.current;
-    if (!el) return;
-    let startX = 0;
-    let startY = 0;
-    let startScrollLeft = 0;
-    const onTouchStart = (e: TouchEvent) => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      startScrollLeft = el.scrollLeft;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      const x = e.touches[0].clientX;
-      const y = e.touches[0].clientY;
-      const deltaX = x - startX;
-      const deltaY = y - startY;
-      const maxScroll = el.scrollWidth - el.clientWidth;
-      if (maxScroll <= 0) return;
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8) {
-        e.preventDefault();
-        const newScroll = Math.max(0, Math.min(maxScroll, startScrollLeft - deltaX));
-        el.scrollLeft = newScroll;
-      }
-    };
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-    };
-  }, []);
-
+  const feedHeaderCardRef = useRef<HTMLDivElement>(null);
   const {
     feed,
     feedError,
@@ -61,6 +28,45 @@ export function FeedScreen() {
   } = useApp();
 
   const currentSection = CATEGORY_TREE.find((s) => s.id === feedCategory);
+
+  useEffect(() => {
+    const parent = feedHeaderCardRef.current;
+    if (!parent) return;
+    const scrollContainers = parent.querySelectorAll<HTMLDivElement>(".feed-categories-scroll");
+    const cleanups: Array<() => void> = [];
+    scrollContainers.forEach((el) => {
+      let startX = 0;
+      let startY = 0;
+      let startScrollLeft = 0;
+      const onTouchStart = (e: TouchEvent) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startScrollLeft = el.scrollLeft;
+      };
+      const onTouchMove = (e: TouchEvent) => {
+        const x = e.touches[0].clientX;
+        const y = e.touches[0].clientY;
+        const deltaX = x - startX;
+        const deltaY = y - startY;
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (maxScroll <= 0) return;
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8) {
+          e.preventDefault();
+          const newScroll = Math.max(0, Math.min(maxScroll, startScrollLeft - deltaX));
+          el.scrollLeft = newScroll;
+        }
+      };
+      el.addEventListener("touchstart", onTouchStart, { passive: true });
+      el.addEventListener("touchmove", onTouchMove, { passive: false });
+      cleanups.push(() => {
+        el.removeEventListener("touchstart", onTouchStart);
+        el.removeEventListener("touchmove", onTouchMove);
+      });
+    });
+    return () => {
+      cleanups.forEach((c) => c());
+    };
+  }, [feedCategory]);
   const subcategoryOptions = currentSection
     ? [{ id: "", label: "Все" }, ...currentSection.children]
     : [];
@@ -87,6 +93,7 @@ export function FeedScreen() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div
+        ref={feedHeaderCardRef}
         className="card feed-header-card"
         style={{ backgroundImage: `url(${feedHeaderBg})` }}
       >
@@ -109,7 +116,7 @@ export function FeedScreen() {
         </div>
 
         <div className="feed-categories-label">Категория</div>
-        <div ref={categoriesScrollRef} className="feed-categories-scroll" role="region" aria-label="Категории">
+        <div className="feed-categories-scroll" role="region" aria-label="Категории">
           <div className="feed-categories">
             {FEED_CATEGORIES.map((c) => (
               <button

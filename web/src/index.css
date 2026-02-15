@@ -761,6 +761,7 @@ a {
   touch-action: pan-x;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
+  scroll-behavior: smooth;
   display: block;
   position: relative;
   z-index: 1;
