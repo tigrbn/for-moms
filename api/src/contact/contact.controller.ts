@@ -1,7 +1,8 @@
 import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
 import type { Request } from "express";
-import { ContactService, ContactDto } from "./contact.service";
+import { ContactService } from "./contact.service";
+import { ContactDto } from "./contact.dto";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Controller("contact")
