@@ -21,7 +21,6 @@ import { ProfileScreen } from "./pages/ProfileScreen";
 import { FeedScreen } from "./pages/FeedScreen";
 import { PublicProfileScreen } from "./pages/PublicProfileScreen";
 import { DocPage } from "./pages/DocPage";
-import { ConsentGateScreen } from "./pages/ConsentGateScreen";
 import { NewProfileScreen } from "./pages/NewProfileScreen";
 
 export default function App() {
@@ -401,16 +400,12 @@ export default function App() {
                 );
               }
 
-              if (pendingRoleType && !consentGiven) {
-                return (
-                  <Routes>
-                    <Route path="/docs/:docType" element={<DocPage />} />
-                    <Route path="*" element={<ConsentGateScreen />} />
-                  </Routes>
-                );
-              }
-
-              return <NewProfileScreen type={pendingRoleType} />;
+              return (
+                <Routes>
+                  <Route path="/docs/:docType" element={<DocPage />} />
+                  <Route path="*" element={<NewProfileScreen type={pendingRoleType} />} />
+                </Routes>
+              );
             })()}
 
             {me && me.profiles.length > 0 && activeProfile && <BottomNav />}

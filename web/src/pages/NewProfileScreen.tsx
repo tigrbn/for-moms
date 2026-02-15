@@ -1,13 +1,74 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { formatPhoneMask, formatPhoneToDigits } from "../lib/format";
 import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import { CATEGORY_TREE } from "../constants/feed";
 
+const DOC_VERSION = "v1.0";
+
 type Props = { type: "parent" | "specialist" };
+
+function validateParent(
+  displayName: string,
+  gender: string,
+  age: string,
+  city: string,
+  district: string,
+  childrenAges: string,
+): { ok: boolean; message?: string } {
+  const nameOk = displayName.trim().length > 0;
+  const genderOk = gender === "female" || gender === "male";
+  const ageNum = age.trim() === "" ? null : Number(age);
+  const ageOk = ageNum != null && Number.isFinite(ageNum) && ageNum > 0;
+  const cityOk = city.trim().length > 0;
+  const districtOk = district.trim().length > 0;
+  const childrenAgesParsed = childrenAges
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => Number(s))
+    .filter((n) => Number.isFinite(n));
+  const childrenOk = childrenAgesParsed.length > 0;
+  if (!nameOk || !genderOk || !ageOk || !cityOk || !districtOk || !childrenOk) {
+    const parts: string[] = [];
+    if (!nameOk) parts.push("имя");
+    if (!genderOk) parts.push("пол");
+    if (!ageOk) parts.push("возраст");
+    if (!cityOk) parts.push("город");
+    if (!districtOk) parts.push("район");
+    if (!childrenOk) parts.push("возраст детей");
+    return { ok: false, message: `Заполните обязательные поля: ${parts.join(", ")}` };
+  }
+  return { ok: true };
+}
+
+function validateSpecialist(
+  displayName: string,
+  city: string,
+  district: string,
+  specialistCategory: string,
+  about: string,
+): { ok: boolean; message?: string } {
+  const nameOk = displayName.trim().length > 0;
+  const cityOk = city.trim().length > 0;
+  const districtOk = district.trim().length > 0;
+  const categoryOrAboutOk = specialistCategory.trim().length > 0 || about.trim().length > 0;
+  if (!nameOk || !cityOk || !districtOk || !categoryOrAboutOk) {
+    const parts: string[] = [];
+    if (!nameOk) parts.push("имя для отображения");
+    if (!cityOk) parts.push("город");
+    if (!districtOk) parts.push("район");
+    if (!categoryOrAboutOk) parts.push("категорию или «О себе»");
+    return { ok: false, message: `Заполните обязательные поля: ${parts.join(", ")}` };
+  }
+  return { ok: true };
+}
 
 export function NewProfileScreen({ type }: Props) {
   const { me, authedPost, refreshMe, setMeError, navigate } = useApp();
+  const [agreeUserAgreement, setAgreeUserAgreement] = useState(false);
+  const [agreePolicy, setAgreePolicy] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [gender, setGender] = useState("");
   const [age, setAge] = useState("");
@@ -23,36 +84,26 @@ export function NewProfileScreen({ type }: Props) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const validation =
+    type === "parent"
+      ? validateParent(displayName, gender, age, city, district, childrenAges)
+      : validateSpecialist(displayName, city, district, specialistCategory, about);
+  const canSave = agreeUserAgreement && agreePolicy && validation.ok;
+
   const save = async () => {
     setErr(null);
-    if (type === "parent") {
-      const nameOk = displayName.trim().length > 0;
-      const genderOk = gender === "female" || gender === "male";
-      const ageNum = age.trim() === "" ? null : Number(age);
-      const ageOk = ageNum != null && Number.isFinite(ageNum) && ageNum > 0;
-      const cityOk = city.trim().length > 0;
-      const districtOk = district.trim().length > 0;
-      const childrenAgesParsed = childrenAges
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .map((s) => Number(s))
-        .filter((n) => Number.isFinite(n));
-      const childrenOk = childrenAgesParsed.length > 0;
-      if (!nameOk || !genderOk || !ageOk || !cityOk || !districtOk || !childrenOk) {
-        const parts: string[] = [];
-        if (!nameOk) parts.push("имя");
-        if (!genderOk) parts.push("пол");
-        if (!ageOk) parts.push("возраст");
-        if (!cityOk) parts.push("город");
-        if (!districtOk) parts.push("район");
-        if (!childrenOk) parts.push("возраст детей");
-        setErr(`Заполните обязательные поля: ${parts.join(", ")}`);
-        return;
-      }
+    if (!canSave || saving) return;
+    if (!validation.ok) {
+      setErr(validation.message ?? "Заполните все обязательные поля");
+      return;
     }
     setSaving(true);
     try {
+      await authedPost("/me/consent", {
+        userAgreement: true,
+        policy: true,
+        version: DOC_VERSION,
+      });
       const ageNum = age.trim() === "" ? null : Number(age);
       const body: Record<string, unknown> = {
         type,
@@ -113,9 +164,34 @@ export function NewProfileScreen({ type }: Props) {
             {err}
           </div>
         )}
+        <div className="profile-consent-checkboxes" style={{ marginBottom: 20, padding: "12px 0", borderBottom: "1px solid var(--border-color)" }}>
+          <p className="muted" style={{ marginBottom: 12, fontSize: 13 }}>Для создания профиля необходимо принять условия:</p>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", marginBottom: 10 }}>
+            <input
+              type="checkbox"
+              checked={agreeUserAgreement}
+              onChange={(e) => setAgreeUserAgreement(e.target.checked)}
+              style={{ marginTop: 4, flexShrink: 0 }}
+            />
+            <span>
+              Я принимаю <Link to="/docs/agreement" style={{ fontWeight: 600 }}>Пользовательское соглашение</Link>
+            </span>
+          </label>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={agreePolicy}
+              onChange={(e) => setAgreePolicy(e.target.checked)}
+              style={{ marginTop: 4, flexShrink: 0 }}
+            />
+            <span>
+              Я даю согласие на <Link to="/docs/policy" style={{ fontWeight: 600 }}>обработку персональных данных</Link>
+            </span>
+          </label>
+        </div>
         <div className="profile-edit-fields">
           <div className="field">
-            <label className="label">{type === "parent" ? "Имя для отображения *" : "Имя для отображения"}</label>
+            <label className="label">{type === "parent" ? "Имя для отображения *" : "Имя для отображения *"}</label>
             <input
               className="input"
               value={displayName}
@@ -142,11 +218,11 @@ export function NewProfileScreen({ type }: Props) {
             />
           </div>
           <div className="field">
-            <label className="label">{type === "parent" ? "Город *" : "Город"}</label>
+            <label className="label">Город *</label>
             <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Москва" />
           </div>
           <div className="field">
-            <label className="label">{type === "parent" ? "Район *" : "Район"}</label>
+            <label className="label">Район *</label>
             <input className="input" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Центральный" />
           </div>
           <div className="field">
@@ -242,15 +318,19 @@ export function NewProfileScreen({ type }: Props) {
                   placeholder="Опыт, образование, чем можете помочь"
                   rows={4}
                 />
+                <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>Нужно заполнить категорию или «О себе» (хотя бы одно).</p>
               </div>
             </>
           )}
         </div>
         <div className="profile-edit-actions">
-          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void save()}>
+          <button type="button" className="btn btn-primary" disabled={!canSave || saving} onClick={() => void save()}>
             {saving ? "Сохранение…" : "Сохранить и продолжить"}
           </button>
         </div>
+        {(!agreeUserAgreement || !agreePolicy) && (
+          <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>Отметьте оба соглашения выше, чтобы активировать кнопку.</p>
+        )}
       </div>
     </div>
   );

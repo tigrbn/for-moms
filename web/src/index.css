@@ -1453,3 +1453,10 @@ a {
 .profile-docs-links a:hover {
   text-decoration: underline;
 }
+.profile-consent-checkboxes a {
+  color: var(--primary);
+  text-decoration: none;
+}
+.profile-consent-checkboxes a:hover {
+  text-decoration: underline;
+}

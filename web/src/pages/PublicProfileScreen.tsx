@@ -188,6 +188,11 @@ export function PublicProfileScreen() {
             Назад
           </button>
         </div>
+        {p.type === "specialist" && (
+          <p className="muted service-disclaimer" style={{ marginTop: 12, marginBottom: 0, fontSize: 13 }}>
+            Информация размещена пользователем. Сервис не проверяет достоверность указанных данных.
+          </p>
+        )}
         {p.contactPhone && (
           <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
             Телефон для связи: <a href={`tel:${p.contactPhone.replace(/\s/g, "")}`}>{p.contactPhone}</a>

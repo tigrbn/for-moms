@@ -372,6 +372,9 @@ export function RequestDetailsScreen() {
                   </button>
                 </div>
               </div>
+              <p className="muted service-disclaimer" style={{ marginTop: 12, marginBottom: 0, fontSize: 13 }}>
+                Решение о сотрудничестве принимается пользователями самостоятельно. Сервис «Для мам» не участвует в оказании услуг.
+              </p>
             </div>
           );
         })()}
@@ -494,6 +497,9 @@ export function RequestDetailsScreen() {
             onPrev={() => setOffersPage((p) => Math.max(1, p - 1))}
             onNext={() => setOffersPage((p) => Math.min(offersTotalPages, p + 1))}
           />
+              <p className="muted service-disclaimer" style={{ marginTop: 16, marginBottom: 0, fontSize: 13 }}>
+                Решение о сотрудничестве принимается пользователями самостоятельно. Сервис «Для мам» не участвует в оказании услуг.
+              </p>
             </>
           )}
         </div>
