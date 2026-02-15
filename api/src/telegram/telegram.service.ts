@@ -12,7 +12,8 @@ export class TelegramService {
   constructor(private readonly config: ConfigService) {}
 
   private get botToken() {
-    return this.config.get<string>("BOT_TOKEN") ?? null;
+    const raw = this.config.get<string>("BOT_TOKEN");
+    return raw != null && typeof raw === "string" ? raw.trim() : null;
   }
 
   private get webAppUrl() {
