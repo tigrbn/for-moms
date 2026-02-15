@@ -330,7 +330,6 @@ export default function App() {
             {meError && <ErrorBox error={meError} />}
 
             {me && (() => {
-              const consentGiven = me.consentedUserAgreement === true && me.consentedPolicy === true;
               const hasProfiles = me.profiles.length > 0;
 
               if (hasProfiles) {
