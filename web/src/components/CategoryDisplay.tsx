@@ -20,7 +20,7 @@ export function CategoryDisplay({ category, inline }: Props) {
       {parts.sub ? (
         <div className="category-display-row">
           <span className="category-display-label">Специализация:</span>
-          <span className="category-display-value">{parts.parent} {parts.sub}</span>
+          <span className="category-display-value">{parts.sub}</span>
         </div>
       ) : null}
     </div>

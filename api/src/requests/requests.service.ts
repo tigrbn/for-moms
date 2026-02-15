@@ -18,6 +18,7 @@ export class RequestsService {
     const desc = dto?.description?.trim();
     if (!desc) throw new BadRequestException("Заполните описание заявки");
     if (desc.length < 10) throw new BadRequestException("Описание должно быть не короче 10 символов");
+    if (desc.length > 2000) throw new BadRequestException("Описание не должно превышать 2000 символов");
 
     const request = await this.prisma.request.create({
       data: {
@@ -192,6 +193,7 @@ export class RequestsService {
       const desc = dto.description?.trim();
       if (!desc) throw new BadRequestException("Описание не может быть пустым");
       if (desc.length < 10) throw new BadRequestException("Описание должно быть не короче 10 символов");
+      if (desc.length > 2000) throw new BadRequestException("Описание не должно превышать 2000 символов");
     }
 
     const nextStatus = dto.status;

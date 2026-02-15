@@ -39,9 +39,16 @@ export class PostsController {
     if (!content || content.length < 10) {
       return { ok: false, error: "Текст должен быть не короче 10 символов" };
     }
-    const imageUrls = Array.isArray(body?.imageUrls)
+    if (content.length > 3000) {
+      return { ok: false, error: "Текст не должен превышать 3000 символов" };
+    }
+    const rawUrls = Array.isArray(body?.imageUrls)
       ? body.imageUrls.filter((u): u is string => typeof u === "string" && u.length > 0).slice(0, 10)
       : [];
+    const imageUrls = rawUrls.filter((u) => {
+      if (u.length > 500 || u.includes("..")) return false;
+      return u.startsWith("/uploads/") || u.includes("/uploads/");
+    });
     const post = await this.prisma.feedPost.create({
       data: { profileId: active.id, content, images: imageUrls.length > 0 ? imageUrls : undefined },
     });
