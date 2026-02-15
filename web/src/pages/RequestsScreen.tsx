@@ -5,6 +5,7 @@ import { StubCard } from "../components/StubCard";
 import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatDate } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
+import { getCategoryDisplayText } from "../constants/feed";
 import type { RequestMineItem, OfferMineItem } from "../types";
 
 /** Уникальные заявки из откликов специалиста: по одной карточке на requestId, с последним откликом */
@@ -114,7 +115,7 @@ export function RequestsScreen() {
                 style={{ background: "var(--tg-bg)" }}
               >
                 <div className="row">
-                  <div style={{ fontWeight: 800 }}>{o.request.category}</div>
+                  <div style={{ fontWeight: 800 }}>{getCategoryDisplayText(o.request.category)}</div>
                   <div className="spacer" />
                   <div className="pill">{labelOfferStatus(o.status)}</div>
                 </div>
@@ -186,7 +187,7 @@ export function RequestsScreen() {
               style={{ background: "var(--tg-bg)" }}
             >
               <div className="row" style={{ alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 800 }}>{r.category}</div>
+                <div style={{ fontWeight: 800 }}>{getCategoryDisplayText(r.category)}</div>
                 {r.newOffersCount > 0 && (
                   <span className="nav-badge nav-badge--inline" aria-label={`Новых откликов: ${r.newOffersCount}`}>
                     {r.newOffersCount > 99 ? "99+" : r.newOffersCount}

@@ -165,7 +165,7 @@ export function ProfileScreen() {
         city: city.trim() || null,
         district: district.trim() || null,
         contactPhone: formatPhoneToDigits(contactPhone).trim() || null,
-        showContactPhonePublicly: type === "specialist" ? showContactPhonePublicly : undefined,
+        showContactPhonePublicly: showContactPhonePublicly,
       });
       if (type === "parent") {
         const ages = childrenAges
@@ -451,6 +451,10 @@ export function ProfileScreen() {
                 <dt className="muted">Пожелания</dt>
                 <dd>{activeProfile.parent?.specialWishes || "—"}</dd>
               </div>
+              <div className="profile-view-row">
+                <dt className="muted">Показывать номер специалистам в заявке</dt>
+                <dd>{activeProfile.showContactPhonePublicly ? "Да" : "Нет"}</dd>
+              </div>
             </>
           )}
           {type === "specialist" && (
@@ -626,10 +630,14 @@ export function ProfileScreen() {
               : "По этому номеру смогут связаться специалисты после того, как вы примете их отклик."}
           </p>
         </div>
-        {type === "specialist" && (
+        {(type === "specialist" || type === "parent") && (
           <div className="field">
             <label className="label profile-toggle-label">
-              <span>Разрешить показывать номер в анкете и в откликах</span>
+              <span>
+                {type === "specialist"
+                  ? "Разрешить показывать номер в анкете и в откликах"
+                  : "Разрешить показывать номер специалистам в карточке заявки"}
+              </span>
               <input
                 type="checkbox"
                 className="profile-toggle-input"

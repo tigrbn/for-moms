@@ -139,6 +139,10 @@ export type RequestDetails = {
     lastName?: string | null;
     ratingAvg?: string;
     ratingCount?: number;
+    childrenAges?: number[] | null;
+    specialWishes?: string | null;
+    /** Телефон заказчика: показывается специалисту если заказчик разрешил показ или отклик принят */
+    contactPhone?: string | null;
   };
   offers: Array<{
     id: string;

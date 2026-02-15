@@ -119,7 +119,7 @@ export function NewProfileScreen({ type }: Props) {
         city: city.trim() || null,
         district: district.trim() || null,
         contactPhone: formatPhoneToDigits(contactPhone).trim() || null,
-        showContactPhonePublicly: type === "specialist" ? showContactPhonePublicly : undefined,
+        showContactPhonePublicly: showContactPhonePublicly,
       };
       if (type === "parent") {
         const ages = childrenAges
@@ -251,10 +251,14 @@ export function NewProfileScreen({ type }: Props) {
               inputMode="tel"
             />
           </div>
-          {type === "specialist" && (
+          {(type === "specialist" || type === "parent") && (
             <div className="field">
               <label className="label profile-toggle-label">
-                <span>Разрешить показывать номер в анкете и в откликах</span>
+                <span>
+                  {type === "specialist"
+                    ? "Разрешить показывать номер в анкете и в откликах"
+                    : "Разрешить показывать номер специалистам в карточке заявки"}
+                </span>
                 <input
                   type="checkbox"
                   className="profile-toggle-input"

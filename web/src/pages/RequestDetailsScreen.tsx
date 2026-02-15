@@ -7,7 +7,7 @@ import { ReviewsSlider } from "../components/ReviewsSlider";
 import { formatMoney, formatDate, formatOfferCreatedAt, formatPhoneForDisplay, formatPhoneToDigits } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
-import { getCategoryIcon } from "../constants/feed";
+import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import type { RequestDetails as RequestDetailsType, ReviewListItem } from "../types";
 
 export function RequestDetailsScreen() {
@@ -194,7 +194,7 @@ export function RequestDetailsScreen() {
               <img src={parentAvatarSrc} alt="" />
             </div>
             {categoryIcon && (
-              <div className="profile-card-category-badge" title={data.category}>
+              <div className="profile-card-category-badge" title={getCategoryDisplayText(data.category)}>
                 <img src={categoryIcon} alt="" />
               </div>
             )}
@@ -220,8 +220,20 @@ export function RequestDetailsScreen() {
             <div className="profile-card-meta-block">
               <div className="profile-card-meta-row">
                 <span className="profile-card-meta-label">Категория:</span>
-                <strong className="profile-card-meta-value">{data.category}</strong>
+                <strong className="profile-card-meta-value">{getCategoryDisplayText(data.category)}</strong>
               </div>
+              {activeProfileType === "specialist" && data.parent.childrenAges != null && data.parent.childrenAges.length > 0 && (
+                <div className="profile-card-meta-row">
+                  <span className="profile-card-meta-label">Возраст детей:</span>
+                  <span className="profile-card-meta-value">{data.parent.childrenAges.join(", ")}</span>
+                </div>
+              )}
+              {activeProfileType === "specialist" && data.parent.specialWishes != null && data.parent.specialWishes.trim() !== "" && (
+                <div className="profile-card-meta-row">
+                  <span className="profile-card-meta-label">Пожелания:</span>
+                  <span className="profile-card-meta-value">{data.parent.specialWishes}</span>
+                </div>
+              )}
               <div className="profile-card-meta-row">
                 <span className="profile-card-meta-label">Район:</span>
                 <span className="profile-card-meta-value">{data.district ?? "—"}</span>
@@ -237,6 +249,16 @@ export function RequestDetailsScreen() {
             </div>
           </div>
         </div>
+        {activeProfileType === "specialist" && data.parent.contactPhone != null && data.parent.contactPhone.trim() !== "" && (
+          <div className="profile-card-meta-block" style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border-color)" }}>
+            <div className="profile-card-meta-row">
+              <span className="profile-card-meta-label">Телефон для связи:</span>
+              <a className="profile-card-meta-value" href={`tel:+${formatPhoneToDigits(data.parent.contactPhone)}`}>
+                {formatPhoneForDisplay(data.parent.contactPhone)}
+              </a>
+            </div>
+          </div>
+        )}
         {data.description && (
           <div className="profile-card-about" style={{ marginTop: 12 }}>
             <div className="profile-card-about-title">Описание</div>

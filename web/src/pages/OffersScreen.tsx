@@ -5,6 +5,7 @@ import { StubCard } from "../components/StubCard";
 import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatDate } from "../lib/format";
 import { labelOfferStatus } from "../lib/labels";
+import { getCategoryDisplayText } from "../constants/feed";
 import type { OfferMineItem } from "../types";
 
 export function OffersScreen() {
@@ -78,7 +79,7 @@ export function OffersScreen() {
               style={{ background: "var(--tg-bg)" }}
             >
               <div className="row">
-                <div style={{ fontWeight: 800 }}>{o.request.category}</div>
+                <div style={{ fontWeight: 800 }}>{getCategoryDisplayText(o.request.category)}</div>
                 <div className="spacer" />
                 <div className="pill">{labelOfferStatus(o.status)}</div>
               </div>

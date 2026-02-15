@@ -6,7 +6,7 @@ import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
-import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon } from "../constants/feed";
+import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
 
@@ -92,11 +92,11 @@ export function FeedScreen() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div
-        ref={feedHeaderCardRef}
-        className="card feed-header-card"
-        style={{ backgroundImage: `url(${feedHeaderBg})` }}
-      >
+      <div className="feed-header-card-wrap" ref={feedHeaderCardRef}>
+        <div
+          className="card feed-header-card"
+          style={{ backgroundImage: `url(${feedHeaderBg})` }}
+        >
         <div className="row feed-header-row">
           <span className="h2 feed-title-text">
             <span className="feed-title-hello">Привет</span> {feedSubtitle}
@@ -160,6 +160,7 @@ export function FeedScreen() {
             </div>
           </>
         )}
+        </div>
       </div>
 
       {feedError && (
@@ -271,7 +272,7 @@ export function FeedScreen() {
                         <img src={requestAvatarSrc} alt="" />
                       </div>
                       {requestCategoryIcon && (
-                        <div className="feed-card-category-badge" title={r.category}>
+                        <div className="feed-card-category-badge" title={getCategoryDisplayText(r.category)}>
                           <img src={requestCategoryIcon} alt="" />
                         </div>
                       )}
@@ -289,7 +290,7 @@ export function FeedScreen() {
                       </div>
                       <div className="feed-card-meta-block">
                         <div className="feed-card-category">
-                          <span>Категория: <strong>{r.category}</strong></span>
+                          <span>Категория: <strong>{getCategoryDisplayText(r.category)}</strong></span>
                         </div>
                         <div className="feed-card-meta feed-card-meta-vertical muted">
                           {r.district && <span>район: {r.district}</span>}

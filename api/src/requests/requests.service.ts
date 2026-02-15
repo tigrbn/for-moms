@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
+import { TelegramService } from "../telegram/telegram.service";
 
 @Injectable()
 export class RequestsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly telegram: TelegramService,
+  ) {}
 
   async create(userId: bigint, dto: { category: string; childAge?: number | null; description?: string | null; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null }) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
@@ -14,7 +18,7 @@ export class RequestsService {
     if (!desc) throw new BadRequestException("Заполните описание заявки");
     if (desc.length < 10) throw new BadRequestException("Описание должно быть не короче 10 символов");
 
-    return this.prisma.request.create({
+    const request = await this.prisma.request.create({
       data: {
         parentProfileId: active.id,
         category: dto.category,
@@ -26,6 +30,47 @@ export class RequestsService {
         district: dto.district ?? null,
       },
     });
+
+    void this.notifySpecialistsAboutNewRequest(request.id, dto.category);
+    return request;
+  }
+
+  /** Отправить в Telegram специалистам с подпиской на новые заявки по этой категории */
+  private async notifySpecialistsAboutNewRequest(requestId: bigint, category: string) {
+    const categoryTrim = category?.trim();
+    if (!categoryTrim) return;
+
+    const specialists = await this.prisma.profile.findMany({
+      where: { type: "specialist" },
+      include: {
+        specialistProfile: true,
+        user: { select: { telegramId: true } },
+      },
+    });
+
+    const skillsIncludesCategory = (skills: unknown): boolean => {
+      if (skills == null) return false;
+      const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+      return arr.some((s) => String(s).trim().toLowerCase() === categoryTrim.toLowerCase());
+    };
+
+    const webAppUrl = this.telegram.buildWebAppUrl(`/requests/${requestId.toString()}`);
+    const text = [
+      "🆕 Новая заявка по вашей категории",
+      "",
+      `Категория: ${categoryTrim}`,
+      "",
+      "Откройте заявку в Mini App, чтобы откликнуться.",
+    ].join("\n");
+
+    for (const p of specialists) {
+      if (!p.specialistProfile?.notifyNewRequestsInCategory) continue;
+      if (!p.user?.telegramId) continue;
+      if (!skillsIncludesCategory(p.specialistProfile.skills)) continue;
+      await this.telegram.sendMessage(p.user.telegramId, text, {
+        buttons: webAppUrl ? [{ text: "Открыть заявку", web_app: { url: webAppUrl } }] : undefined,
+      });
+    }
   }
 
   async mine(userId: bigint) {
@@ -110,7 +155,29 @@ export class RequestsService {
       select: { id: true },
     });
 
-    return { ...request, currentUserHasReviewed: !!existingReview };
+    const acceptedOffer = request.offers.find((o) => o.status === "accepted") ?? null;
+    const parentProfile = request.parent.parentProfile;
+    const childrenAges = parentProfile?.childrenAges != null && Array.isArray(parentProfile.childrenAges)
+      ? (parentProfile.childrenAges as unknown[]).filter((n): n is number => typeof n === "number")
+      : null;
+    const specialWishes = parentProfile?.specialWishes ?? null;
+    const showParentPhone =
+      request.parent.showContactPhonePublicly ||
+      (acceptedOffer != null && acceptedOffer.specialistProfileId === active.id);
+    const parentContactPhone = showParentPhone ? (request.parent.contactPhone ?? null) : undefined;
+
+    const parentDto = {
+      ...request.parent,
+      childrenAges: childrenAges && childrenAges.length > 0 ? childrenAges : null,
+      specialWishes,
+      contactPhone: parentContactPhone,
+    };
+
+    return {
+      ...request,
+      parent: parentDto,
+      currentUserHasReviewed: !!existingReview,
+    };
   }
 
   async update(userId: bigint, requestId: bigint, dto: { category?: string; childAge?: number | null; description?: string | null; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null; status?: "active" | "in_progress" | "done" | "cancelled" }) {
