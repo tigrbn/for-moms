@@ -9,11 +9,22 @@ type InlineKeyboardButton =
 export class TelegramService {
   private readonly log = new Logger(TelegramService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {
+    const token = this.getBotToken();
+    if (token) {
+      this.log.log(`BOT_TOKEN loaded, length=${token.length} (expected 45-46)`);
+    } else {
+      this.log.warn("BOT_TOKEN is missing or empty");
+    }
+  }
 
-  private get botToken() {
+  private getBotToken(): string | null {
     const raw = this.config.get<string>("BOT_TOKEN");
     return raw != null && typeof raw === "string" ? raw.trim() : null;
+  }
+
+  private get botToken() {
+    return this.getBotToken();
   }
 
   private get webAppUrl() {
