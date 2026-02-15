@@ -125,6 +125,10 @@ export class RequestsController {
           firstName: o.specialistProfile.user?.firstName ?? null,
           lastName: o.specialistProfile.user?.lastName ?? null,
           pricePerHour: o.specialistProfile.specialistProfile?.pricePerHour ?? null,
+          contactPhone:
+            o.status === "accepted" || o.specialistProfile.showContactPhonePublicly
+              ? (o.specialistProfile.contactPhone ?? null)
+              : undefined,
         },
       })),
     };

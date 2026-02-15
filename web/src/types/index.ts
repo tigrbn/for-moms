@@ -17,6 +17,8 @@ export type MeResponse = {
     age?: number | null;
     city?: string | null;
     district?: string | null;
+    contactPhone?: string | null;
+    showContactPhonePublicly?: boolean;
     specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null };
     parent?: { childrenAges: number[] | null; specialWishes?: string | null };
   }>;
@@ -152,6 +154,8 @@ export type RequestDetails = {
       firstName?: string | null;
       lastName?: string | null;
       pricePerHour?: number | null;
+      /** Показывается заказчику только у принятого исполнителя */
+      contactPhone?: string | null;
     };
   }>;
 };
@@ -186,6 +190,8 @@ export type PublicProfile = {
   district?: string | null;
   ratingAvg: string;
   ratingCount: number;
+  /** Телефон (только если специалист разрешил показ в анкете) */
+  contactPhone?: string | null;
   user: { username?: string | null; firstName?: string | null; lastName?: string | null; photoUrl?: string | null };
   specialist: { category?: string | null; pricePerHour?: number | null; about?: string | null } | null;
   parent: { childrenAges?: number[] | null; specialWishes?: string | null } | null;

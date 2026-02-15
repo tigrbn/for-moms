@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
+import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatDate, formatOfferCreatedAt } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
@@ -24,6 +25,17 @@ export function RequestDetailsScreen() {
   const [reviewText, setReviewText] = useState("");
   const [reviewSending, setReviewSending] = useState(false);
   const [reviewOk, setReviewOk] = useState<string | null>(null);
+
+  const [offersPage, setOffersPage] = useState(1);
+  const offers = data?.offers ?? [];
+  const offersTotalPages = Math.max(1, Math.ceil(offers.length / ITEMS_PER_PAGE));
+  const offersPaginated = useMemo(
+    () => offers.slice((offersPage - 1) * ITEMS_PER_PAGE, offersPage * ITEMS_PER_PAGE),
+    [offers, offersPage],
+  );
+  useEffect(() => {
+    setOffersPage(1);
+  }, [offers.length]);
 
   useEffect(() => {
     const run = async () => {
@@ -130,10 +142,11 @@ export function RequestDetailsScreen() {
     data.parent.gender ?? null,
   );
   const categoryIcon = getCategoryIcon(data.category);
+  const isCompleted = data.status === "done" || data.status === "cancelled";
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <div className="card profile-card card--status-top">
+      <div className={`card profile-card card--status-top ${isCompleted ? "card--completed" : ""}`}>
         <div className="pill pill--top-right">{labelRequestStatus(data.status)}</div>
         <div className="profile-card-header">
           <div className="profile-card-avatar-wrap">
@@ -260,8 +273,10 @@ export function RequestDetailsScreen() {
           )}
 
           {data.offers.length === 0 && <div className="muted" style={{ marginTop: 8 }}>Пока нет откликов.</div>}
+          {data.offers.length > 0 && (
+            <>
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-            {data.offers.map((o) => (
+            {offersPaginated.map((o) => (
               <div key={o.id} className="card offer-card" style={{ background: "var(--tg-bg)" }}>
                 <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
                   <img
@@ -334,9 +349,23 @@ export function RequestDetailsScreen() {
                     </a>
                   )}
                 </div>
+                {o.specialist.contactPhone && (
+                  <div className="offer-card-contact-phone" style={{ marginTop: 10 }}>
+                    <span className="offer-card-meta-label">Телефон:</span>{" "}
+                    <a href={`tel:${o.specialist.contactPhone.replace(/\s/g, "")}`}>{o.specialist.contactPhone}</a>
+                  </div>
+                )}
               </div>
             ))}
           </div>
+          <PaginationBar
+            currentPage={offersPage}
+            totalPages={offersTotalPages}
+            onPrev={() => setOffersPage((p) => Math.max(1, p - 1))}
+            onNext={() => setOffersPage((p) => Math.min(offersTotalPages, p + 1))}
+          />
+            </>
+          )}
         </div>
       )}
 

@@ -7,8 +7,10 @@ import menuAll from "../assets/img/menu/все заявки.png";
 
 export function BottomNav() {
   const location = useLocation();
-  const { parentNewOffersCount } = useApp();
-  const showNewOffersBadge = parentNewOffersCount != null && parentNewOffersCount > 0;
+  const { activeProfileType, parentNewOffersCount } = useApp();
+  const isSpecialist = activeProfileType === "specialist";
+  const showNewOffersBadge = !isSpecialist && parentNewOffersCount != null && parentNewOffersCount > 0;
+
   return (
     <nav className="bottom-nav">
       <Link className={`bottom-nav-item ${location.pathname === "/" ? "active" : ""}`} to="/">
@@ -19,24 +21,42 @@ export function BottomNav() {
         <img src={menuProfil} alt="" className="bottom-nav-icon-img" />
         <span>Профиль</span>
       </Link>
-      <Link className={`bottom-nav-item ${location.pathname === "/requests/new" ? "active" : ""}`} to="/requests/new">
-        <img src={menuCreate} alt="" className="bottom-nav-icon-img" />
-        <span>Создать</span>
-      </Link>
-      <Link
-        className={`bottom-nav-item ${location.pathname.startsWith("/requests") && location.pathname !== "/requests/new" ? "active" : ""}`}
-        to="/requests"
-      >
-        <span className="bottom-nav-item-badge-wrap">
-          <img src={menuAll} alt="" className="bottom-nav-icon-img" />
-          {showNewOffersBadge && (
-            <span className="nav-badge" aria-label={`Новых откликов: ${parentNewOffersCount}`}>
-              {parentNewOffersCount > 99 ? "99+" : parentNewOffersCount}
+      {isSpecialist ? (
+        <>
+          <Link className={`bottom-nav-item ${location.pathname === "/offers" ? "active" : ""}`} to="/offers">
+            <img src={menuCreate} alt="" className="bottom-nav-icon-img" />
+            <span>Отклики</span>
+          </Link>
+          <Link
+            className={`bottom-nav-item ${location.pathname.startsWith("/requests") ? "active" : ""}`}
+            to="/requests"
+          >
+            <img src={menuAll} alt="" className="bottom-nav-icon-img" />
+            <span>Все заявки</span>
+          </Link>
+        </>
+      ) : (
+        <>
+          <Link className={`bottom-nav-item ${location.pathname === "/requests/new" ? "active" : ""}`} to="/requests/new">
+            <img src={menuCreate} alt="" className="bottom-nav-icon-img" />
+            <span>Создать</span>
+          </Link>
+          <Link
+            className={`bottom-nav-item ${location.pathname.startsWith("/requests") && location.pathname !== "/requests/new" ? "active" : ""}`}
+            to="/requests"
+          >
+            <span className="bottom-nav-item-badge-wrap">
+              <img src={menuAll} alt="" className="bottom-nav-icon-img" />
+              {showNewOffersBadge && (
+                <span className="nav-badge" aria-label={`Новых откликов: ${parentNewOffersCount}`}>
+                  {parentNewOffersCount > 99 ? "99+" : parentNewOffersCount}
+                </span>
+              )}
             </span>
-          )}
-        </span>
-        <span>Все заявки</span>
-      </Link>
+            <span>Все заявки</span>
+          </Link>
+        </>
+      )}
     </nav>
   );
 }

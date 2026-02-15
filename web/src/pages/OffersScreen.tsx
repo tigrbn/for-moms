@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { StubCard } from "../components/StubCard";
+import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatDate } from "../lib/format";
 import { labelOfferStatus } from "../lib/labels";
 import type { OfferMineItem } from "../types";
@@ -10,6 +11,7 @@ export function OffersScreen() {
   const { activeProfileType, activeProfileId, authedGet } = useApp();
   const [items, setItems] = useState<OfferMineItem[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const run = async () => {
@@ -25,6 +27,16 @@ export function OffersScreen() {
     };
     void run();
   }, [activeProfileId, activeProfileType, authedGet]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [items?.length ?? 0]);
+
+  const totalPages = Math.max(1, Math.ceil((items?.length ?? 0) / ITEMS_PER_PAGE));
+  const paginatedItems = useMemo(
+    () => (items ?? []).slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE),
+    [items, page],
+  );
 
   if (activeProfileType !== "specialist") {
     return (
@@ -54,10 +66,17 @@ export function OffersScreen() {
           </StubCard>
         </div>
       )}
-      {items && (
+      {items && items.length > 0 && (
+        <>
         <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-          {items.map((o) => (
-            <div key={o.id} className="card" style={{ background: "var(--tg-bg)" }}>
+          {paginatedItems.map((o) => {
+            const isCompleted = o.request.status === "done" || o.request.status === "cancelled";
+            return (
+            <div
+              key={o.id}
+              className={`card ${isCompleted ? "card--completed" : ""}`}
+              style={{ background: "var(--tg-bg)" }}
+            >
               <div className="row">
                 <div style={{ fontWeight: 800 }}>{o.request.category}</div>
                 <div className="spacer" />
@@ -75,8 +94,16 @@ export function OffersScreen() {
                 <div className="muted">{formatDate(o.createdAt)}</div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
+        <PaginationBar
+          currentPage={page}
+          totalPages={totalPages}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+        />
+        </>
       )}
     </div>
   );

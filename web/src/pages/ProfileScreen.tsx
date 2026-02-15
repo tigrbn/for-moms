@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { getAvatarSrc } from "../lib/avatar";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
-import { FEED_CATEGORIES } from "../constants/feed";
+import { CATEGORY_TREE } from "../constants/feed";
 
 export function ProfileScreen() {
   const location = useLocation();
@@ -31,6 +31,8 @@ export function ProfileScreen() {
   const [age, setAge] = useState(activeProfile.age != null ? String(activeProfile.age) : "");
   const [city, setCity] = useState(activeProfile.city ?? "");
   const [district, setDistrict] = useState(activeProfile.district ?? "");
+  const [contactPhone, setContactPhone] = useState(activeProfile.contactPhone ?? "");
+  const [showContactPhonePublicly, setShowContactPhonePublicly] = useState(Boolean(activeProfile.showContactPhonePublicly));
   const [childrenAges, setChildrenAges] = useState("");
   const [specialWishes, setSpecialWishes] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
@@ -46,6 +48,8 @@ export function ProfileScreen() {
     setAge(activeProfile.age != null ? String(activeProfile.age) : "");
     setCity(activeProfile.city ?? "");
     setDistrict(activeProfile.district ?? "");
+    setContactPhone(activeProfile.contactPhone ?? "");
+    setShowContactPhonePublicly(Boolean(activeProfile.showContactPhonePublicly));
     if (activeProfile.type === "parent") {
       const parent = activeProfile.parent;
       setChildrenAges(Array.isArray(parent?.childrenAges) ? parent.childrenAges.join(", ") : "");
@@ -108,6 +112,8 @@ export function ProfileScreen() {
         age: ageNum != null && Number.isFinite(ageNum) ? ageNum : null,
         city: city.trim() || null,
         district: district.trim() || null,
+        contactPhone: contactPhone.trim() || null,
+        showContactPhonePublicly: type === "specialist" ? showContactPhonePublicly : undefined,
       });
       if (type === "parent") {
         const ages = childrenAges
@@ -186,6 +192,14 @@ export function ProfileScreen() {
             <dt className="muted">Район</dt>
             <dd>{activeProfile.district || "—"}</dd>
           </div>
+          <div className="profile-view-row">
+            <dt className="muted">Логин в Telegram</dt>
+            <dd>{me?.user?.username ? `@${me.user.username}` : "—"}</dd>
+          </div>
+          <div className="profile-view-row">
+            <dt className="muted">Телефон для связи</dt>
+            <dd>{activeProfile.contactPhone || "—"}</dd>
+          </div>
           {type === "parent" && (
             <>
               <div className="profile-view-row">
@@ -225,6 +239,10 @@ export function ProfileScreen() {
                 <dd style={{ whiteSpace: "pre-wrap" }}>
                   {(activeProfile.specialist?.about ?? "").trim() || "—"}
                 </dd>
+              </div>
+              <div className="profile-view-row">
+                <dt className="muted">Показывать телефон в анкете и откликах</dt>
+                <dd>{activeProfile.showContactPhonePublicly ? "Да" : "Нет"}</dd>
               </div>
             </>
           )}
@@ -299,6 +317,50 @@ export function ProfileScreen() {
             placeholder="Центральный"
           />
         </div>
+        <div className="field">
+          <label className="label">Логин в Telegram</label>
+          <input
+            className="input"
+            value={me?.user?.username ? `@${me.user.username}` : ""}
+            readOnly
+            disabled
+            style={{ opacity: 0.9 }}
+          />
+          <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+            {me?.user?.username
+              ? "Логин подтягивается из Telegram."
+              : "Задайте имя пользователя в Telegram: Настройки → Имя пользователя. Или укажите номер телефона ниже — заказчик увидит его после принятия отклика."}
+          </p>
+        </div>
+        <div className="field">
+          <label className="label">Номер телефона для связи</label>
+          <input
+            className="input"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder="+7 999 123-45-67"
+            inputMode="tel"
+          />
+          <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+            {type === "specialist"
+              ? "Если разрешите показ ниже — номер будет виден в анкете и в карточках откликов. Иначе заказчик увидит его только после принятия отклика."
+              : "Заказчик увидит номер только после принятия вашего отклика."}
+          </p>
+        </div>
+        {type === "specialist" && (
+          <div className="field">
+            <label className="label profile-toggle-label">
+              <span>Разрешить показывать номер в анкете и в откликах</span>
+              <input
+                type="checkbox"
+                className="profile-toggle-input"
+                checked={showContactPhonePublicly}
+                onChange={(e) => setShowContactPhonePublicly(e.target.checked)}
+              />
+              <span className="profile-toggle-slider" />
+            </label>
+          </div>
+        )}
         {type === "parent" && (
           <>
             <div className="field">
@@ -331,10 +393,15 @@ export function ProfileScreen() {
                 onChange={(e) => setSpecialistCategory(e.target.value)}
               >
                 <option value="">Не выбрано</option>
-                {FEED_CATEGORIES.filter((c) => c.id).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
+                {CATEGORY_TREE.map((section) => (
+                  <optgroup key={section.id} label={section.label}>
+                    <option value={section.id}>{section.label}</option>
+                    {section.children.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

@@ -1,7 +1,8 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { StubCard } from "../components/StubCard";
+import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
@@ -60,6 +61,16 @@ export function FeedScreen() {
   const contentItems = feed?.items.filter((it) => it.kind !== "banner") ?? [];
   const contentCount = contentItems.length;
   const role = activeProfileType;
+
+  const [feedPage, setFeedPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(contentCount / ITEMS_PER_PAGE));
+  const paginatedItems = useMemo(
+    () => contentItems.slice((feedPage - 1) * ITEMS_PER_PAGE, feedPage * ITEMS_PER_PAGE),
+    [contentItems, feedPage],
+  );
+  useEffect(() => {
+    setFeedPage(1);
+  }, [contentCount]);
 
   const feedSubtitle =
     activeProfileType === "specialist"
@@ -148,7 +159,7 @@ export function FeedScreen() {
               </div>
             </StubCard>
           )}
-          {contentItems.map((it, idx) => {
+          {paginatedItems.map((it, idx) => {
             if (it.kind === "specialist_profile") {
               const p = it.profile;
               const categoryIcon = getCategoryIcon(p.category ?? null);
@@ -208,8 +219,12 @@ export function FeedScreen() {
                 parent?.gender ?? null,
               );
               const requestCategoryIcon = getCategoryIcon(r.category);
+              const isCompleted = r.status === "done" || r.status === "cancelled";
               return (
-                <div key={`r-${r.id}-${idx}`} className="card feed-card feed-card-request card--status-top">
+                <div
+                  key={`r-${r.id}-${idx}`}
+                  className={`card feed-card feed-card-request card--status-top ${isCompleted ? "card--completed" : ""}`}
+                >
                   <div className="pill pill--top-right">{labelRequestStatus(r.status)}</div>
                   <div className="feed-card-header">
                     <div className="feed-card-avatar-wrap">
@@ -251,6 +266,12 @@ export function FeedScreen() {
 
             return null;
           })}
+          <PaginationBar
+            currentPage={feedPage}
+            totalPages={totalPages}
+            onPrev={() => setFeedPage((p) => Math.max(1, p - 1))}
+            onNext={() => setFeedPage((p) => Math.min(totalPages, p + 1))}
+          />
         </div>
       )}
     </div>

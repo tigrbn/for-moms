@@ -141,6 +141,23 @@ a {
   top: 10px;
   right: 12px;
 }
+
+/* Завершённые заявки (выполнены или отменены) — приглушённый вид */
+.card--completed {
+  background: var(--disabled-bg, #eceaf5) !important;
+  opacity: 0.92;
+  color: var(--text-secondary);
+}
+.card--completed .feed-card-title,
+.card--completed .profile-card-title,
+.card--completed strong {
+  color: var(--text-secondary);
+}
+.card--completed .feed-card-category strong,
+.card--completed .profile-card-meta-value {
+  color: var(--text-secondary);
+}
+
 .pill--active-green {
   background: #e8f5e9 !important;
   color: #2e7d32 !important;
@@ -588,6 +605,13 @@ a {
   color: var(--text-primary);
   font-weight: 500;
 }
+.offer-card-contact-phone {
+  font-size: 13px;
+}
+.offer-card-contact-phone a {
+  color: var(--primary);
+  font-weight: 500;
+}
 
 /* Блок статуса (специалист): онлайн + личный кабинет */
 .status-block {
@@ -750,6 +774,30 @@ a {
 .feed-content {
   display: grid;
   gap: 12px;
+}
+
+/* Постраничная навигация (при > 10 элементов) */
+.pagination-bar {
+  margin-top: 12px;
+}
+.pagination-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pagination-info {
+  font-size: 14px;
+  min-width: 120px;
+  text-align: center;
+}
+.pagination-btn {
+  min-width: 90px;
+}
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .feed-empty {
@@ -1275,6 +1323,49 @@ a {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-color);
 }
+/* Ползунок «Разрешить показывать телефон» в профиле специалиста */
+.profile-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.profile-toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.profile-toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  background: var(--border-color);
+  border-radius: 999px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.profile-toggle-slider::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.profile-toggle-input:checked + .profile-toggle-slider {
+  background: var(--primary);
+}
+.profile-toggle-input:checked + .profile-toggle-slider::after {
+  transform: translateX(22px);
+}
+
 .profile-edit-err {
   padding: 10px 12px;
   margin-bottom: 12px;

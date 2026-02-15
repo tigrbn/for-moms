@@ -59,7 +59,7 @@ export class ProfilesController {
   async updateBase(
     @Req() req: Request,
     @Param("id") id: string,
-    @Body() body: { displayName?: string | null; avatarUrl?: string | null; gender?: string | null; age?: number | null; city?: string | null; district?: string | null },
+    @Body() body: { displayName?: string | null; avatarUrl?: string | null; gender?: string | null; age?: number | null; city?: string | null; district?: string | null; contactPhone?: string | null; showContactPhonePublicly?: boolean },
   ) {
     this.logger.log(`PATCH /profiles/${id} (base) body=${JSON.stringify(body)}`);
     const { userId } = (req as unknown as AuthedRequest).auth!;
@@ -75,6 +75,8 @@ export class ProfilesController {
       age: profile.age,
       city: profile.city,
       district: profile.district,
+      contactPhone: profile.contactPhone ?? null,
+      showContactPhonePublicly: profile.showContactPhonePublicly ?? false,
     };
   }
 

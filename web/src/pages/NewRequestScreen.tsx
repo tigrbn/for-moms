@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import { FEED_CATEGORIES } from "../constants/feed";
+import { CATEGORY_TREE } from "../constants/feed";
 
-const REQUEST_CATEGORIES = FEED_CATEGORIES.filter((c) => c.id && c.id.trim());
+const DEFAULT_CATEGORY = CATEGORY_TREE[0]?.children[0]?.id ?? "";
 
 export function NewRequestScreen() {
   const { activeProfileType, authedPost, navigate } = useApp();
-  const [category, setCategory] = useState(REQUEST_CATEGORIES[0]?.id ?? "");
+  const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [district, setDistrict] = useState("");
   const [budget, setBudget] = useState("");
   const [description, setDescription] = useState("");
@@ -46,10 +46,14 @@ export function NewRequestScreen() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            {REQUEST_CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
+            {CATEGORY_TREE.map((section) => (
+              <optgroup key={section.id} label={section.label}>
+                {section.children.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>

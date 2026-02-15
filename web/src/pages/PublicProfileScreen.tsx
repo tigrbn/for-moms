@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
+import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatDate } from "../lib/format";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon } from "../constants/feed";
@@ -16,6 +17,7 @@ export function PublicProfileScreen() {
   const [err, setErr] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
   const [reviewsErr, setReviewsErr] = useState<string | null>(null);
+  const [reviewsPage, setReviewsPage] = useState(1);
 
   useEffect(() => {
     const run = async () => {
@@ -62,6 +64,16 @@ export function PublicProfileScreen() {
       cancelled = true;
     };
   }, [profileId, token, authedGet]);
+
+  const reviewsList = reviews ?? [];
+  const reviewsTotalPages = Math.max(1, Math.ceil(reviewsList.length / ITEMS_PER_PAGE));
+  const reviewsPaginated = useMemo(
+    () => reviewsList.slice((reviewsPage - 1) * ITEMS_PER_PAGE, reviewsPage * ITEMS_PER_PAGE),
+    [reviewsList, reviewsPage],
+  );
+  useEffect(() => {
+    setReviewsPage(1);
+  }, [reviewsList.length]);
 
   if (err) return <ErrorBox error={err} />;
   if (!p) return <div className="card">Загрузка…</div>;
@@ -176,6 +188,11 @@ export function PublicProfileScreen() {
             Назад
           </button>
         </div>
+        {p.contactPhone && (
+          <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+            Телефон для связи: <a href={`tel:${p.contactPhone.replace(/\s/g, "")}`}>{p.contactPhone}</a>
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -188,8 +205,9 @@ export function PublicProfileScreen() {
           </div>
         )}
         {reviews && reviews.length > 0 && (
+          <>
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-            {reviews.map((r) => {
+            {reviewsPaginated.map((r) => {
               const authorName =
                 r.fromProfile.displayName?.trim() ||
                 [r.fromProfile.firstName, r.fromProfile.lastName].filter(Boolean).join(" ") ||
@@ -235,6 +253,13 @@ export function PublicProfileScreen() {
               );
             })}
           </div>
+          <PaginationBar
+            currentPage={reviewsPage}
+            totalPages={reviewsTotalPages}
+            onPrev={() => setReviewsPage((p) => Math.max(1, p - 1))}
+            onNext={() => setReviewsPage((p) => Math.min(reviewsTotalPages, p + 1))}
+          />
+        </>
         )}
       </div>
     </div>

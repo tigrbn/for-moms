@@ -14,6 +14,8 @@ export type PublicProfileDto = {
   district: string | null;
   ratingAvg: string;
   ratingCount: number;
+  /** Только для специалиста и только если разрешил показ в анкете */
+  contactPhone?: string | null;
   user: { username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null };
   specialist: { category: string | null; pricePerHour: number | null; about: string | null } | null;
   parent: { childrenAges: number[] | null; specialWishes: string | null } | null;
@@ -87,7 +89,7 @@ export class ProfilesService {
   async updateBase(
     userId: bigint,
     profileId: bigint,
-    data: { displayName?: string | null; avatarUrl?: string | null; gender?: string | null; age?: number | null; city?: string | null; district?: string | null },
+    data: { displayName?: string | null; avatarUrl?: string | null; gender?: string | null; age?: number | null; city?: string | null; district?: string | null; contactPhone?: string | null; showContactPhonePublicly?: boolean },
   ) {
     await this.getOwnedProfileOrThrow(userId, profileId);
 
@@ -109,6 +111,13 @@ export class ProfilesService {
     }
     if (Object.prototype.hasOwnProperty.call(data, "district")) {
       updateData.district = data.district;
+    }
+    if (Object.prototype.hasOwnProperty.call(data, "contactPhone")) {
+      const v = data.contactPhone;
+      updateData.contactPhone = typeof v === "string" && v.trim() === "" ? null : (v ?? null);
+    }
+    if (Object.prototype.hasOwnProperty.call(data, "showContactPhonePublicly")) {
+      updateData.showContactPhonePublicly = Boolean(data.showContactPhonePublicly);
     }
 
     this.logger.log(`updateBase profileId=${profileId} keys=${Object.keys(updateData).join(",")} gender=${(updateData as { gender?: string | null }).gender ?? "n/a"}`);
@@ -243,6 +252,8 @@ export class ProfilesService {
         district: string | null;
         rating_avg: string | number;
         rating_count: number;
+        contact_phone: string | null;
+        show_contact_phone_publicly: boolean;
         username: string | null;
         first_name: string | null;
         last_name: string | null;
@@ -255,7 +266,7 @@ export class ProfilesService {
       }>
     >(Prisma.sql`
       SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.gender, p.age, p.city, p.district,
-             p.rating_avg::text AS rating_avg, p.rating_count,
+             p.rating_avg::text AS rating_avg, p.rating_count, p.contact_phone, p.show_contact_phone_publicly,
              u.username, u.first_name, u.last_name, u.photo_url,
              sp.skills, sp.price_per_hour, sp.about,
              pp.children_ages, pp.special_wishes
@@ -289,6 +300,9 @@ export class ProfilesService {
       district: row.district,
       ratingAvg,
       ratingCount: Number(row.rating_count) || 0,
+      ...(profileType === "specialist" && row.show_contact_phone_publicly && row.contact_phone
+        ? { contactPhone: row.contact_phone }
+        : {}),
       user: {
         username: row.username,
         firstName: row.first_name,
@@ -345,6 +359,9 @@ export class ProfilesService {
       district: p.district ?? null,
       ratingAvg,
       ratingCount: Number(p.ratingCount) || 0,
+      ...(typeStr === "specialist" && p.showContactPhonePublicly && p.contactPhone
+        ? { contactPhone: p.contactPhone }
+        : {}),
       user: {
         username: p.user?.username ?? null,
         firstName: p.user?.firstName ?? null,

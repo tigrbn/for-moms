@@ -60,7 +60,9 @@ model Profile {
   district      String?
   ratingAvg     Decimal     @default(0.0) @db.Decimal(2, 1) @map("rating_avg")
   ratingCount   Int         @default(0) @map("rating_count")
-  promotedUntil DateTime?   @db.Timestamptz(6) @map("promoted_until")
+  contactPhone             String?   @map("contact_phone")
+  showContactPhonePublicly Boolean   @default(false) @map("show_contact_phone_publicly")
+  promotedUntil            DateTime? @db.Timestamptz(6) @map("promoted_until")
   createdAt     DateTime    @default(now()) @db.Timestamptz(6) @map("created_at")
   updatedAt     DateTime    @default(now()) @db.Timestamptz(6) @map("updated_at")
 
