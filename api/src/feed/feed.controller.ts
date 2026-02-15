@@ -4,6 +4,37 @@ import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 import { PrismaService } from "../prisma/prisma.service";
 
+/** Родительская категория → список значений навыка (родитель + все подкатегории). Совпадает с деревом на фронте. */
+const PARENT_CATEGORY_SKILLS: Record<string, string[]> = {
+  Няня: [
+    "Няня",
+    "Няня на час",
+    "Няня на полный день",
+    "Няня с проживанием",
+    "Выходного дня",
+    "Сиделка для ребенка",
+    "Водитель-няня",
+  ],
+  Репетитор: [
+    "Репетитор",
+    "Начальная школа",
+    "Иностранные языки",
+    "Подготовка к школе",
+    "ОГЭ/ЕГЭ",
+    "Спорт и танцы",
+    "Музыка и творчество",
+  ],
+  Досуг: [
+    "Досуг",
+    "Аниматоры на праздник",
+    "Мастер-классы",
+    "Квесты для детей",
+    "Походы в музеи/театр",
+    "Организация Дня Рождения",
+    "Детские лагеря",
+  ],
+};
+
 @UseGuards(JwtAuthGuard)
 @Controller("feed")
 export class FeedController {
@@ -155,11 +186,16 @@ export class FeedController {
       take: 100,
     });
     if (category?.trim()) {
-      const cat = category.trim().toLowerCase();
+      const catTrim = category.trim();
+      const allowedSkills = PARENT_CATEGORY_SKILLS[catTrim];
       specialists = specialists.filter((p) => {
         const skills = p.specialistProfile?.skills;
         if (!skills) return false;
         const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+        if (allowedSkills) {
+          return arr.some((s: unknown) => allowedSkills.includes(String(s).trim()));
+        }
+        const cat = catTrim.toLowerCase();
         return arr.some((s: unknown) => String(s).toLowerCase().includes(cat));
       });
     }

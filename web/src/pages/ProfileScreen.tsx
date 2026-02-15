@@ -5,6 +5,7 @@ import { getAvatarSrc } from "../lib/avatar";
 import { formatPhoneMask, formatPhoneToDigits, formatDate } from "../lib/format";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 import { CATEGORY_TREE, getCategoryIcon } from "../constants/feed";
+import { CategoryDisplay } from "../components/CategoryDisplay";
 import { PaginationBar } from "../components/PaginationBar";
 import type { ReviewListItem } from "../types";
 
@@ -261,7 +262,7 @@ export function ProfileScreen() {
                     style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 4 }}
                   />
                 )}
-                {r.requestCategory}
+                <CategoryDisplay category={r.requestCategory} inline />
               </div>
             )}
           </div>
@@ -462,9 +463,9 @@ export function ProfileScreen() {
               <div className="profile-view-row">
                 <dt className="muted">Категория</dt>
                 <dd>
-                  {(activeProfile.specialist?.skills ?? []).length > 0
-                    ? (activeProfile.specialist?.skills ?? [])[0]
-                    : "—"}
+                  <CategoryDisplay
+                    category={(activeProfile.specialist?.skills ?? []).length > 0 ? (activeProfile.specialist?.skills ?? [])[0] : null}
+                  />
                 </dd>
               </div>
               <div className="profile-view-row">
@@ -517,6 +518,11 @@ export function ProfileScreen() {
               <span className="profile-toggle-slider" />
             </label>
           </div>
+        )}
+        {type === "specialist" && (
+          <p className="muted" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
+            Фотографии и описания размещены пользователем. Сервис «Для мам» не проверяет достоверность и законность размещённых материалов.
+          </p>
         )}
       </div>
       {reviewsBlock}

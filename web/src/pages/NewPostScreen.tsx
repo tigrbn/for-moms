@@ -133,16 +133,21 @@ export function NewPostScreen() {
             onChange={onFileChange}
           />
           {imageUrls.length < MAX_IMAGES && (
-            <button
-              type="button"
-              className="btn secondary"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {uploading
-                ? (uploadingCount > 0 ? `Загрузка… (${uploadingCount})` : "Загрузка…")
-                : "+ Добавить фото"}
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn secondary"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading
+                  ? (uploadingCount > 0 ? `Загрузка… (${uploadingCount})` : "Загрузка…")
+                  : "+ Добавить фото"}
+              </button>
+              <p className="muted" style={{ marginTop: 6, marginBottom: 0, fontSize: 12 }}>
+                Загружая изображение, вы подтверждаете, что обладаете правами на его размещение и несёте ответственность за его содержание.
+              </p>
+            </>
           )}
           {(imageUrls.length > 0 || uploadingCount > 0) && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>

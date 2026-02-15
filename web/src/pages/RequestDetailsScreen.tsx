@@ -8,6 +8,7 @@ import { formatMoney, formatDate, formatOfferCreatedAt, formatPhoneForDisplay, f
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
+import { CategoryDisplay } from "../components/CategoryDisplay";
 import type { RequestDetails as RequestDetailsType, ReviewListItem } from "../types";
 
 export function RequestDetailsScreen() {
@@ -220,7 +221,7 @@ export function RequestDetailsScreen() {
             <div className="profile-card-meta-block">
               <div className="profile-card-meta-row">
                 <span className="profile-card-meta-label">Категория:</span>
-                <strong className="profile-card-meta-value">{getCategoryDisplayText(data.category)}</strong>
+                <span className="profile-card-meta-value"><CategoryDisplay category={data.category} /></span>
               </div>
               {activeProfileType === "specialist" && data.parent.childrenAges != null && data.parent.childrenAges.length > 0 && (
                 <div className="profile-card-meta-row">

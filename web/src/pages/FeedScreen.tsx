@@ -8,6 +8,7 @@ import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { ImageSlider } from "../components/ImageSlider";
 import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
+import { CategoryDisplay } from "../components/CategoryDisplay";
 import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
 
@@ -234,7 +235,7 @@ export function FeedScreen() {
                         <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
                       </div>
                       {categoryIcon && (
-                        <div className="feed-card-category-badge" title={p.category ?? undefined}>
+                        <div className="feed-card-category-badge" title={getCategoryDisplayText(p.category ?? null)}>
                           <img src={categoryIcon} alt="" />
                         </div>
                       )}
@@ -252,7 +253,7 @@ export function FeedScreen() {
                       </div>
                       <div className="feed-card-meta-block">
                         <div className="feed-card-category">
-                          <span>Категория: <strong>{p.category ?? "—"}</strong></span>
+                          <CategoryDisplay category={p.category ?? null} />
                         </div>
                         <div className="feed-card-meta feed-card-meta-vertical muted">
                           {p.city && <span>город: {p.city}</span>}
@@ -346,7 +347,7 @@ export function FeedScreen() {
                       </div>
                       <div className="feed-card-meta-block">
                         <div className="feed-card-category">
-                          <span>Категория: <strong>{getCategoryDisplayText(r.category)}</strong></span>
+                          <CategoryDisplay category={r.category} />
                         </div>
                         <div className="feed-card-meta feed-card-meta-vertical muted">
                           {r.district && <span>район: {r.district}</span>}

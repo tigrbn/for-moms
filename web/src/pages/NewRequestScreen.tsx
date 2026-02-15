@@ -3,19 +3,31 @@ import { Navigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { CATEGORY_TREE } from "../constants/feed";
 
-const DEFAULT_CATEGORY = CATEGORY_TREE[0]?.children[0]?.id ?? "";
+const DEFAULT_SECTION_ID = CATEGORY_TREE[0]?.id ?? "";
 
 export function NewRequestScreen() {
   const { activeProfileType, authedPost, navigate } = useApp();
-  const [category, setCategory] = useState(DEFAULT_CATEGORY);
+  const [categorySectionId, setCategorySectionId] = useState(DEFAULT_SECTION_ID);
+  const [subcategoryId, setSubcategoryId] = useState("");
   const [district, setDistrict] = useState("");
   const [budget, setBudget] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const currentSection = CATEGORY_TREE.find((s) => s.id === categorySectionId);
+  const subcategoryOptions = currentSection?.children ?? [];
+
   const onSubmit = async () => {
     setErr(null);
+    if (!categorySectionId?.trim()) {
+      setErr("Выберите категорию");
+      return;
+    }
+    if (!subcategoryId?.trim()) {
+      setErr("Выберите подкатегорию");
+      return;
+    }
     const desc = description.trim();
     if (!desc) {
       setErr("Заполните описание заявки");
@@ -28,7 +40,7 @@ export function NewRequestScreen() {
     setSaving(true);
     try {
       const created = await authedPost<{ id: string }>("/requests", {
-        category,
+        category: subcategoryId,
         district: district || null,
         budget: budget ? Number(budget) : null,
         description: desc || null,
@@ -52,20 +64,37 @@ export function NewRequestScreen() {
       {err && <div className="error-message" style={{ marginTop: 8 }} role="alert">{err}</div>}
       <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
         <div className="field">
-          <div className="label">Категория</div>
+          <div className="label">Категория <span className="muted">(обязательно)</span></div>
           <select
             className="input"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            value={categorySectionId}
+            onChange={(e) => {
+              setCategorySectionId(e.target.value);
+              setSubcategoryId("");
+            }}
+            required
           >
             {CATEGORY_TREE.map((section) => (
-              <optgroup key={section.id} label={section.label}>
-                {section.children.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </optgroup>
+              <option key={section.id} value={section.id}>
+                {section.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <div className="label">Подкатегория <span className="muted">(обязательно)</span></div>
+          <select
+            className="input"
+            value={subcategoryId}
+            onChange={(e) => setSubcategoryId(e.target.value)}
+            required
+            disabled={!currentSection || subcategoryOptions.length === 0}
+          >
+            <option value="">Выберите подкатегорию</option>
+            {subcategoryOptions.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
             ))}
           </select>
         </div>

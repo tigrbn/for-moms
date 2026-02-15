@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon } from "../constants/feed";
+import { CategoryDisplay } from "./CategoryDisplay";
 import { formatDate } from "../lib/format";
 import type { ReviewListItem } from "../types";
 
@@ -102,7 +103,7 @@ export function ReviewsSlider({ reviews, authorFallbackLabel = "Пользова
                       style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 4 }}
                     />
                   )}
-                  {r.requestCategory}
+                  <CategoryDisplay category={r.requestCategory} inline />
                 </div>
               )}
             </div>

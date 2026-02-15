@@ -4,7 +4,8 @@ import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { ReviewsSlider } from "../components/ReviewsSlider";
 import { getAvatarSrc } from "../lib/avatar";
-import { getCategoryIcon } from "../constants/feed";
+import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
+import { CategoryDisplay } from "../components/CategoryDisplay";
 import { getParentRoleLabel } from "../lib/labels";
 import type { PublicProfile, ReviewListItem } from "../types";
 
@@ -85,7 +86,7 @@ export function PublicProfileScreen() {
               <img src={avatarSrc} alt="" />
             </div>
             {p.type === "specialist" && categoryIcon && (
-              <div className="profile-card-category-badge" title={category ?? undefined}>
+              <div className="profile-card-category-badge" title={getCategoryDisplayText(category)}>
                 <img src={categoryIcon} alt="" />
               </div>
             )}
@@ -109,7 +110,7 @@ export function PublicProfileScreen() {
               {p.type === "specialist" && (
                 <div className="profile-card-meta-row">
                   <span className="profile-card-meta-label">Категория:</span>
-                  <strong className="profile-card-meta-value">{category ?? "—"}</strong>
+                  <span className="profile-card-meta-value"><CategoryDisplay category={category} /></span>
                 </div>
               )}
               <div className="profile-card-meta-row">
@@ -178,8 +179,8 @@ export function PublicProfileScreen() {
           </button>
         </div>
         {p.type === "specialist" && (
-          <p className="muted service-disclaimer" style={{ marginTop: 12, marginBottom: 0, fontSize: 13 }}>
-            Информация размещена пользователем. Сервис не проверяет достоверность указанных данных.
+          <p className="muted service-disclaimer" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
+            Фотографии и описания размещены пользователем. Сервис «Для мам» не проверяет достоверность и законность размещённых материалов.
           </p>
         )}
         {p.contactPhone && (

@@ -88,3 +88,15 @@ export function getCategoryDisplayText(category: string | null | undefined): str
   }
   return cat;
 }
+
+/** Родительская категория и подкатегория для отображения в карточке (категория сверху, подкатегория снизу) */
+export function getCategoryParts(category: string | null | undefined): { parent: string; sub: string } | null {
+  if (!category?.trim()) return null;
+  const cat = category.trim();
+  for (const section of CATEGORY_TREE) {
+    if (section.id === cat) return { parent: section.label, sub: "" };
+    const child = section.children.find((c) => c.id === cat);
+    if (child) return { parent: section.label, sub: child.label };
+  }
+  return { parent: cat, sub: "" };
+}
