@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 import { isAdminUser } from "../common/admin";
+import { getParentCategory } from "../categories";
 import { TelegramService } from "../telegram/telegram.service";
 
 @Injectable()
@@ -50,10 +51,14 @@ export class RequestsService {
       },
     });
 
+    const parentCategory = getParentCategory(categoryTrim)?.trim().toLowerCase() ?? categoryTrim.toLowerCase();
     const skillsIncludesCategory = (skills: unknown): boolean => {
       if (skills == null) return false;
       const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
-      return arr.some((s) => String(s).trim().toLowerCase() === categoryTrim.toLowerCase());
+      return arr.some((s) => {
+        const skillNorm = String(s).trim().toLowerCase();
+        return skillNorm === categoryTrim.toLowerCase() || skillNorm === parentCategory;
+      });
     };
 
     const webAppUrl = this.telegram.buildWebAppUrl(`/requests/${requestId.toString()}`);
