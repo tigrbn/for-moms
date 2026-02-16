@@ -270,6 +270,32 @@ a {
   min-width: 0;
 }
 
+/* Обёртка статуса и бейджа новых откликов в карточке заявки */
+.request-card-status-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.request-card-new-badge {
+  position: absolute;
+  /* Центр бейджа: +6–8px вправо, –6–8px вверх от правого верхнего угла пилла статуса */
+  right: -14px;
+  top: -14px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  color: #FFFFFF;
+  text-align: center;
+  background: #FF4D4F;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
 .btn {
   appearance: none;
   border: 0;

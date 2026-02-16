@@ -269,14 +269,16 @@ export function RequestsScreen() {
                 <div className="row row--status-right" style={{ gap: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="request-card-category"><CategoryDisplay category={r.category} /></div>
+                  </div>
+                  <div className="spacer" />
+                  <div className="request-card-status-wrap">
                     {r.newOffersCount > 0 && (
-                      <span className="nav-badge nav-badge--inline" aria-label={`Новых откликов: ${r.newOffersCount}`}>
+                      <span className="request-card-new-badge" aria-label={`Новых откликов: ${r.newOffersCount}`}>
                         {r.newOffersCount > 99 ? "99+" : r.newOffersCount}
                       </span>
                     )}
+                    <div className="pill">{labelRequestStatus(r.status)}</div>
                   </div>
-                  <div className="spacer" />
-                  <div className="pill">{labelRequestStatus(r.status)}</div>
                 </div>
                 <div className="request-card-date" style={{ marginTop: 4 }}>
                   <span className="request-meta-label">Дата создания:</span> {formatDate(r.createdAt)}
