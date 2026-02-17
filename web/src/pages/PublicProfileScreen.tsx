@@ -14,7 +14,7 @@ import type { PublicProfile, ReviewListItem } from "../types";
 export function PublicProfileScreen() {
   const params = useParams();
   const profileId = params.id!;
-  const { activeProfileId, token, authedGet, navigate } = useApp();
+  const { activeProfileId, activeProfile, token, authedGet, navigate } = useApp();
   const [p, setP] = useState<PublicProfile | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
@@ -185,7 +185,11 @@ export function PublicProfileScreen() {
           </div>
         )}
         <div className="profile-card-actions row">
-          {tgUrl ? (
+          {!activeProfile ? (
+            <p className="muted" style={{ margin: 0, alignSelf: "center", fontSize: 14 }}>
+              Для связи и просмотра контактов авторизуйтесь.
+            </p>
+          ) : tgUrl ? (
             <a className="btn btn-telegram btn-with-icon" href={tgUrl} target="_blank" rel="noreferrer">
               <span className="btn-icon-telegram" aria-hidden>
                 <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -209,7 +213,7 @@ export function PublicProfileScreen() {
             Фотографии и описания размещены пользователем. Сервис «Для мам» не проверяет достоверность и законность размещённых материалов.
           </p>
         )}
-        {p.contactPhone && (
+        {activeProfile && p.contactPhone && (
           <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
             Телефон для связи: <a href={`tel:${p.contactPhone.replace(/\s/g, "")}`}>{p.contactPhone}</a>
           </div>

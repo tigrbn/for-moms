@@ -269,11 +269,6 @@ export function FeedScreen() {
                 >
                   Показать все
                 </button>
-                {feedCategory === "Объявления" && (
-                  <Link className="btn btn-primary" to="/posts/new">
-                    + Добавить объявление
-                  </Link>
-                )}
               </div>
             </StubCard>
           )}
