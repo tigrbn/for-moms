@@ -57,12 +57,16 @@ export type DashboardMetrics = {
   usersWithParentProfile: number;
   /** Пользователей с профилем «специалист» (хотя бы один) */
   usersWithSpecialistProfile: number;
+  /** Пользователей с профилем «компания» (хотя бы один) */
+  usersWithCompanyProfile: number;
   /** Пользователей с обоими ролями (родитель и специалист) */
   usersWithBothRoles: number;
   /** Активных профилей: родитель (is_active) */
   activeParentProfilesCount: number;
   /** Активных профилей: специалист (is_active) */
   activeSpecialistProfilesCount: number;
+  /** Активных профилей: компания (is_active) */
+  activeCompanyProfilesCount: number;
   /** Уникальных пользователей, открывших бот за период (по записям app_opens) */
   uniqueUsersOpenedBotThisMonth: number;
   /** Уникальных пользователей, когда-либо открывших бот (всего по app_opens) */
@@ -99,9 +103,11 @@ export class AnalyticsService {
       newUsersThisMonth,
       usersWithParentProfile,
       usersWithSpecialistProfile,
+      usersWithCompanyProfile,
       usersWithBothRoles,
       activeParentProfilesCount,
       activeSpecialistProfilesCount,
+      activeCompanyProfilesCount,
       uniqueUsersOpenedBotThisMonth,
       uniqueUsersOpenedBotAllTime,
     ] = await Promise.all([
@@ -120,9 +126,11 @@ export class AnalyticsService {
       this.getNewUsersInPeriod(periodFrom, periodTo),
       this.getUsersWithParentProfile(),
       this.getUsersWithSpecialistProfile(),
+      this.getUsersWithCompanyProfile(),
       this.getUsersWithBothRoles(),
       this.getActiveParentProfilesCount(),
       this.getActiveSpecialistProfilesCount(),
+      this.getActiveCompanyProfilesCount(),
       this.getUniqueUsersOpenedBotInPeriod(periodFrom, periodTo),
       this.getUniqueUsersOpenedBotAllTime(),
     ]);
@@ -177,9 +185,11 @@ export class AnalyticsService {
       newUsersThisMonth,
       usersWithParentProfile,
       usersWithSpecialistProfile,
+      usersWithCompanyProfile,
       usersWithBothRoles,
       activeParentProfilesCount,
       activeSpecialistProfilesCount,
+      activeCompanyProfilesCount,
       uniqueUsersOpenedBotThisMonth,
       uniqueUsersOpenedBotAllTime,
       periodYear: y,
@@ -229,6 +239,13 @@ export class AnalyticsService {
     return Number(rows[0]?.count ?? 0);
   }
 
+  private async getUsersWithCompanyProfile(): Promise<number> {
+    const rows = await this.prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+      SELECT COUNT(DISTINCT user_id) AS count FROM profiles WHERE type = 'company'
+    `);
+    return Number(rows[0]?.count ?? 0);
+  }
+
   private async getUsersWithBothRoles(): Promise<number> {
     const rows = await this.prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
       SELECT COUNT(*) AS count FROM (
@@ -249,6 +266,12 @@ export class AnalyticsService {
   private async getActiveSpecialistProfilesCount(): Promise<number> {
     return this.prisma.profile.count({
       where: { type: "specialist", isActive: true },
+    });
+  }
+
+  private async getActiveCompanyProfilesCount(): Promise<number> {
+    return this.prisma.profile.count({
+      where: { type: "company", isActive: true },
     });
   }
 

@@ -84,17 +84,19 @@ export function AnalyticsScreen() {
   if (!specialistData && !adminData) return null;
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div style={{ display: "grid", gap: 20 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <h1 className="h2" style={{ margin: 0 }}>Аналитика</h1>
         <Link to="/profile" className="muted" style={{ fontSize: 14 }}>← В профиль</Link>
       </div>
 
       {isProvider && specialistData && (
-        <>
-          <p className="muted" style={{ margin: 0 }}>Как идёт работа в системе</p>
+        <div className="card" style={{ padding: 16, background: "var(--tg-secondary-bg-color, #f8f8fa)", borderLeft: "4px solid var(--tg-theme-button-color, #3390ec)" }}>
+          <h2 className="h2" style={{ margin: "0 0 4px", fontSize: 18 }}>Ваша аналитика</h2>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>Как идёт работа в системе: анкета, отклики, заказы</p>
+          <div style={{ marginTop: 16, display: "grid", gap: 16 }}>
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Анкета и отклики</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Анкета и отклики</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
               <MetricCard
                 title="Уникальных переходов на анкету"
@@ -109,7 +111,7 @@ export function AnalyticsScreen() {
             </div>
           </section>
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Заказы и заработок</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Заказы и заработок</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
               <MetricCard
                 title="Сделанных заказов"
@@ -136,16 +138,17 @@ export function AnalyticsScreen() {
               </p>
             </div>
           )}
-        </>
+          </div>
+        </div>
       )}
 
       {isAdmin && adminData && (
-        <>
-          <h2 className="h2" style={{ margin: "8px 0 0", paddingTop: 8, borderTop: "1px solid var(--border-color)" }}>Дашборд метрик</h2>
-          <p className="muted" style={{ margin: 0 }}>Период: {MONTH_NAMES[adminData.periodMonth - 1]} {adminData.periodYear}</p>
-
+        <div className="card" style={{ padding: 16, background: "var(--tg-bg-color, #fff)", borderLeft: "4px solid #6b7280" }}>
+          <h2 className="h2" style={{ margin: "0 0 4px", fontSize: 18 }}>Дашборд метрик</h2>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>Общая аналитика по сервису для администратора. Период: {MONTH_NAMES[adminData.periodMonth - 1]} {adminData.periodYear}</p>
+          <div style={{ marginTop: 16, display: "grid", gap: 16 }}>
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Пользователи</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Пользователи</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
               <MetricCard
                 title="Открывали бот (за месяц)"
@@ -178,6 +181,11 @@ export function AnalyticsScreen() {
                 subtitle={`активных анкет: ${adminData.activeSpecialistProfilesCount}`}
               />
               <MetricCard
+                title="С профилем «компания»"
+                value={adminData.usersWithCompanyProfile}
+                subtitle={`активных анкет: ${adminData.activeCompanyProfilesCount}`}
+              />
+              <MetricCard
                 title="Обе роли"
                 value={adminData.usersWithBothRoles}
                 subtitle="родитель и специалист"
@@ -186,7 +194,7 @@ export function AnalyticsScreen() {
           </section>
 
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Для мам</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Для мам</h3>
             <MetricCard
               title="Закрытые заявки за месяц"
               value={adminData.closedRequestsThisMonth}
@@ -196,7 +204,7 @@ export function AnalyticsScreen() {
           </section>
 
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Ликвидность и отклики</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Ликвидность и отклики</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
               <MetricCard
                 title="% заявок с откликами"
@@ -222,7 +230,7 @@ export function AnalyticsScreen() {
           </section>
 
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Время до первого отклика</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Время до первого отклика</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
               <MetricCard
                 title="Среднее (часы)"
@@ -237,7 +245,7 @@ export function AnalyticsScreen() {
           </section>
 
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Конверсии</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Конверсии</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
               <MetricCard
                 title="Conversion Parent → Order"
@@ -253,7 +261,7 @@ export function AnalyticsScreen() {
           </section>
 
           <section>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Специалисты</h2>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Специалисты</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
               <MetricCard
                 title="Активные (MAU)"
@@ -278,7 +286,8 @@ export function AnalyticsScreen() {
               <strong>Когда включать монетизацию:</strong> ≥80% заявок с откликами, ≥3 отклика на заявку, ≥30 активных специалистов.
             </div>
           </div>
-        </>
+          </div>
+        </div>
       )}
     </div>
   );
