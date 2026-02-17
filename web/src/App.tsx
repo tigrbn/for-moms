@@ -176,7 +176,7 @@ export default function App() {
   );
 
   const createRole = useCallback(
-    async (type: "parent" | "specialist") => {
+    async (type: "parent" | "specialist" | "company") => {
       if (!token) return;
       const { postJSON } = await import("./shared/api");
       const created = await postJSON<{ id: string }>("/profiles", { type }, token);

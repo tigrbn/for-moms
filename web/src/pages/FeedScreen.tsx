@@ -95,7 +95,6 @@ export function FeedScreen() {
     return allItems.filter((it) => it.kind === "request" || it.kind === "other_post");
   }, [allItems, feedView]);
   const contentCount = contentItems.length;
-  const role = activeProfileType;
 
   const [feedPage, setFeedPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(contentCount / ITEMS_PER_PAGE));
