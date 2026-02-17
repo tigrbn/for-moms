@@ -7,6 +7,7 @@ import { formatMoney, formatDate, formatRequestCreatedAt } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { CategoryDisplay } from "../components/CategoryDisplay";
 import type { RequestMineItem, OfferMineItem } from "../types";
+import announcementImg from "../assets/img/announcement.jpg";
 
 type PostMineItem = {
   id: string;
@@ -193,7 +194,15 @@ export function RequestsScreen() {
         <p className="muted" style={{ fontSize: 13, marginTop: 8, marginBottom: 10 }}>Объявления видны в разделе «Объявления» в ленте.</p>
         {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
         {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
-        {myPosts?.length === 0 && !postsErr && <p className="muted" style={{ margin: 0 }}>Объявлений пока нет.</p>}
+        {myPosts?.length === 0 && !postsErr && (
+          <div style={{ marginTop: 10 }}>
+            <StubCard
+              image={announcementImg}
+              title="💬 Объявлений пока нет"
+              desc="Добавьте объявление — его увидят в разделе «Объявления» в ленте."
+            />
+          </div>
+        )}
         {myPosts && myPosts.length > 0 && (
           <div style={{ display: "grid", gap: 10 }}>
             {myPosts.map((p) => {
@@ -323,7 +332,13 @@ export function RequestsScreen() {
       {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
       {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
       {myPosts?.length === 0 && !postsErr && (
-        <p className="muted" style={{ margin: 0 }}>Объявлений пока нет.</p>
+        <div style={{ marginTop: 10 }}>
+          <StubCard
+            image={announcementImg}
+            title="💬 Объявлений пока нет"
+            desc="Добавьте объявление — его увидят в разделе «Объявления» в ленте."
+          />
+        </div>
       )}
       {myPosts && myPosts.length > 0 && (
         <div style={{ display: "grid", gap: 10 }}>

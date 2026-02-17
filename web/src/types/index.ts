@@ -247,6 +247,16 @@ export type PublicProfile = {
   company: { companyName: string; inn?: string | null; legalAddress?: string | null } | null;
 };
 
+/** Ответ GET /analytics/specialist (для специалиста/компании) */
+export type SpecialistAnalyticsResponse = {
+  uniqueProfileViews: number;
+  acceptedOffersCount: number;
+  completedOrdersCount: number;
+  totalEarnings: number;
+  ordersCount: number;
+  uncontactableRequestsCount: number;
+};
+
 /** Ответ GET /analytics/dashboard (только для админа) */
 export type AnalyticsDashboardResponse = {
   closedRequestsThisMonth: number;

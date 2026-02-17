@@ -338,4 +338,57 @@ export class AnalyticsService {
     `);
     return Number(rows[0]?.count ?? 0);
   }
+
+  /** Метрики для специалиста/компании: переходы на анкету, отклики, заказы, заработок, непереходные заявки. */
+  async getSpecialistDashboard(specialistProfileId: bigint): Promise<{
+    uniqueProfileViews: number;
+    acceptedOffersCount: number;
+    completedOrdersCount: number;
+    totalEarnings: number;
+    ordersCount: number;
+    uncontactableRequestsCount: number;
+  }> {
+    const [
+      uniqueProfileViews,
+      acceptedOffersCount,
+      completedRows,
+      uncontactableRows,
+    ] = await Promise.all([
+      this.prisma.profileView.groupBy({
+        by: ["userId"],
+        where: { profileId: specialistProfileId },
+        _count: { userId: true },
+      }).then((g) => g.length),
+      this.prisma.offer.count({
+        where: { specialistProfileId, status: "accepted" },
+      }),
+      this.prisma.$queryRaw<{ count: bigint; sum: string | null }[]>(Prisma.sql`
+        SELECT COUNT(r.id) AS count, COALESCE(SUM(o.price_offer), 0)::text AS sum
+        FROM requests r
+        INNER JOIN offers o ON o.request_id = r.id AND o.specialist_profile_id = ${specialistProfileId} AND o.status = 'accepted'
+        WHERE r.status = 'done'
+      `),
+      this.prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+        SELECT COUNT(DISTINCT r.id) AS count
+        FROM requests r
+        INNER JOIN offers o ON o.request_id = r.id AND o.specialist_profile_id = ${specialistProfileId}
+        INNER JOIN profiles p ON p.id = r.parent_profile_id
+        INNER JOIN users u ON u.id = p.user_id
+        WHERE (TRIM(COALESCE(u.username, '')) = '' OR u.username IS NULL)
+          AND p.show_contact_phone_publicly = false
+      `),
+    ]);
+
+    const completedCount = Number(completedRows[0]?.count ?? 0);
+    const totalEarnings = Number(completedRows[0]?.sum ?? 0) || 0;
+
+    return {
+      uniqueProfileViews,
+      acceptedOffersCount,
+      completedOrdersCount: completedCount,
+      totalEarnings,
+      ordersCount: completedCount,
+      uncontactableRequestsCount: Number(uncontactableRows[0]?.count ?? 0),
+    };
+  }
 }

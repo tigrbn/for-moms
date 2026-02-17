@@ -131,7 +131,7 @@ export default function App() {
 
   useEffect(() => {
     const run = async () => {
-      if (!token || !me?.activeProfileId) return;
+      if (!token) return;
       setFeedError(null);
       try {
         const qs = new URLSearchParams();
@@ -155,7 +155,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token, me?.activeProfileId, feedCategory, feedSubcategory, feedView, feedReloadKey]);
+  }, [token, feedCategory, feedSubcategory, feedView, feedReloadKey]);
 
   useEffect(() => {
     if (token) setReauthing(false);

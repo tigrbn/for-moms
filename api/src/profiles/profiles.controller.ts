@@ -26,13 +26,17 @@ export class ProfilesController {
   }
 
   @Get(":id")
-  async get(@Param("id") id: string) {
+  async get(@Req() req: Request, @Param("id") id: string) {
     const idTrim = id?.trim();
     if (!idTrim || !/^\d+$/.test(idTrim)) {
       throw new BadRequestException("Invalid profile id");
     }
+    const profileId = BigInt(idTrim);
     try {
-      return await this.profiles.getPublicProfileOrThrow(BigInt(idTrim));
+      const profile = await this.profiles.getPublicProfileOrThrow(profileId);
+      const { userId } = (req as unknown as AuthedRequest).auth!;
+      await this.profiles.recordProfileView(profileId, userId).catch(() => {});
+      return profile;
     } catch (e: unknown) {
       if (e instanceof NotFoundException) throw e;
       this.logger.error(`GET /profiles/${id} failed`, e instanceof Error ? e : String(e));

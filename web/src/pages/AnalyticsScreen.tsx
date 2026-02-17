@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import type { AnalyticsDashboardResponse } from "../types";
+import { formatMoney } from "../lib/format";
+import type { AnalyticsDashboardResponse, SpecialistAnalyticsResponse } from "../types";
 
 const MONTH_NAMES = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -31,41 +32,117 @@ function MetricCard({
 }
 
 export function AnalyticsScreen() {
-  const { authedGet, isAdmin } = useApp();
-  const [data, setData] = useState<AnalyticsDashboardResponse | null>(null);
+  const { authedGet, isAdmin, activeProfileType } = useApp();
+  const [specialistData, setSpecialistData] = useState<SpecialistAnalyticsResponse | null>(null);
+  const [adminData, setAdminData] = useState<AnalyticsDashboardResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isProvider = activeProfileType === "specialist" || activeProfileType === "company";
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setErr(null);
-    authedGet<AnalyticsDashboardResponse>("/analytics/dashboard")
-      .then((res) => {
-        if (!cancelled) setData(res);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Ошибка загрузки");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    setSpecialistData(null);
+    setAdminData(null);
+    if (isProvider) {
+      authedGet<SpecialistAnalyticsResponse>("/analytics/specialist")
+        .then((res) => { if (!cancelled) setSpecialistData(res); })
+        .catch((e: unknown) => { if (!cancelled) setErr(e instanceof Error ? e.message : "Ошибка загрузки"); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    } else if (isAdmin) {
+      authedGet<AnalyticsDashboardResponse>("/analytics/dashboard")
+        .then((res) => { if (!cancelled) setAdminData(res); })
+        .catch((e: unknown) => { if (!cancelled) setErr(e instanceof Error ? e.message : "Ошибка загрузки"); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    } else {
+      setLoading(false);
+    }
     return () => { cancelled = true; };
-  }, [authedGet]);
+  }, [authedGet, isProvider, isAdmin]);
 
-  if (!isAdmin) {
+  if (!isProvider && !isAdmin) {
     return (
       <div className="card">
-        <div className="h2">Метрики</div>
-        <p className="muted">Доступ только для администратора.</p>
+        <div className="h2">Аналитика</div>
+        <p className="muted">Доступна для специалистов, компаний и администратора.</p>
         <Link to="/profile">В профиль</Link>
       </div>
     );
   }
 
-  if (loading) return <div className="card">Загрузка метрик…</div>;
+  if (loading) return <div className="card">Загрузка…</div>;
   if (err) return <div className="card" role="alert">Ошибка: {err}</div>;
-  if (!data) return null;
+
+  if (isProvider && specialistData) {
+    return (
+      <div style={{ display: "grid", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <h1 className="h2" style={{ margin: 0 }}>Аналитика</h1>
+          <Link to="/profile" className="muted" style={{ fontSize: 14 }}>← В профиль</Link>
+        </div>
+        <p className="muted" style={{ margin: 0 }}>Как идёт работа в системе</p>
+
+        <section>
+          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Анкета и отклики</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+            <MetricCard
+              title="Уникальных переходов на анкету"
+              value={specialistData.uniqueProfileViews}
+              subtitle="пользователей открыли вашу анкету"
+            />
+            <MetricCard
+              title="Принятых откликов"
+              value={specialistData.acceptedOffersCount}
+              subtitle="ваш отклик принят заказчиком"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Заказы и заработок</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+            <MetricCard
+              title="Сделанных заказов"
+              value={specialistData.completedOrdersCount}
+              subtitle="заявок со статусом «завершена»"
+              highlight
+            />
+            <MetricCard
+              title="Сумма заработка"
+              value={formatMoney(specialistData.totalEarnings)}
+              subtitle="по принятым откликам"
+            />
+            <MetricCard
+              title="Всего заказов"
+              value={specialistData.ordersCount}
+            />
+          </div>
+        </section>
+
+        {specialistData.uncontactableRequestsCount > 0 && (
+          <div className="card" style={{ padding: 12, background: "var(--bg-muted, #f5f5f5)", borderColor: "var(--warning, #b8860b)" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>О заказчиках, с которыми нельзя связаться</div>
+            <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+              По {specialistData.uncontactableRequestsCount} заявке (заявкам) вы откликнулись, но у заказчика нет ника в Telegram и не включена опция «показывать номер специалистам в заявке». С такими пользователями связаться через сервис нельзя — рекомендуйте им указать контакт в настройках профиля.
+            </p>
+          </div>
+        )}
+
+        {specialistData.uncontactableRequestsCount === 0 && (
+          <div className="card" style={{ padding: 12, background: "var(--bg-muted, #f5f5f5)" }}>
+            <div style={{ fontSize: 13 }}>
+              По всем заявкам, на которые вы откликнулись, заказчики указали контакт (ник в Telegram или разрешение показывать номер). Вы можете связаться с ними через сервис.
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!isAdmin || !adminData) return null;
+  const data = adminData;
 
   const periodLabel = `${MONTH_NAMES[data.periodMonth - 1]} ${data.periodYear}`;
 

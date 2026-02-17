@@ -523,13 +523,20 @@ export function ProfileScreen() {
     return (
       <div style={{ display: "grid", gap: 12 }}>
       <div className="card profile-view-card">
-        <div className="profile-view-header" style={{ display: "block" }}>
-          <h2 className="h2" style={{ margin: 0 }}>
-            {activeProfile.displayName || "—"}
-          </h2>
-          <p className="muted" style={{ margin: "4px 0 0" }}>
-            {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
-          </p>
+        <div className="profile-view-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <h2 className="h2" style={{ margin: 0 }}>
+              {activeProfile.displayName || "—"}
+            </h2>
+            <p className="muted" style={{ margin: "4px 0 0" }}>
+              {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
+            </p>
+          </div>
+          {(type === "specialist" || type === "company") && (
+            <Link className="btn secondary" to="/profile/analytics" style={{ flexShrink: 0 }}>
+              Аналитика
+            </Link>
+          )}
         </div>
         {profileId && (
           <div style={{ paddingBottom: 16, borderBottom: "1px solid var(--border-color)" }}>

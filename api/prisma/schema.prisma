@@ -106,6 +106,7 @@ model Profile {
   usersAsActive      User[]              @relation("UserActiveProfile")
   parentVisits       ParentVisit[]
   requestViewsAsSpecialist RequestView[] @relation("RequestViewsAsSpecialist")
+  profileViews       ProfileView[]
 
   @@unique([userId, type])
   @@index([type, isActive], map: "idx_profiles_type_active")
@@ -233,8 +234,22 @@ model User {
   profiles        Profile[] @relation("UserProfiles")
   activeProfile   Profile?  @relation("UserActiveProfile", fields: [activeProfileId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   consentLogs     ConsentLog[]
+  profileViews    ProfileView[]
 
   @@map("users")
+}
+
+model ProfileView {
+  id         BigInt   @id @default(autoincrement())
+  profileId  BigInt   @map("profile_id")
+  userId     BigInt   @map("user_id")
+  createdAt  DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt], map: "idx_profile_views_profile_created")
+  @@map("profile_views")
 }
 
 enum OfferStatus {

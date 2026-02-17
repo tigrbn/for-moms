@@ -405,6 +405,24 @@ export class ProfilesService {
     });
   }
 
+  /** Записать просмотр анкеты специалиста/компании (для аналитики). Не записываем просмотр своей анкеты. */
+  async recordProfileView(profileId: bigint, viewerUserId: bigint): Promise<void> {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { userId: true, type: true },
+    });
+    if (
+      !profile ||
+      profile.userId === viewerUserId ||
+      (profile.type !== "specialist" && profile.type !== "company")
+    ) {
+      return;
+    }
+    await this.prisma.profileView.create({
+      data: { profileId, userId: viewerUserId },
+    });
+  }
+
   /** Публичная анкета по id. Сначала raw SQL; при ошибке — fallback через Prisma с ручной сериализацией. */
   async getPublicProfileOrThrow(profileId: bigint): Promise<PublicProfileDto> {
     try {

@@ -1,6 +1,7 @@
-import { Controller, ForbiddenException, Get, Query, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Controller, ForbiddenException, Get, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { getActiveProfileOrThrow } from "../common/active-profile";
 import { isAdminUser } from "../common/admin";
 import { PrismaService } from "../prisma/prisma.service";
 import { AnalyticsService } from "./analytics.service";
@@ -12,6 +13,16 @@ export class AnalyticsController {
     private readonly analytics: AnalyticsService,
     private readonly prisma: PrismaService,
   ) {}
+
+  @Get("specialist")
+  async getSpecialist(@Req() req: Request) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const active = await getActiveProfileOrThrow(this.prisma, userId);
+    if (active.type !== "specialist" && active.type !== "company") {
+      throw new BadRequestException("Only for specialist or company profile");
+    }
+    return this.analytics.getSpecialistDashboard(active.id);
+  }
 
   @Get("dashboard")
   async getDashboard(

@@ -215,6 +215,14 @@ export function FeedScreen() {
         </div>
       </div>
 
+      {!activeProfile && (
+        <div className="card">
+          <p className="muted" style={{ margin: 0 }}>
+            Чтобы откликаться на заявки, писать в&nbsp;Telegram и видеть телефоны, авторизуйтесь и заполните профиль.
+          </p>
+        </div>
+      )}
+
       {feedError && (
         <div className="card">
           <div className="muted">{feedError}</div>
@@ -222,19 +230,7 @@ export function FeedScreen() {
       )}
       {!feed && (
         <div className="card">
-          {!activeProfile ? (
-            <>
-              <div className="h2" style={{ marginBottom: 8 }}>Лента</div>
-              <p className="muted" style={{ marginBottom: 12 }}>
-                Авторизуйтесь, чтобы видеть заявки родителей и анкеты специалистов.
-              </p>
-              <Link className="btn btn-primary" to="/auth">
-                Авторизация
-              </Link>
-            </>
-          ) : (
-            <div className="muted">Загрузка…</div>
-          )}
+          <div className="muted">Загрузка…</div>
         </div>
       )}
 
@@ -332,9 +328,16 @@ export function FeedScreen() {
                   {p.portfolioImageUrls && p.portfolioImageUrls.length > 0 && (
                     <ImageSlider images={p.portfolioImageUrls} alt="" height={120} className="feed-card-specialist-images" allowModal={false} />
                   )}
-                  <Link className="btn feed-card-btn feed-card-btn-open" to={`/profiles/${p.id}`}>
-                    Открыть анкету
-                  </Link>
+                  <div className="feed-card-request-row">
+                    <Link className="btn feed-card-btn feed-card-btn-open" to={`/profiles/${p.id}`}>
+                      Открыть анкету
+                    </Link>
+                    {!activeProfile && (
+                      <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>
+                        Для связи и просмотра контактов авторизуйтесь.
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             }
@@ -364,11 +367,11 @@ export function FeedScreen() {
                     <ImageSlider images={images} alt="" height={140} className="feed-card-other-images" allowModal={false} />
                   )}
                   <div className="feed-card-desc" style={{ whiteSpace: "pre-wrap" }}>{preview}</div>
-                  <div className="feed-card-request-row">
-                    <Link className="btn feed-card-btn feed-card-btn-open" to={`/posts/${post.id}`}>
-                      Открыть
-                    </Link>
-                  </div>
+                <div className="feed-card-request-row">
+                  <Link className="btn feed-card-btn feed-card-btn-open" to={`/posts/${post.id}`}>
+                    Открыть
+                  </Link>
+                </div>
                 </div>
               );
             }
@@ -488,6 +491,11 @@ export function FeedScreen() {
                     </Link>
                     <span className="feed-card-request-time muted">{formatRequestCreatedAt(r.createdAt)}</span>
                   </div>
+                  {!activeProfile && (
+                    <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                      Чтобы откликнуться и связаться с родителем, авторизуйтесь и заполните профиль.
+                    </div>
+                  )}
                 </div>
               );
             }

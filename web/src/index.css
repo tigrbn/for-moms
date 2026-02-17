@@ -555,6 +555,7 @@ a {
 .topbar-feed-btn {
   padding: 6px 12px;
   font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
   text-decoration: none;
 }

@@ -48,7 +48,15 @@ export class FeedController {
     @Query("view") view?: string,
   ) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
-    const active = await getActiveProfileOrThrow(this.prisma, userId);
+    // Активный профиль может отсутствовать (гость без заполненного профиля):
+    // в этом случае показываем «гостевую» ленту с тем же составом карточек,
+    // но без привязки к роли.
+    let active: Awaited<ReturnType<typeof getActiveProfileOrThrow>> | null = null;
+    try {
+      active = await getActiveProfileOrThrow(this.prisma, userId);
+    } catch {
+      active = null;
+    }
     const viewMode = view?.toLowerCase() === "requests" ? "requests" : view?.toLowerCase() === "specialists" ? "specialists" : null;
 
     const now = new Date();
@@ -172,15 +180,17 @@ export class FeedController {
     /** Режим «Ищу заказ»: только заявки (+ объявления при «Все»). */
     if (viewMode === "requests") {
       const requestItems = await getRequestItems.call(this);
+      const roleForRequests: "parent" | "specialist" =
+        active && (active.type === "specialist" || active.type === "company") ? "specialist" : "parent";
       if (isCategoryAll) {
         const postItems = await getOtherPostItems.call(this);
         return {
-          role: active.type as "parent" | "specialist",
+          role: roleForRequests,
           items: [...bannerItems, ...requestItems, ...postItems],
         };
       }
       return {
-        role: active.type as "parent" | "specialist",
+        role: roleForRequests,
         items: [...bannerItems, ...requestItems],
       };
     }
@@ -258,20 +268,22 @@ export class FeedController {
     /** Режим «Ищу специалиста»: только анкеты специалистов (+ объявления при «Все»). */
     if (viewMode === "specialists") {
       const specialistItems = await getSpecialistProfileItems.call(this);
+      const roleForSpecialists: "parent" | "specialist" =
+        active && (active.type === "specialist" || active.type === "company") ? "specialist" : "parent";
       if (isCategoryAll) {
         const postItems = await getOtherPostItems.call(this);
         return {
-          role: active.type as "parent" | "specialist",
+          role: roleForSpecialists,
           items: [...bannerItems, ...specialistItems, ...postItems],
         };
       }
       return {
-        role: active.type as "parent" | "specialist",
+        role: roleForSpecialists,
         items: [...bannerItems, ...specialistItems],
       };
     }
 
-    if (active.type === "specialist" || active.type === "company") {
+    if (active && (active.type === "specialist" || active.type === "company")) {
       const requestItems = await getRequestItems.call(this);
       const specialistItems = await getSpecialistProfileItems.call(this);
       if (isCategoryAll) {
