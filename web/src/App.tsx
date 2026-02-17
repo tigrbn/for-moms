@@ -5,7 +5,6 @@ import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
 import mainLogoImg from "./assets/img/main_logo.png";
-import { TechnicalWorksScreen } from "./components/TechnicalWorksScreen";
 
 import type { MeResponse, FeedResponse } from "./types";
 import { AppContext } from "./context/AppContext";
@@ -381,7 +380,7 @@ export default function App() {
             {meError && <ErrorBox error={meError} />}
 
             {me && (() => {
-              // Заглушка «Технические работы»: раскомментировать для режима обслуживания
+              // Заглушка «Технические работы»: добавить import { TechnicalWorksScreen } from "./components/TechnicalWorksScreen" и раскомментировать:
               // if (!me.isAdmin) return <TechnicalWorksScreen />;
               const hasProfiles = me.profiles.length > 0;
 
