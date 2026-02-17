@@ -1110,7 +1110,7 @@ a {
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--surface-2);
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1390,7 +1390,7 @@ a {
   height: 72px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--tg-theme-secondary-bg-color, #eee);
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1746,7 +1746,11 @@ a {
   text-decoration: underline;
 }
 
-/* Модальное окно просмотра фото: без рывков при свайпе и скролле */
+/* Модальное окно просмотра фото: рендер в body через портал, без сжатия при клике */
+.image-slider-modal-overlay,
+.image-slider-modal-overlay:active {
+  transform: none !important;
+}
 .image-slider-modal-overlay {
   touch-action: none;
   overflow: hidden;

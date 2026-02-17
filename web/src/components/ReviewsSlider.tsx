@@ -38,6 +38,7 @@ export function ReviewsSlider({ reviews, authorFallbackLabel = "Пользова
         fromProfile.avatarUrl ?? null,
         fromProfile.photoUrl ?? null,
         fromProfile.gender ?? null,
+        fromProfile.type,
       )
     : "";
   const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
@@ -68,18 +69,17 @@ export function ReviewsSlider({ reviews, authorFallbackLabel = "Пользова
         <div className="card review-card reviews-slider-card" style={{ background: "var(--tg-bg)" }}>
           <div className="row" style={{ alignItems: "center", gap: 12 }}>
             {authorAvatar ? (
-              <img
-                src={authorAvatar}
-                alt=""
-                style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-              />
+              <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#fff", flexShrink: 0 }}>
+                <img src={authorAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
             ) : (
               <div
                 style={{
                   width: 40,
                   height: 40,
                   borderRadius: "50%",
-                  background: "var(--border-color)",
+                  background: "#fff",
+                  border: "1px solid var(--border-color)",
                   flexShrink: 0,
                   display: "flex",
                   alignItems: "center",

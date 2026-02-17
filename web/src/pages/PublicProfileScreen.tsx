@@ -76,7 +76,7 @@ export function PublicProfileScreen() {
   const parentRoleLabel = p.type === "parent" ? getParentRoleLabel(p.gender) : p.type === "company" ? "Компания" : null;
   const tgUsername = p.user?.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
-  const avatarSrc = getAvatarSrc(p.avatarUrl, p.user?.photoUrl, p.gender);
+  const avatarSrc = getAvatarSrc(p.avatarUrl, p.user?.photoUrl, p.gender, p.type);
   const genderLabel = p.gender === "male" ? "Мужской" : p.gender === "female" ? "Женский" : "—";
   const category = (p.type === "specialist" || p.type === "company") ? p.specialist?.category ?? null : null;
   const categoryIcon = getCategoryIcon(category);

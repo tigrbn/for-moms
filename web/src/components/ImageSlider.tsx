@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const SWIPE_THRESHOLD = 40;
 
@@ -35,9 +36,11 @@ type Props = {
   /** Высота блока (px) */
   height?: number;
   className?: string;
+  /** Открывать модалку по клику (в ленте — false, в карточке/профиле — true) */
+  allowModal?: boolean;
 };
 
-export function ImageSlider({ images, alt = "", height = 280, className = "" }: Props) {
+export function ImageSlider({ images, alt = "", height = 280, className = "", allowModal = true }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
@@ -51,6 +54,7 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
   const goNext = () => setCurrentIndex((i) => Math.min(images.length - 1, i + 1));
 
   const openModal = (index: number) => {
+    if (!allowModal) return;
     setModalIndex(Math.max(0, Math.min(index, images.length - 1)));
     setModalOpen(true);
   };
@@ -69,10 +73,10 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
     else if (delta < -SWIPE_THRESHOLD) goPrev();
   };
 
-  useLockBodyScroll(modalOpen);
+  useLockBodyScroll(modalOpen && allowModal);
 
   useEffect(() => {
-    if (!modalOpen) return;
+    if (!modalOpen || !allowModal) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeModal();
       if (e.key === "ArrowLeft") modalGoPrev();
@@ -85,7 +89,7 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("touchmove", onTouchMove);
     };
-  }, [modalOpen]);
+  }, [modalOpen, allowModal]);
 
   const sliderContent = (
     <>
@@ -156,12 +160,21 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
     return (
       <div className={className} style={{ marginTop: 12 }}>
         <div
-          role="button"
-          tabIndex={0}
-          onClick={() => openModal(0)}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(0); } }}
-          style={{ cursor: "pointer", display: "block" }}
-          aria-label="Открыть фото"
+          {...(allowModal
+            ? {
+                role: "button" as const,
+                tabIndex: 0,
+                onClick: () => openModal(0),
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openModal(0);
+                  }
+                },
+                style: { cursor: "pointer" as const, display: "block" as const },
+                "aria-label": "Открыть фото",
+              }
+            : { style: { display: "block" as const } })}
         >
           <img
             src={images[0]}
@@ -175,57 +188,62 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
             }}
           />
         </div>
-        {modalOpen && (
-          <div
-            className="image-slider-modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Просмотр фото"
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 10000,
-              background: "rgba(0,0,0,0.9)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-              overflow: "hidden",
-              touchAction: "none",
-              WebkitOverflowScrolling: "touch",
-            }}
-            onClick={closeModal}
-          >
-            <button
-              type="button"
-              onClick={closeModal}
-              aria-label="Закрыть"
+        {allowModal &&
+          modalOpen &&
+          createPortal(
+            <div
+              className="image-slider-modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Просмотр фото"
               style={{
-                position: "absolute",
-                top: 12,
-                right: 12,
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                border: "none",
-                background: "rgba(255,255,255,0.2)",
-                color: "#fff",
-                fontSize: 24,
-                cursor: "pointer",
-                zIndex: 1,
+                position: "fixed",
+                inset: 0,
+                zIndex: 10000,
+                background: "rgba(0,0,0,0.9)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+                overflow: "hidden",
+                touchAction: "none",
+                transform: "none",
               }}
+              onClick={closeModal}
             >
-              ×
-            </button>
-            <div style={{ minWidth: 0, minHeight: "50vh", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
-              <img
-                src={images[0]}
-                alt={alt}
-                style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain" }}
-              />
-            </div>
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={closeModal}
+                aria-label="Закрыть"
+                className="image-slider-modal-btn"
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  right: 12,
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "#fff",
+                  fontSize: 24,
+                  cursor: "pointer",
+                  zIndex: 1,
+                }}
+              >
+                ×
+              </button>
+              <div style={{ minWidth: 0, minHeight: "50vh", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
+                <img
+                  src={images[0]}
+                  alt={alt}
+                  style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain" }}
+                  draggable={false}
+                />
+              </div>
+            </div>,
+            document.body,
+          )}
       </div>
     );
   }
@@ -233,10 +251,20 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
   return (
     <div className={className} style={{ marginTop: 12 }}>
       <div
-        role="button"
-        tabIndex={0}
-        onClick={() => openModal(clampedIndex)}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(clampedIndex); } }}
+        {...(allowModal
+          ? {
+              role: "button" as const,
+              tabIndex: 0,
+              onClick: () => openModal(clampedIndex),
+              onKeyDown: (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openModal(clampedIndex);
+                }
+              },
+              "aria-label": "Открыть фото",
+            }
+          : {})}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         style={{
@@ -245,9 +273,8 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
           borderRadius: "var(--radius-sm)",
           overflow: "hidden",
           background: "var(--border-color)",
-          cursor: "pointer",
+          cursor: allowModal ? "pointer" : "default",
         }}
-        aria-label="Открыть фото"
       >
         {sliderContent}
       </div>
@@ -282,143 +309,149 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
         {clampedIndex + 1} из {images.length}
       </p>
 
-      {modalOpen && (
-        <div
-          className="image-slider-modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Просмотр фото"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 10000,
-            background: "rgba(0,0,0,0.9)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 48,
-            overflow: "hidden",
-            touchAction: "none",
-            contain: "layout",
-          }}
-          onClick={closeModal}
-        >
-          <button
-            type="button"
-            onClick={closeModal}
-            aria-label="Закрыть"
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              border: "none",
-              background: "rgba(255,255,255,0.2)",
-              color: "#fff",
-              fontSize: 24,
-              cursor: "pointer",
-              zIndex: 2,
-            }}
-          >
-            ×
-          </button>
-          {images.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); modalGoPrev(); }}
-                disabled={modalClamped <= 0}
-                aria-label="Предыдущее фото"
-                style={{
-                  position: "absolute",
-                  left: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 48,
-                  height: 48,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "rgba(255,255,255,0.2)",
-                  color: "#fff",
-                  fontSize: 24,
-                  cursor: modalClamped <= 0 ? "default" : "pointer",
-                  opacity: modalClamped <= 0 ? 0.4 : 1,
-                  zIndex: 2,
-                }}
-              >
-                ←
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); modalGoNext(); }}
-                disabled={modalClamped >= images.length - 1}
-                aria-label="Следующее фото"
-                style={{
-                  position: "absolute",
-                  right: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 48,
-                  height: 48,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "rgba(255,255,255,0.2)",
-                  color: "#fff",
-                  fontSize: 24,
-                  cursor: modalClamped >= images.length - 1 ? "default" : "pointer",
-                  opacity: modalClamped >= images.length - 1 ? 0.4 : 1,
-                  zIndex: 2,
-                }}
-              >
-                →
-              </button>
-            </>
-          )}
+      {allowModal &&
+        modalOpen &&
+        createPortal(
           <div
+            className="image-slider-modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Просмотр фото"
             style={{
-              position: "relative",
+              position: "fixed",
+              inset: 0,
+              zIndex: 10000,
+              background: "rgba(0,0,0,0.9)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              minWidth: 0,
-              minHeight: "50vh",
-              maxWidth: "100%",
-              maxHeight: "85vh",
+              padding: 48,
+              overflow: "hidden",
+              touchAction: "none",
+              transform: "none",
             }}
-            onTouchStart={(e) => { modalTouchStartX.current = e.touches[0].clientX; }}
-            onTouchEnd={(e) => {
-              if (images.length <= 1) return;
-              const endX = e.changedTouches[0].clientX;
-              const delta = modalTouchStartX.current - endX;
-              if (delta > SWIPE_THRESHOLD) modalGoNext();
-              else if (delta < -SWIPE_THRESHOLD) modalGoPrev();
-            }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={closeModal}
           >
-            <img
-              src={images[modalClamped]}
-              alt={`${alt} ${modalClamped + 1} из ${images.length}`}
-              style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", display: "block" }}
-              draggable={false}
-            />
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              bottom: 16,
-              left: "50%",
-              transform: "translateX(-50%)",
-              color: "rgba(255,255,255,0.9)",
-              fontSize: 14,
-              pointerEvents: "none",
-            }}
-          >
-            {modalClamped + 1} из {images.length}
-          </div>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={closeModal}
+              aria-label="Закрыть"
+              className="image-slider-modal-btn"
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(255,255,255,0.2)",
+                color: "#fff",
+                fontSize: 24,
+                cursor: "pointer",
+                zIndex: 2,
+              }}
+            >
+              ×
+            </button>
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); modalGoPrev(); }}
+                  disabled={modalClamped <= 0}
+                  aria-label="Предыдущее фото"
+                  className="image-slider-modal-btn"
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "rgba(255,255,255,0.2)",
+                    color: "#fff",
+                    fontSize: 24,
+                    cursor: modalClamped <= 0 ? "default" : "pointer",
+                    opacity: modalClamped <= 0 ? 0.4 : 1,
+                    zIndex: 2,
+                  }}
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); modalGoNext(); }}
+                  disabled={modalClamped >= images.length - 1}
+                  aria-label="Следующее фото"
+                  className="image-slider-modal-btn"
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "rgba(255,255,255,0.2)",
+                    color: "#fff",
+                    fontSize: 24,
+                    cursor: modalClamped >= images.length - 1 ? "default" : "pointer",
+                    opacity: modalClamped >= images.length - 1 ? 0.4 : 1,
+                    zIndex: 2,
+                  }}
+                >
+                  →
+                </button>
+              </>
+            )}
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 0,
+                minHeight: "50vh",
+                maxWidth: "100%",
+                maxHeight: "85vh",
+              }}
+              onTouchStart={(e) => { modalTouchStartX.current = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                if (images.length <= 1) return;
+                const endX = e.changedTouches[0].clientX;
+                const delta = modalTouchStartX.current - endX;
+                if (delta > SWIPE_THRESHOLD) modalGoNext();
+                else if (delta < -SWIPE_THRESHOLD) modalGoPrev();
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={images[modalClamped]}
+                alt={`${alt} ${modalClamped + 1} из ${images.length}`}
+                style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", display: "block" }}
+                draggable={false}
+              />
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                bottom: 16,
+                left: "50%",
+                transform: "translateX(-50%)",
+                color: "rgba(255,255,255,0.9)",
+                fontSize: 14,
+                pointerEvents: "none",
+              }}
+            >
+              {modalClamped + 1} из {images.length}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

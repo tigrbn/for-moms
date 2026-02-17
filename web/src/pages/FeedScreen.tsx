@@ -322,7 +322,7 @@ export function FeedScreen() {
                     </div>
                   </div>
                   {p.portfolioImageUrls && p.portfolioImageUrls.length > 0 && (
-                    <ImageSlider images={p.portfolioImageUrls} alt="" height={120} className="feed-card-specialist-images" />
+                    <ImageSlider images={p.portfolioImageUrls} alt="" height={120} className="feed-card-specialist-images" allowModal={false} />
                   )}
                   <Link className="btn feed-card-btn feed-card-btn-open" to={`/profiles/${p.id}`}>
                     Открыть анкету
@@ -353,7 +353,7 @@ export function FeedScreen() {
                     </div>
                   </div>
                   {images.length > 0 && (
-                    <ImageSlider images={images} alt="" height={140} className="feed-card-other-images" />
+                    <ImageSlider images={images} alt="" height={140} className="feed-card-other-images" allowModal={false} />
                   )}
                   <div className="feed-card-desc" style={{ whiteSpace: "pre-wrap" }}>{preview}</div>
                   <div className="feed-card-request-row">
@@ -423,7 +423,7 @@ export function FeedScreen() {
                         </div>
                       </div>
                       {r.images && r.images.length > 0 && (
-                        <ImageSlider images={r.images} alt="" height={140} className="feed-card-request-images" />
+                        <ImageSlider images={r.images} alt="" height={140} className="feed-card-request-images" allowModal={false} />
                       )}
                       {r.description && <div className="feed-card-desc">{r.description}</div>}
                     </div>
@@ -469,7 +469,7 @@ export function FeedScreen() {
                         </div>
                       </div>
                       {r.images && r.images.length > 0 && (
-                        <ImageSlider images={r.images} alt="" height={140} className="feed-card-request-images" />
+                        <ImageSlider images={r.images} alt="" height={140} className="feed-card-request-images" allowModal={false} />
                       )}
                       {r.description && <div className="feed-card-desc">{r.description}</div>}
                     </>

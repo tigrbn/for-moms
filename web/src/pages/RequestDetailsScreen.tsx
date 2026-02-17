@@ -390,11 +390,13 @@ export function RequestDetailsScreen() {
             {offersPaginated.map((o) => (
               <div key={o.id} className="card offer-card" style={{ background: "var(--tg-bg)" }}>
                 <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
-                  <img
-                    src={getAvatarSrc(o.specialist.avatarUrl, o.specialist.photoUrl, o.specialist.gender)}
-                    alt=""
-                    style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                  />
+                  <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", background: "#fff", flexShrink: 0 }}>
+                    <img
+                      src={getAvatarSrc(o.specialist.avatarUrl, o.specialist.photoUrl, o.specialist.gender)}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
                   <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                     <div className="row" style={{ alignItems: "center", gap: 8 }}>
                       <span style={{ fontWeight: 800 }}>

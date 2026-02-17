@@ -42,7 +42,7 @@ export function ProfileScreen() {
   const profileId = activeProfile?.id;
   const type = activeProfile?.type;
   const telegramPhotoUrl = me?.user?.photoUrl ?? null;
-  const profileAvatarSrc = getAvatarSrc(activeProfile?.avatarUrl ?? null, telegramPhotoUrl, activeProfile?.gender ?? null);
+  const profileAvatarSrc = getAvatarSrc(activeProfile?.avatarUrl ?? null, telegramPhotoUrl, activeProfile?.gender ?? null, activeProfile?.type);
 
   const openedWithEditRef = useRef(Boolean((location.state as { openEdit?: boolean })?.openEdit));
   const [isEditing, setIsEditing] = useState(openedWithEditRef.current);
@@ -77,6 +77,7 @@ export function ProfileScreen() {
   const [legalAddress, setLegalAddress] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const [deletingPortfolioIndex, setDeletingPortfolioIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!activeProfile) return;
@@ -246,6 +247,27 @@ export function ProfileScreen() {
     }
   };
 
+  const removePortfolioPhoto = async (index: number) => {
+    if (!profileId || !activeProfile?.specialist?.portfolioImageUrls) return;
+    const urls = activeProfile.specialist.portfolioImageUrls;
+    const newUrls = urls.filter((_, j) => j !== index);
+    setDeletingPortfolioIndex(index);
+    setErr(null);
+    try {
+      await authedPatch(`/profiles/${profileId}/specialist`, {
+        portfolioImageUrls: newUrls,
+      });
+      await refreshMe();
+      setErr(null);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Не удалось удалить фото";
+      setErr(msg);
+      setMeError(msg);
+    } finally {
+      setDeletingPortfolioIndex(null);
+    }
+  };
+
   const roles = me.profiles
     .filter((p) => p.type === "parent" || p.type === "specialist" || p.type === "company")
     .map((p) => ({
@@ -271,6 +293,7 @@ export function ProfileScreen() {
             fromProfile.avatarUrl ?? null,
             fromProfile.photoUrl ?? null,
             fromProfile.gender ?? null,
+            fromProfile.type,
           )
         : null;
     const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
@@ -278,19 +301,18 @@ export function ProfileScreen() {
       <div key={r.id} className="card review-card" style={{ background: "var(--tg-bg)" }}>
         <div className="row" style={{ alignItems: "center", gap: 12 }}>
           {authorAvatar ? (
-            <img
-              src={authorAvatar}
-              alt=""
-              style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: "var(--border-color)",
-                flexShrink: 0,
+            <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#fff", flexShrink: 0 }}>
+              <img src={authorAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+            ) : (
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  border: "1px solid var(--border-color)",
+                  flexShrink: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -436,31 +458,13 @@ export function ProfileScreen() {
     return (
       <div style={{ display: "grid", gap: 12 }}>
       <div className="card profile-view-card">
-        <div className="profile-view-header">
-          <div
-            className="profile-view-avatar"
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: "50%",
-              overflow: "hidden",
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "var(--tg-theme-secondary-bg-color, #eee)",
-            }}
-          >
-            <img src={profileAvatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-          <div className="profile-view-title-wrap" style={{ flex: 1, minWidth: 0 }}>
-            <h2 className="h2" style={{ margin: 0 }}>
-              {activeProfile.displayName || "—"}
-            </h2>
-            <p className="muted" style={{ margin: "4px 0 0" }}>
-              {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
-            </p>
-          </div>
+        <div className="profile-view-header" style={{ display: "block" }}>
+          <h2 className="h2" style={{ margin: 0 }}>
+            {activeProfile.displayName || "—"}
+          </h2>
+          <p className="muted" style={{ margin: "4px 0 0" }}>
+            {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
+          </p>
         </div>
         {profileId && (
           <div style={{ paddingBottom: 16, borderBottom: "1px solid var(--border-color)" }}>
@@ -476,7 +480,7 @@ export function ProfileScreen() {
                     height: 96,
                     borderRadius: "50%",
                     overflow: "hidden",
-                    background: "var(--border-color)",
+                    background: "#fff",
                     border: "2px solid var(--border-color)",
                     display: "flex",
                     alignItems: "center",
@@ -684,7 +688,28 @@ export function ProfileScreen() {
           <div style={{ marginTop: 16 }}>
             <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Фото в анкете</div>
             {activeProfile.specialist?.portfolioImageUrls && activeProfile.specialist.portfolioImageUrls.length > 0 ? (
-              <ImageSlider images={activeProfile.specialist.portfolioImageUrls} alt="Фото в анкете" height={200} />
+              <>
+                <ImageSlider images={activeProfile.specialist.portfolioImageUrls} alt="Фото в анкете" height={200} />
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                  {activeProfile.specialist.portfolioImageUrls.map((url, i) => (
+                    <div key={url} style={{ position: "relative" }}>
+                      <img src={url} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, display: "block" }} />
+                      <button
+                        type="button"
+                        onClick={() => void removePortfolioPhoto(i)}
+                        disabled={deletingPortfolioIndex !== null}
+                        aria-label="Удалить фото"
+                        style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 14, cursor: "pointer", lineHeight: 1 }}
+                      >
+                        {deletingPortfolioIndex === i ? "…" : "×"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {err && (
+                  <p role="alert" style={{ margin: "8px 0 0", fontSize: 13, color: "var(--error-color, #c00)" }}>{err}</p>
+                )}
+              </>
             ) : (
               <div style={{ padding: "16px 0", border: "1px dashed var(--border-color)", borderRadius: "var(--radius-sm)", textAlign: "center" }}>
                 <p className="muted" style={{ margin: "0 0 12px", fontSize: 14 }}>Фото не добавлены</p>
