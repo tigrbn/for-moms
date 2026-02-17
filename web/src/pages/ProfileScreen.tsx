@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { uploadFile } from "../shared/api";
+import { compressImage } from "../lib/imageCompress";
 import { getAvatarSrc } from "../lib/avatar";
 import { formatPhoneMask, formatPhoneToDigits, formatDate } from "../lib/format";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
@@ -17,6 +19,8 @@ export function ProfileScreen() {
   const {
     activeProfile,
     me,
+    isAdmin,
+    token,
     authedPatch,
     authedDelete,
     authedGet,
@@ -61,6 +65,9 @@ export function ProfileScreen() {
   const [pricePerHour, setPricePerHour] = useState("");
   const [about, setAbout] = useState("");
   const [specialistCategory, setSpecialistCategory] = useState("");
+  const [portfolioImageUrls, setPortfolioImageUrls] = useState<string[]>([]);
+  const [portfolioUploading, setPortfolioUploading] = useState(false);
+  const specialistFileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -84,6 +91,7 @@ export function ProfileScreen() {
       if (spec) {
         setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
         setAbout(spec.about ?? "");
+        setPortfolioImageUrls(Array.isArray(spec.portfolioImageUrls) ? spec.portfolioImageUrls : []);
         const first =
           Array.isArray(spec.skills) && spec.skills.length > 0
             ? spec.skills[0]
@@ -94,6 +102,7 @@ export function ProfileScreen() {
       } else {
         setPricePerHour("");
         setAbout("");
+        setPortfolioImageUrls([]);
         setSpecialistCategory("");
       }
     }
@@ -186,6 +195,7 @@ export function ProfileScreen() {
           skills: specialistCategory ? [specialistCategory] : [],
           pricePerHour: priceNum != null && Number.isFinite(priceNum) ? priceNum : null,
           about: about.trim() || null,
+          portfolioImageUrls: portfolioImageUrls.length > 0 ? portfolioImageUrls : [],
         });
       }
       await refreshMe();
@@ -534,6 +544,14 @@ export function ProfileScreen() {
           <li><Link to="/profile/contact?category=order">Заказать свой проект</Link></li>
         </ul>
       </div>
+      {isAdmin && (
+        <div className="card profile-docs-links">
+          <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Метрики</div>
+          <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
+            <li><Link to="/profile/analytics">Дашборд метрик</Link></li>
+          </ul>
+        </div>
+      )}
       <div className="card profile-docs-links">
         <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Принятые документы</div>
         <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -748,6 +766,77 @@ export function ProfileScreen() {
                 rows={4}
               />
             </div>
+            <div className="field">
+              <label className="label">Фото в анкете <span className="muted">(до 10)</span></label>
+              <input
+                ref={specialistFileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={async (e) => {
+                  const files = e.target.files;
+                  if (!files?.length || !token) {
+                    e.target.value = "";
+                    return;
+                  }
+                  const remaining = 10 - portfolioImageUrls.length;
+                  if (remaining <= 0) {
+                    e.target.value = "";
+                    return;
+                  }
+                  setPortfolioUploading(true);
+                  setErr(null);
+                  try {
+                    for (let i = 0; i < Math.min(files.length, remaining); i++) {
+                      const file = files[i]!;
+                      if (file.type && !file.type.startsWith("image/")) continue;
+                      let toUpload: File;
+                      try {
+                        toUpload = await compressImage(file);
+                      } catch {
+                        if (!/^image\/(jpeg|png|gif|webp)$/i.test(file.type)) continue;
+                        toUpload = file;
+                      }
+                      const { url } = await uploadFile("/upload", toUpload, token);
+                      setPortfolioImageUrls((prev) => [...prev, url].slice(0, 10));
+                    }
+                  } catch (err: unknown) {
+                    setErr(err instanceof Error ? err.message : "Не удалось загрузить фото");
+                  } finally {
+                    setPortfolioUploading(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              {portfolioImageUrls.length < 10 && (
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={portfolioUploading}
+                  onClick={() => specialistFileInputRef.current?.click()}
+                >
+                  {portfolioUploading ? "Загрузка…" : "+ Добавить фото"}
+                </button>
+              )}
+              {portfolioImageUrls.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                  {portfolioImageUrls.map((url, i) => (
+                    <div key={url} style={{ position: "relative" }}>
+                      <img src={url} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, display: "block" }} />
+                      <button
+                        type="button"
+                        onClick={() => setPortfolioImageUrls((prev) => prev.filter((_, j) => j !== i))}
+                        aria-label="Удалить"
+                        style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 14, cursor: "pointer" }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -794,6 +883,14 @@ export function ProfileScreen() {
         <li><Link to="/profile/contact?category=order">Заказать свой проект</Link></li>
       </ul>
     </div>
+    {isAdmin && (
+      <div className="card profile-docs-links">
+        <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Метрики</div>
+        <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
+          <li><Link to="/profile/analytics">Дашборд метрик</Link></li>
+        </ul>
+      </div>
+    )}
     <div className="card profile-docs-links">
       <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Принятые документы</div>
       <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>

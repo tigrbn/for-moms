@@ -14,6 +14,7 @@ import { UploadModule } from "./upload/upload.module";
 import { TelegramModule } from "./telegram/telegram.module";
 import { ContactModule } from "./contact/contact.module";
 import { PostsModule } from "./posts/posts.module";
+import { AnalyticsModule } from "./analytics/analytics.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PostsModule } from "./posts/posts.module";
     TelegramModule,
     ContactModule,
     PostsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

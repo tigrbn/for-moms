@@ -105,7 +105,7 @@ export class FeedController {
     }
 
     const categoryNorm = category?.trim() ?? "";
-    if (categoryNorm === "Другое") {
+    if (categoryNorm === "Объявления") {
       const postItems = await getOtherPostItems.call(this);
       return {
         role: active.type as "parent" | "specialist",
@@ -114,6 +114,72 @@ export class FeedController {
     }
 
     const isCategoryAll = categoryNorm === "";
+
+    /** Карточки специалистов в ленте (и родители, и специалисты видят других специалистов для связи). */
+    async function getSpecialistProfileItems(): Promise<
+      Array<{ kind: "specialist_profile"; isPromoted: boolean; profile: Record<string, unknown> }
+    > {
+      const profileWhere: any = { type: "specialist", isActive: true };
+      if (district?.trim()) {
+        profileWhere.district = { equals: district.trim(), mode: "insensitive" };
+      }
+      let specialists = await this.prisma.profile.findMany({
+        where: profileWhere,
+        include: {
+          user: { select: { username: true, photoUrl: true } },
+          specialistProfile: true,
+          specialistPortfolio: { orderBy: { sortOrder: "asc" }, select: { imageUrl: true } },
+        },
+        orderBy: [{ promotedUntil: "desc" }, { ratingAvg: "desc" }],
+        take: 100,
+      });
+      if (category?.trim()) {
+        const catTrim = category.trim();
+        const allowedSkills = PARENT_CATEGORY_SKILLS[catTrim];
+        specialists = specialists.filter((p) => {
+          const skills = p.specialistProfile?.skills;
+          if (!skills) return false;
+          const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+          if (allowedSkills) {
+            return arr.some((s: unknown) => allowedSkills.includes(String(s).trim()));
+          }
+          const cat = catTrim.toLowerCase();
+          return arr.some((s: unknown) => String(s).toLowerCase().includes(cat));
+        });
+      }
+      specialists = specialists.filter((p) => {
+        const name = p.displayName?.trim();
+        if (!name) return false;
+        const skills = p.specialistProfile?.skills;
+        if (!skills) return false;
+        const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+        return arr.some((s: unknown) => String(s).trim() !== "");
+      });
+      return specialists.slice(0, 50).map((p) => {
+        const skills = p.specialistProfile?.skills;
+        const skillArr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
+        const cat = skillArr.length > 0 ? String(skillArr[0]) : null;
+        const portfolioImageUrls = p.specialistPortfolio?.map((i) => i.imageUrl) ?? [];
+        return {
+          kind: "specialist_profile" as const,
+          isPromoted: Boolean(p.promotedUntil && p.promotedUntil > now),
+          profile: {
+            id: p.id.toString(),
+            displayName: p.displayName,
+            avatarUrl: p.avatarUrl,
+            gender: p.gender ?? null,
+            photoUrl: p.user?.photoUrl ?? null,
+            category: cat,
+            city: p.city,
+            district: p.district,
+            ratingAvg: p.ratingAvg.toString(),
+            ratingCount: p.ratingCount,
+            pricePerHour: p.specialistProfile?.pricePerHour ?? null,
+            portfolioImageUrls,
+          },
+        };
+      });
+    }
 
     if (active.type === "specialist") {
       const where: any = { status: "active" };
@@ -135,6 +201,11 @@ export class FeedController {
           },
         },
       });
+      const toImages = (raw: unknown): string[] => {
+        if (Array.isArray(raw)) return raw.filter((u): u is string => typeof u === "string");
+        if (typeof raw === "string") return [raw];
+        return [];
+      };
       const requestItems = requests.map((r) => ({
         kind: "request" as const,
         request: {
@@ -142,6 +213,7 @@ export class FeedController {
           category: r.category,
           childAge: r.childAge,
           description: r.description,
+          images: toImages((r as { images?: unknown }).images),
           startAt: r.startAt?.toISOString() ?? null,
           durationMin: r.durationMin,
           budget: r.budget,
@@ -158,79 +230,22 @@ export class FeedController {
           },
         },
       }));
+      const specialistItems = await getSpecialistProfileItems.call(this);
       if (isCategoryAll) {
         const postItems = await getOtherPostItems.call(this);
         return {
           role: "specialist" as const,
-          items: [...bannerItems, ...requestItems, ...postItems],
+          items: [...bannerItems, ...requestItems, ...specialistItems, ...postItems],
         };
       }
       return {
         role: "specialist" as const,
-        items: [...bannerItems, ...requestItems],
+        items: [...bannerItems, ...requestItems, ...specialistItems],
       };
     }
 
-    // parent: show specialist profiles (filter by category = skills match)
-    const profileWhere: any = { type: "specialist", isActive: true };
-    if (district?.trim()) {
-      profileWhere.district = { equals: district.trim(), mode: "insensitive" };
-    }
-    let specialists = await this.prisma.profile.findMany({
-      where: profileWhere,
-      include: {
-        user: { select: { username: true, photoUrl: true } },
-        specialistProfile: true,
-      },
-      orderBy: [{ promotedUntil: "desc" }, { ratingAvg: "desc" }],
-      take: 100,
-    });
-    if (category?.trim()) {
-      const catTrim = category.trim();
-      const allowedSkills = PARENT_CATEGORY_SKILLS[catTrim];
-      specialists = specialists.filter((p) => {
-        const skills = p.specialistProfile?.skills;
-        if (!skills) return false;
-        const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
-        if (allowedSkills) {
-          return arr.some((s: unknown) => allowedSkills.includes(String(s).trim()));
-        }
-        const cat = catTrim.toLowerCase();
-        return arr.some((s: unknown) => String(s).toLowerCase().includes(cat));
-      });
-    }
-    // Не показывать анкеты с незаполненными данными: имя и хотя бы одна категория (навык)
-    specialists = specialists.filter((p) => {
-      const name = p.displayName?.trim();
-      if (!name) return false;
-      const skills = p.specialistProfile?.skills;
-      if (!skills) return false;
-      const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
-      const hasSkill = arr.some((s: unknown) => String(s).trim() !== "");
-      return hasSkill;
-    });
-    const specialistItems = specialists.slice(0, 50).map((p) => {
-      const skills = p.specialistProfile?.skills;
-      const skillArr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
-      const category = skillArr.length > 0 ? String(skillArr[0]) : null;
-      return {
-        kind: "specialist_profile" as const,
-        isPromoted: Boolean(p.promotedUntil && p.promotedUntil > now),
-        profile: {
-          id: p.id.toString(),
-          displayName: p.displayName,
-          avatarUrl: p.avatarUrl,
-          gender: p.gender ?? null,
-          photoUrl: p.user?.photoUrl ?? null,
-          category,
-          city: p.city,
-          district: p.district,
-          ratingAvg: p.ratingAvg.toString(),
-          ratingCount: p.ratingCount,
-          pricePerHour: p.specialistProfile?.pricePerHour ?? null,
-        },
-      };
-    });
+    // parent: show specialist profiles (тот же набор карточек, что и для специалистов)
+    const specialistItems = await getSpecialistProfileItems.call(this);
     if (isCategoryAll) {
       const postItems = await getOtherPostItems.call(this);
       return {

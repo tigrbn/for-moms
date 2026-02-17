@@ -9,6 +9,7 @@ import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
+import { ImageSlider } from "../components/ImageSlider";
 import type { RequestDetails as RequestDetailsType, ReviewListItem } from "../types";
 
 export function RequestDetailsScreen() {
@@ -52,12 +53,15 @@ export function RequestDetailsScreen() {
         const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
         setData(r);
         void refreshParentNewOffersCount();
+        if (activeProfileType === "specialist") {
+          void authedPost(`/requests/${requestId}/view`, {}).catch(() => {});
+        }
       } catch (e: unknown) {
         setErr(e instanceof Error ? e.message : "Failed to load request");
       }
     };
     void run();
-  }, [requestId, activeProfileId, authedGet, refreshParentNewOffersCount]);
+  }, [requestId, activeProfileId, authedGet, refreshParentNewOffersCount, activeProfileType, authedPost]);
 
   useEffect(() => {
     if (!data?.parent?.profileId || activeProfileId === data.parent.profileId) {
@@ -256,6 +260,11 @@ export function RequestDetailsScreen() {
                 {formatPhoneForDisplay(data.parent.contactPhone)}
               </a>
             </div>
+          </div>
+        )}
+        {data.images && data.images.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <ImageSlider images={data.images} alt="Фото заявки" height={200} />
           </div>
         )}
         {data.description && (

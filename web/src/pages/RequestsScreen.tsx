@@ -188,10 +188,10 @@ export function RequestsScreen() {
       </div>
       <div className="card">
         <div className="h2" style={{ marginBottom: 8 }}>Мои объявления</div>
-        <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>Объявления в разделе «Другое» в ленте.</p>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>Объявления в разделе «Объявления» в ленте.</p>
         {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
         {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
-        {myPosts?.length === 0 && !postsErr && <div className="muted">Объявлений пока нет. Добавить можно в ленте, выбрав категорию «Другое».</div>}
+        {myPosts?.length === 0 && !postsErr && <div className="muted">Объявлений пока нет. Добавить можно в ленте, выбрав категорию «Объявления».</div>}
         {myPosts && myPosts.length > 0 && (
           <div style={{ display: "grid", gap: 10 }}>
             {myPosts.map((p) => {
@@ -315,10 +315,10 @@ export function RequestsScreen() {
     </div>
     <div className="card">
       <div className="h2" style={{ marginBottom: 8 }}>Мои объявления</div>
-      <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>Объявления в разделе «Другое» в ленте.</p>
+      <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>Объявления в разделе «Объявления» в ленте.</p>
       {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
       {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
-      {myPosts?.length === 0 && !postsErr && <div className="muted">Объявлений пока нет. Добавить можно в ленте, выбрав категорию «Другое».</div>}
+      {myPosts?.length === 0 && !postsErr && <div className="muted">Объявлений пока нет. Добавить можно в ленте, выбрав категорию «Объявления».</div>}
       {myPosts && myPosts.length > 0 && (
         <div style={{ display: "grid", gap: 10 }}>
           {myPosts.map((p) => {

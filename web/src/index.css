@@ -135,6 +135,11 @@ a {
   transform: scale(0.99);
 }
 
+.analytics-card--north {
+  border-color: var(--tg-theme-button-color, #3390ec);
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+}
+
 .card--status-top {
   position: relative;
 }
@@ -507,6 +512,12 @@ a {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+}
+.topbar-feed-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  white-space: nowrap;
+  text-decoration: none;
 }
 .topbar-role-link {
   display: inline-flex;

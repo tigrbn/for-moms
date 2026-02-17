@@ -17,7 +17,7 @@ export type PublicProfileDto = {
   /** Только для специалиста и только если разрешил показ в анкете */
   contactPhone?: string | null;
   user: { username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null };
-  specialist: { category: string | null; pricePerHour: number | null; about: string | null } | null;
+  specialist: { category: string | null; pricePerHour: number | null; about: string | null; portfolioImageUrls?: string[] } | null;
   parent: { childrenAges: number[] | null; specialWishes: string | null } | null;
 };
 
@@ -247,6 +247,7 @@ export class ProfilesService {
       workDistricts?: string[] | null;
       about?: string | null;
       notifyNewRequestsInCategory?: boolean;
+      portfolioImageUrls?: string[];
     },
   ) {
     const profile = await this.getOwnedProfileOrThrow(userId, profileId);
@@ -269,7 +270,7 @@ export class ProfilesService {
     const about = data.about !== undefined ? data.about : undefined;
     const notifyNewRequestsInCategory = data.notifyNewRequestsInCategory;
 
-    return this.prisma.specialistProfile.upsert({
+    const specialist = await this.prisma.specialistProfile.upsert({
       where: { profileId },
       create: {
         profileId,
@@ -291,6 +292,29 @@ export class ProfilesService {
         ...(notifyNewRequestsInCategory !== undefined && { notifyNewRequestsInCategory }),
       },
     });
+
+    if (data.portfolioImageUrls !== undefined) {
+      const urls = Array.isArray(data.portfolioImageUrls)
+        ? data.portfolioImageUrls.filter((u): u is string => typeof u === "string" && u.trim().length > 0).slice(0, 10)
+        : [];
+      await this.prisma.specialistPortfolio.deleteMany({ where: { profileId } });
+      if (urls.length > 0) {
+        await this.prisma.specialistPortfolio.createMany({
+          data: urls.map((imageUrl, sortOrder) => ({ profileId, imageUrl, sortOrder })),
+        });
+      }
+    }
+
+    return specialist;
+  }
+
+  async getPortfolioForProfile(profileId: bigint): Promise<string[]> {
+    const rows = await this.prisma.specialistPortfolio.findMany({
+      where: { profileId },
+      orderBy: { sortOrder: "asc" },
+      select: { imageUrl: true },
+    });
+    return rows.map((r) => r.imageUrl);
   }
 
   async deleteProfile(userId: bigint, profileId: bigint) {
@@ -405,11 +429,12 @@ export class ProfilesService {
       },
       specialist:
         profileType === "specialist"
-          ? (() => {
+          ? await (async () => {
               const skills = row.skills;
               const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
               const category = arr.length > 0 ? String(arr[0]) : null;
-              return { category, pricePerHour: row.price_per_hour, about: row.about };
+              const portfolioImageUrls = await this.getPortfolioForProfile(profileId);
+              return { category, pricePerHour: row.price_per_hour, about: row.about, portfolioImageUrls };
             })()
           : null,
       parent:
@@ -426,6 +451,7 @@ export class ProfilesService {
       include: {
         user: { select: { username: true, firstName: true, lastName: true, photoUrl: true } },
         specialistProfile: true,
+        specialistPortfolio: { orderBy: { sortOrder: "asc" }, select: { imageUrl: true } },
         parentProfile: true,
       },
     });
@@ -468,10 +494,12 @@ export class ProfilesService {
               const skills = p.specialistProfile.skills;
               const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
               const category = arr.length > 0 ? String(arr[0]) : null;
+              const portfolioImageUrls = p.specialistPortfolio?.map((i) => i.imageUrl) ?? [];
               return {
                 category,
                 pricePerHour: p.specialistProfile.pricePerHour ?? null,
                 about: p.specialistProfile.about ?? null,
+                portfolioImageUrls,
               };
             })()
           : null,

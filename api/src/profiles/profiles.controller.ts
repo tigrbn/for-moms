@@ -133,12 +133,14 @@ export class ProfilesController {
       workDistricts?: string[] | null;
       about?: string | null;
       notifyNewRequestsInCategory?: boolean;
+      portfolioImageUrls?: string[];
     },
   ) {
     this.logger.log(`PATCH /profiles/${id}/specialist body=${JSON.stringify(body)}`);
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const specialist = await this.profiles.updateSpecialist(userId, BigInt(id), body ?? {});
     this.logger.log(`PATCH /profiles/${id}/specialist result pricePerHour=${specialist.pricePerHour} about=${specialist.about != null ? "set" : "null"} skills=${JSON.stringify(specialist.skills)}`);
+    const portfolio = await this.profiles.getPortfolioForProfile(specialist.profileId);
     return {
       profileId: specialist.profileId.toString(),
       skills: specialist.skills,
@@ -148,6 +150,7 @@ export class ProfilesController {
       workDistricts: specialist.workDistricts,
       about: specialist.about,
       notifyNewRequestsInCategory: specialist.notifyNewRequestsInCategory,
+      portfolioImageUrls: portfolio,
     };
   }
 

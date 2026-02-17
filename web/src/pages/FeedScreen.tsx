@@ -12,6 +12,8 @@ import { CategoryDisplay } from "../components/CategoryDisplay";
 import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
 
+const VISIT_SENT_KEY = "for_moms_visit_sent";
+
 export function FeedScreen() {
   const feedHeaderCardRef = useRef<HTMLDivElement>(null);
   const {
@@ -27,9 +29,19 @@ export function FeedScreen() {
     activeProfileType,
     missingRole,
     addMissingRole,
+    authedPost,
   } = useApp();
 
   const currentSection = CATEGORY_TREE.find((s) => s.id === feedCategory);
+
+  /** Один раз за сессию записываем визит родителя (для Conversion Parent → Order). */
+  useEffect(() => {
+    if (activeProfileType !== "parent") return;
+    if (sessionStorage.getItem(VISIT_SENT_KEY)) return;
+    authedPost("/me/visit", {})
+      .then(() => sessionStorage.setItem(VISIT_SENT_KEY, "1"))
+      .catch(() => {});
+  }, [activeProfileType, authedPost]);
 
   useEffect(() => {
     const parent = feedHeaderCardRef.current;
@@ -178,7 +190,7 @@ export function FeedScreen() {
 
       {feed && (
         <div className="feed-content">
-          {feedCategory === "Другое" && (
+          {feedCategory === "Объявления" && (
             <div style={{ marginBottom: 8 }}>
               <Link className="btn btn-primary" to="/posts/new">
                 + Добавить объявление
@@ -188,14 +200,14 @@ export function FeedScreen() {
           {contentCount === 0 && (
             <StubCard
               title={
-                feedCategory === "Другое"
+                feedCategory === "Объявления"
                   ? "💬 Объявлений пока нет"
                   : role === "specialist"
                     ? "💛 Заявок пока нет"
                     : "💛 Специалистов пока нет"
               }
               desc={
-                feedCategory === "Другое"
+                feedCategory === "Объявления"
                   ? "Напишите первое объявление — его увидят и мамы, и специалисты."
                   : "Но они появляются регулярно — попробуйте выбрать другую категорию."
               }
@@ -211,7 +223,7 @@ export function FeedScreen() {
                 >
                   Показать все
                 </button>
-                {feedCategory === "Другое" ? (
+                {feedCategory === "Объявления" ? (
                   <Link className="btn btn-primary" to="/posts/new">
                     + Добавить объявление
                   </Link>
@@ -270,6 +282,9 @@ export function FeedScreen() {
                       </div>
                     </div>
                   </div>
+                  {p.portfolioImageUrls && p.portfolioImageUrls.length > 0 && (
+                    <ImageSlider images={p.portfolioImageUrls} alt="" height={120} className="feed-card-specialist-images" />
+                  )}
                   <Link className="btn feed-card-btn feed-card-btn-open" to={`/profiles/${p.id}`}>
                     Открыть анкету
                   </Link>
@@ -368,6 +383,9 @@ export function FeedScreen() {
                           </div>
                         </div>
                       </div>
+                      {r.images && r.images.length > 0 && (
+                        <ImageSlider images={r.images} alt="" height={140} className="feed-card-request-images" />
+                      )}
                       {r.description && <div className="feed-card-desc">{r.description}</div>}
                     </div>
                   ) : (
@@ -411,6 +429,9 @@ export function FeedScreen() {
                           </div>
                         </div>
                       </div>
+                      {r.images && r.images.length > 0 && (
+                        <ImageSlider images={r.images} alt="" height={140} className="feed-card-request-images" />
+                      )}
                       {r.description && <div className="feed-card-desc">{r.description}</div>}
                     </>
                   )}

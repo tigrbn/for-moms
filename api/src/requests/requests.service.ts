@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 import { isAdminUser } from "../common/admin";
@@ -14,7 +15,7 @@ export class RequestsService {
     private readonly telegram: TelegramService,
   ) {}
 
-  async create(userId: bigint, dto: { category: string; childAge?: number | null; description?: string | null; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null }) {
+  async create(userId: bigint, dto: { category: string; childAge?: number | null; description?: string | null; imageUrls?: string[]; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null }) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
     if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
     if (!dto?.category?.trim()) throw new BadRequestException("Укажите категорию");
@@ -23,12 +24,17 @@ export class RequestsService {
     if (desc.length < 10) throw new BadRequestException("Описание должно быть не короче 10 символов");
     if (desc.length > 2000) throw new BadRequestException("Описание не должно превышать 2000 символов");
 
+    const imageUrls = Array.isArray(dto?.imageUrls)
+      ? dto.imageUrls.filter((u): u is string => typeof u === "string" && u.trim().length > 0).slice(0, 10)
+      : [];
+
     const request = await this.prisma.request.create({
       data: {
         parentProfileId: active.id,
         category: dto.category,
         childAge: dto.childAge ?? null,
         description: desc,
+        images: imageUrls.length > 0 ? (imageUrls as unknown as Prisma.InputJsonValue) : undefined,
         startAt: dto.startAt ? new Date(dto.startAt) : null,
         durationMin: dto.durationMin ?? null,
         budget: dto.budget ?? null,
@@ -115,6 +121,23 @@ export class RequestsService {
     return items.reduce((sum, r) => sum + r.newOffersCount, 0);
   }
 
+  /** Записать просмотр заявки специалистом (для метрики Conversion Specialist → Response). */
+  async recordView(userId: bigint, requestId: bigint): Promise<void> {
+    const active = await getActiveProfileOrThrow(this.prisma, userId);
+    if (active.type !== "specialist") return;
+    const request = await this.prisma.request.findUnique({
+      where: { id: requestId },
+      select: { id: true },
+    });
+    if (!request) return;
+    await this.prisma.requestView.create({
+      data: {
+        requestId: request.id,
+        specialistProfileId: active.id,
+      },
+    });
+  }
+
   async get(userId: bigint, requestId: bigint) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
     const request = await this.prisma.request.findUnique({
@@ -195,7 +218,7 @@ export class RequestsService {
     };
   }
 
-  async update(userId: bigint, requestId: bigint, dto: { category?: string; childAge?: number | null; description?: string | null; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null; status?: "active" | "in_progress" | "done" | "cancelled" }) {
+  async update(userId: bigint, requestId: bigint, dto: { category?: string; childAge?: number | null; description?: string | null; imageUrls?: string[]; startAt?: string | null; durationMin?: number | null; budget?: number | null; district?: string | null; status?: "active" | "in_progress" | "done" | "cancelled" }) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
     if (active.type !== "parent") throw new BadRequestException("Active profile is not parent");
 
@@ -209,6 +232,10 @@ export class RequestsService {
       if (desc.length > 2000) throw new BadRequestException("Описание не должно превышать 2000 символов");
     }
 
+    const imageUrls = dto.imageUrls !== undefined
+      ? (Array.isArray(dto.imageUrls) ? dto.imageUrls.filter((u): u is string => typeof u === "string" && u.trim().length > 0).slice(0, 10) : []) as unknown as Prisma.InputJsonValue
+      : undefined;
+
     const nextStatus = dto.status;
     const completedAt = nextStatus === "done" ? new Date() : undefined;
 
@@ -218,6 +245,7 @@ export class RequestsService {
         category: dto.category ?? undefined,
         childAge: dto.childAge ?? undefined,
         description: dto.description !== undefined ? (dto.description?.trim() || null) : undefined,
+        images: imageUrls,
         startAt: dto.startAt ? new Date(dto.startAt) : undefined,
         durationMin: dto.durationMin ?? undefined,
         budget: dto.budget ?? undefined,

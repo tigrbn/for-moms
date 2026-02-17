@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { getJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
 import mainLogoImg from "./assets/img/main_logo.png";
+import { TechnicalWorksScreen } from "./components/TechnicalWorksScreen";
 
 import type { MeResponse, FeedResponse } from "./types";
 import { AppContext } from "./context/AppContext";
@@ -25,6 +26,7 @@ import { DocPage } from "./pages/DocPage";
 import { NewProfileScreen } from "./pages/NewProfileScreen";
 import { NewPostScreen } from "./pages/NewPostScreen";
 import { PostDetailScreen } from "./pages/PostDetailScreen";
+import { AnalyticsScreen } from "./pages/AnalyticsScreen";
 import { useParams } from "react-router-dom";
 
 function NewProfileByRoleRoute() {
@@ -316,7 +318,16 @@ export default function App() {
   return (
     <div className={`app safe${inputFocused ? " input-focused" : ""}`}>
       <div className="container">
-        <TopBar logo={mainLogoImg} />
+        <TopBar
+          logo={mainLogoImg}
+          rightNode={
+            me?.isAdmin && activeProfile?.type === "specialist" ? (
+              <Link to="/" className="btn secondary topbar-feed-btn">
+                Общая лента
+              </Link>
+            ) : undefined
+          }
+        />
 
         {error && <ErrorBox error={error} />}
         {reauthing && (
@@ -340,6 +351,9 @@ export default function App() {
             {meError && <ErrorBox error={meError} />}
 
             {me && (() => {
+              if (!me.isAdmin) {
+                return <TechnicalWorksScreen />;
+              }
               const hasProfiles = me.profiles.length > 0;
 
               if (hasProfiles) {
@@ -367,6 +381,7 @@ export default function App() {
                         element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
                       />
                       <Route path="/profile" element={<ProfileScreen />} />
+                      <Route path="/profile/analytics" element={<AnalyticsScreen />} />
                       <Route path="/profile/contact" element={<ContactScreen />} />
                       <Route path="/profile/new/:roleType" element={<NewProfileByRoleRoute />} />
                       <Route path="/profiles/:id" element={<PublicProfileScreen />} />
@@ -421,7 +436,7 @@ export default function App() {
               );
             })()}
 
-            {me && me.profiles.length > 0 && activeProfile && <BottomNav />}
+            {me && me.profiles.length > 0 && activeProfile && me.isAdmin && <BottomNav />}
           </AppContext.Provider>
         )}
       </div>

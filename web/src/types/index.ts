@@ -19,7 +19,7 @@ export type MeResponse = {
     district?: string | null;
     contactPhone?: string | null;
     showContactPhonePublicly?: boolean;
-    specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null; notifyNewRequestsInCategory?: boolean };
+    specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null; notifyNewRequestsInCategory?: boolean; portfolioImageUrls?: string[] };
     parent?: { childrenAges: number[] | null; specialWishes?: string | null };
   }>;
   activeProfileId: string | null;
@@ -64,6 +64,7 @@ export type FeedResponse =
               ratingAvg: string;
               ratingCount: number;
               pricePerHour?: number | null;
+              portfolioImageUrls?: string[];
             };
           }
       >;
@@ -94,6 +95,7 @@ export type FeedResponse =
               category: string;
               childAge?: number | null;
               description?: string | null;
+              images?: string[];
               startAt?: string | null;
               durationMin?: number | null;
               budget?: number | null;
@@ -118,6 +120,7 @@ export type RequestMineItem = {
   status: "active" | "in_progress" | "done" | "cancelled";
   category: string;
   description?: string | null;
+  images?: string[];
   startAt?: string | null;
   durationMin?: number | null;
   budget?: number | null;
@@ -152,6 +155,7 @@ export type RequestDetails = {
   category: string;
   childAge?: number | null;
   description?: string | null;
+  images?: string[];
   startAt?: string | null;
   durationMin?: number | null;
   budget?: number | null;
@@ -236,6 +240,35 @@ export type PublicProfile = {
   /** Телефон (только если специалист разрешил показ в анкете) */
   contactPhone?: string | null;
   user: { username?: string | null; firstName?: string | null; lastName?: string | null; photoUrl?: string | null };
-  specialist: { category?: string | null; pricePerHour?: number | null; about?: string | null } | null;
+  specialist: { category?: string | null; pricePerHour?: number | null; about?: string | null; portfolioImageUrls?: string[] } | null;
   parent: { childrenAges?: number[] | null; specialWishes?: string | null } | null;
+};
+
+/** Ответ GET /analytics/dashboard (только для админа) */
+export type AnalyticsDashboardResponse = {
+  closedRequestsThisMonth: number;
+  requestsThisMonth: number;
+  requestsWithOffersThisMonth: number;
+  liquidityRatePercent: number;
+  avgTimeToFirstResponseHours: number | null;
+  medianTimeToFirstResponseHours: number | null;
+  avgOffersPerRequest: number;
+  offersThisMonth: number;
+  activeSpecialistsMau: number;
+  repeatSpecialistsCount: number;
+  payingSpecialists: number;
+  conversionParentOrderPercent: number | null;
+  conversionSpecialistResponsePercent: number | null;
+  parentsWithVisitThisMonth: number;
+  parentsWhoCreatedRequestThisMonth: number;
+  requestViewsThisMonth: number;
+  totalUsers: number;
+  newUsersThisMonth: number;
+  usersWithParentProfile: number;
+  usersWithSpecialistProfile: number;
+  usersWithBothRoles: number;
+  activeParentProfilesCount: number;
+  activeSpecialistProfilesCount: number;
+  periodYear: number;
+  periodMonth: number;
 };

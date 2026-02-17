@@ -79,6 +79,21 @@ export class MeController {
     const specialistByProfileId = new Map(specialists.map((s) => [String(Number(s.profile_id)), s]));
     const parentByProfileId = new Map(parents.map((p) => [String(Number(p.profile_id)), p]));
 
+    const portfolioRows =
+      profileIdsNum.length > 0
+        ? await this.prisma.specialistPortfolio.findMany({
+            where: { profileId: { in: profileIds } },
+            orderBy: { sortOrder: "asc" },
+            select: { profileId: true, imageUrl: true },
+          })
+        : [];
+    const portfolioByProfileId = new Map<string, string[]>();
+    for (const row of portfolioRows) {
+      const key = String(Number(row.profileId));
+      if (!portfolioByProfileId.has(key)) portfolioByProfileId.set(key, []);
+      portfolioByProfileId.get(key)!.push(row.imageUrl);
+    }
+
     function parseSkills(raw: unknown): string[] {
       if (raw == null) return [];
       if (typeof raw === "string") {
@@ -114,6 +129,7 @@ export class MeController {
       const profileIdKey = base.id;
       if (profileType === "specialist") {
         const spec = specialistByProfileId.get(profileIdKey);
+        const portfolioImageUrls = portfolioByProfileId.get(profileIdKey) ?? [];
         return {
           ...base,
           specialist: {
@@ -121,6 +137,7 @@ export class MeController {
             pricePerHour: spec?.price_per_hour ?? null,
             about: spec?.about ?? null,
             notifyNewRequestsInCategory: spec?.notify_new_requests_in_category ?? false,
+            portfolioImageUrls,
           },
         };
       }
@@ -171,6 +188,27 @@ export class MeController {
     if (body?.policy) toCreate.push({ userId, consentType: "policy", documentVersion: version });
     if (toCreate.length === 0) throw new BadRequestException("At least one of userAgreement or policy must be true");
     await this.prisma.consentLog.createMany({ data: toCreate });
+    return { ok: true };
+  }
+
+  /** Записать визит родителя (для метрики Conversion Parent → Order). Вызывать при входе в ленту. */
+  @UseGuards(JwtAuthGuard)
+  @Post("visit")
+  async recordVisit(@Req() req: Request) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeProfileId: true },
+    });
+    if (!user?.activeProfileId) return { ok: true };
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: user.activeProfileId },
+      select: { id: true, type: true },
+    });
+    if (!profile || profile.type !== "parent") return { ok: true };
+    await this.prisma.parentVisit.create({
+      data: { parentProfileId: profile.id },
+    });
     return { ok: true };
   }
 

@@ -107,7 +107,7 @@ export function NewPostScreen() {
     <div className="card">
       <div className="h2">Добавить объявление</div>
       <p className="muted" style={{ marginTop: 6, marginBottom: 12, fontSize: 13 }}>
-        Ваше объявление увидят и мамы, и специалисты в разделе «Другое».
+        Ваше объявление увидят и мамы, и специалисты в разделе «Объявления».
       </p>
       <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div className="field">

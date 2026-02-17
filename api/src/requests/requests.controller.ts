@@ -20,6 +20,7 @@ export class RequestsController {
       category: string;
       childAge?: number | null;
       description?: string | null;
+      imageUrls?: string[];
       startAt?: string | null;
       durationMin?: number | null;
       budget?: number | null;
@@ -35,12 +36,18 @@ export class RequestsController {
   async mine(@Req() req: Request) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const items = await this.requests.mine(userId);
+    const toImages = (raw: unknown): string[] | undefined => {
+      if (Array.isArray(raw)) return raw.filter((u): u is string => typeof u === "string");
+      if (typeof raw === "string") return [raw];
+      return undefined;
+    };
     return items.map((r) => ({
       id: r.id.toString(),
       status: r.status,
       category: r.category,
       childAge: r.childAge,
       description: r.description,
+      images: toImages((r as { images?: unknown }).images),
       startAt: r.startAt?.toISOString() ?? null,
       durationMin: r.durationMin,
       budget: r.budget,
@@ -76,10 +83,22 @@ export class RequestsController {
     };
   }
 
+  @Post(":id/view")
+  async recordView(@Req() req: Request, @Param("id") id: string) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    await this.requests.recordView(userId, BigInt(id));
+    return { ok: true };
+  }
+
   @Get(":id")
   async get(@Req() req: Request, @Param("id") id: string) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const r = await this.requests.get(userId, BigInt(id));
+    const toImages = (raw: unknown): string[] | undefined => {
+      if (Array.isArray(raw)) return raw.filter((u): u is string => typeof u === "string");
+      if (typeof raw === "string") return [raw];
+      return undefined;
+    };
     return {
       id: r.id.toString(),
       currentUserHasReviewed: r.currentUserHasReviewed,
@@ -87,6 +106,7 @@ export class RequestsController {
       category: r.category,
       childAge: r.childAge,
       description: r.description,
+      images: toImages((r as { images?: unknown }).images),
       startAt: r.startAt?.toISOString() ?? null,
       durationMin: r.durationMin,
       budget: r.budget,
@@ -148,6 +168,7 @@ export class RequestsController {
       category?: string;
       childAge?: number | null;
       description?: string | null;
+      imageUrls?: string[];
       startAt?: string | null;
       durationMin?: number | null;
       budget?: number | null;

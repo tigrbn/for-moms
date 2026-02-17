@@ -6,6 +6,7 @@ import { ReviewsSlider } from "../components/ReviewsSlider";
 import { getAvatarSrc } from "../lib/avatar";
 import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
+import { ImageSlider } from "../components/ImageSlider";
 import { getParentRoleLabel } from "../lib/labels";
 import type { PublicProfile, ReviewListItem } from "../types";
 
@@ -131,6 +132,11 @@ export function PublicProfileScreen() {
             </div>
           </div>
         </div>
+        {p.type === "specialist" && p.specialist?.portfolioImageUrls && p.specialist.portfolioImageUrls.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <ImageSlider images={p.specialist.portfolioImageUrls} alt="Фото в анкете" height={200} />
+          </div>
+        )}
         {p.type === "specialist" && (p.specialist?.about ?? "").trim() && (
           <div className="profile-card-about">
             <div className="profile-card-about-title">О специалисте</div>

@@ -1,6 +1,8 @@
 import categoryNanny from "../assets/img/category/няня.png";
 import categoryTutor from "../assets/img/category/репетитор.png";
 import categoryLeisure from "../assets/img/category/досуг.png";
+import categoryCleaning from "../assets/img/category/клининг.png";
+import categoryCourier from "../assets/img/category/курьеры.png";
 import categoryOther from "../assets/img/category/другое.png";
 
 /** Раздел и его подкатегории (для выбора в заявках и профиле) */
@@ -11,7 +13,7 @@ export interface CategorySection {
   children: { id: string; label: string }[];
 }
 
-/** Дерево категорий: 3 раздела и подкатегории */
+/** Дерево категорий: разделы и подкатегории */
 export const CATEGORY_TREE: CategorySection[] = [
   {
     id: "Няня",
@@ -52,13 +54,37 @@ export const CATEGORY_TREE: CategorySection[] = [
       { id: "Детские лагеря", label: "Детские лагеря" },
     ],
   },
+  {
+    id: "Клининг",
+    label: "Клининг",
+    icon: categoryCleaning,
+    children: [
+      { id: "Уборка квартиры", label: "Уборка квартиры" },
+      { id: "Генеральная уборка", label: "Генеральная уборка" },
+      { id: "Мытьё окон", label: "Мытьё окон" },
+      { id: "Химчистка", label: "Химчистка" },
+      { id: "После ремонта", label: "После ремонта" },
+      { id: "Регулярная уборка", label: "Регулярная уборка" },
+    ],
+  },
+  {
+    id: "Курьеры",
+    label: "Курьеры",
+    icon: categoryCourier,
+    children: [
+      { id: "Привезти продукты из магазина", label: "Привезти продукты из магазина" },
+      { id: "Забрать и привезти вещи", label: "Забрать и привезти вещи" },
+      { id: "Срочно нужно привезти", label: "Срочно нужно привезти" },
+      { id: "Курьер с машиной", label: "Курьер с машиной" },
+    ],
+  },
 ];
 
-/** Категории для фильтра ленты (разделы + «Все» + «Другое») */
+/** Категории для фильтра ленты (разделы + «Все» + «Объявления») */
 export const FEED_CATEGORIES = [
   { id: "", label: "Все", icon: null as string | null },
   ...CATEGORY_TREE.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
-  { id: "Другое", label: "Другое", icon: categoryOther },
+  { id: "Объявления", label: "Объявления", icon: categoryOther },
 ];
 
 /** Все подкатегории по порядку (для списков выбора) */

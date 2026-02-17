@@ -103,10 +103,23 @@ model Profile {
   specialistProfile  SpecialistProfile?
   feedPosts          FeedPost[]
   usersAsActive      User[]              @relation("UserActiveProfile")
+  parentVisits       ParentVisit[]
+  requestViewsAsSpecialist RequestView[] @relation("RequestViewsAsSpecialist")
 
   @@unique([userId, type])
   @@index([type, isActive], map: "idx_profiles_type_active")
   @@map("profiles")
+}
+
+model ParentVisit {
+  id               BigInt   @id @default(autoincrement())
+  parentProfileId  BigInt   @map("parent_profile_id")
+  createdAt        DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  parentProfile    Profile  @relation(fields: [parentProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([parentProfileId, createdAt], map: "idx_parent_visits_profile_created")
+  @@map("parent_visits")
 }
 
 model Request {
@@ -115,6 +128,7 @@ model Request {
   category        String
   childAge        Int?          @map("child_age")
   description     String?
+  images          Json?         // массив URL строк (фото к заявке)
   startAt         DateTime?     @db.Timestamptz(6) @map("start_at")
   durationMin     Int?          @map("duration_min")
   budget          Int?
@@ -128,9 +142,24 @@ model Request {
   offers          Offer[]
   parent          Profile       @relation(fields: [parentProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   reviews         Review[]
+  requestViews    RequestView[]
 
   @@index([status], map: "idx_requests_status")
   @@map("requests")
+}
+
+model RequestView {
+  id                  BigInt   @id @default(autoincrement())
+  requestId           BigInt   @map("request_id")
+  specialistProfileId BigInt   @map("specialist_profile_id")
+  createdAt           DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  request             Request  @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  specialistProfile   Profile  @relation("RequestViewsAsSpecialist", fields: [specialistProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([requestId], map: "idx_request_views_request")
+  @@index([specialistProfileId, createdAt], map: "idx_request_views_specialist_created")
+  @@map("request_views")
 }
 
 model Review {

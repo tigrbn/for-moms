@@ -1,6 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
 
-/** Telegram username пользователя с админскими правами (удаление любых заявок и объявлений). */
+/**
+ * Telegram username пользователя с админскими правами:
+ * - удаление любых заявок и объявлений;
+ * - доступ к дашборду метрик (/profile/analytics).
+ * Указывать без @ (например: tigrbn).
+ */
 export const ADMIN_USERNAME = "tigrbn";
 
 export async function isAdminUser(prisma: PrismaClient, userId: bigint): Promise<boolean> {
