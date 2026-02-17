@@ -116,9 +116,12 @@ export class FeedController {
     const isCategoryAll = categoryNorm === "";
 
     /** Карточки специалистов в ленте (и родители, и специалисты видят других специалистов для связи). */
-    async function getSpecialistProfileItems(): Promise<
-      Array<{ kind: "specialist_profile"; isPromoted: boolean; profile: Record<string, unknown> }
-    > {
+    type SpecialistFeedItem = {
+      kind: "specialist_profile";
+      isPromoted: boolean;
+      profile: Record<string, unknown>;
+    };
+    async function getSpecialistProfileItems(): Promise<SpecialistFeedItem[]> {
       const profileWhere: any = { type: "specialist", isActive: true };
       if (district?.trim()) {
         profileWhere.district = { equals: district.trim(), mode: "insensitive" };
