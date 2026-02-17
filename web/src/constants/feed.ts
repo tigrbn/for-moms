@@ -1,9 +1,9 @@
-import categoryNanny from "../assets/img/category/няня.png";
-import categoryTutor from "../assets/img/category/репетитор.png";
-import categoryLeisure from "../assets/img/category/досуг.png";
-import categoryCleaning from "../assets/img/category/клининг.png";
-import categoryCourier from "../assets/img/category/курьеры.png";
-import categoryOther from "../assets/img/category/другое.png";
+import categoryNanny from "../assets/img/category/nanny.png";
+import categoryTutor from "../assets/img/category/tutor.png";
+import categoryLeisure from "../assets/img/category/leisure.png";
+import categoryCleaning from "../assets/img/category/cleaning.png";
+import categoryCourier from "../assets/img/category/courier.png";
+import categoryOther from "../assets/img/category/other.png";
 
 /** Раздел и его подкатегории (для выбора в заявках и профиле) */
 export interface CategorySection {
