@@ -135,9 +135,18 @@ a {
   transform: scale(0.99);
 }
 
+/* Выделенная карточка метрики (специалист и админ): фиксированный светлый фон и тёмный текст, чтобы в Telegram не уходила в чёрный */
 .analytics-card--north {
   border-color: var(--tg-theme-button-color, #3390ec);
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: #e8f0fe !important;
+  color: #1a1a1a !important;
+}
+.analytics-card--north .muted,
+.analytics-card--north [class*="muted"] {
+  color: #5f6368 !important;
+}
+.analytics-card--north div {
+  color: inherit;
 }
 
 .card--status-top {

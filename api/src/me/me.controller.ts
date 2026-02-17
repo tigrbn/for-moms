@@ -184,6 +184,8 @@ export class MeController {
 
     const isAdmin = await isAdminUser(this.prisma, userId);
 
+    await this.prisma.appOpen.create({ data: { userId } }).catch(() => {});
+
     return {
       user: {
         id: user.id.toString(),

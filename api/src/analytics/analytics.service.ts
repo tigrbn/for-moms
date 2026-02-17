@@ -63,6 +63,10 @@ export type DashboardMetrics = {
   activeParentProfilesCount: number;
   /** Активных профилей: специалист (is_active) */
   activeSpecialistProfilesCount: number;
+  /** Уникальных пользователей, открывших бот за период (по записям app_opens) */
+  uniqueUsersOpenedBotThisMonth: number;
+  /** Уникальных пользователей, когда-либо открывших бот (всего по app_opens) */
+  uniqueUsersOpenedBotAllTime: number;
   /** Текущий месяц/год для подписи */
   periodYear: number;
   periodMonth: number;
@@ -98,6 +102,8 @@ export class AnalyticsService {
       usersWithBothRoles,
       activeParentProfilesCount,
       activeSpecialistProfilesCount,
+      uniqueUsersOpenedBotThisMonth,
+      uniqueUsersOpenedBotAllTime,
     ] = await Promise.all([
       this.closedRequestsInPeriod(periodFrom, periodTo),
       this.totalRequestsInPeriod(periodFrom, periodTo),
@@ -117,6 +123,8 @@ export class AnalyticsService {
       this.getUsersWithBothRoles(),
       this.getActiveParentProfilesCount(),
       this.getActiveSpecialistProfilesCount(),
+      this.getUniqueUsersOpenedBotInPeriod(periodFrom, periodTo),
+      this.getUniqueUsersOpenedBotAllTime(),
     ]);
 
     const liquidityRatePercent =
@@ -172,9 +180,27 @@ export class AnalyticsService {
       usersWithBothRoles,
       activeParentProfilesCount,
       activeSpecialistProfilesCount,
+      uniqueUsersOpenedBotThisMonth,
+      uniqueUsersOpenedBotAllTime,
       periodYear: y,
       periodMonth: m,
     };
+  }
+
+  private async getUniqueUsersOpenedBotInPeriod(from: Date, to: Date): Promise<number> {
+    const rows = await this.prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+      SELECT COUNT(DISTINCT user_id) AS count
+      FROM app_opens
+      WHERE opened_at >= ${from} AND opened_at < ${to}
+    `);
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  private async getUniqueUsersOpenedBotAllTime(): Promise<number> {
+    const rows = await this.prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+      SELECT COUNT(DISTINCT user_id) AS count FROM app_opens
+    `);
+    return Number(rows[0]?.count ?? 0);
   }
 
   private async getTotalUsers(): Promise<number> {

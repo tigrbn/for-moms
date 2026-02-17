@@ -282,6 +282,8 @@ export type AnalyticsDashboardResponse = {
   usersWithBothRoles: number;
   activeParentProfilesCount: number;
   activeSpecialistProfilesCount: number;
+  uniqueUsersOpenedBotThisMonth: number;
+  uniqueUsersOpenedBotAllTime: number;
   periodYear: number;
   periodMonth: number;
 };

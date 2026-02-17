@@ -532,7 +532,7 @@ export function ProfileScreen() {
               {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
             </p>
           </div>
-          {(type === "specialist" || type === "company") && (
+          {(type === "specialist" || type === "company" || isAdmin) && (
             <Link className="btn secondary" to="/profile/analytics" style={{ flexShrink: 0 }}>
               Аналитика
             </Link>
