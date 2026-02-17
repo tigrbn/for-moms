@@ -141,11 +141,7 @@ export function RequestsScreen() {
             <StubCard
               title="💛 Заявок пока нет"
               desc="Откройте ленту и отправьте отклик на заявку — она появится здесь."
-            >
-              <Link className="btn btn-primary" to="/">
-                Перейти в ленту
-              </Link>
-            </StubCard>
+            />
           </div>
         )}
         {archiveItems.length > 0 && (
@@ -187,11 +183,17 @@ export function RequestsScreen() {
         )}
       </div>
       <div className="card">
-        <div className="h2" style={{ marginBottom: 8 }}>Мои объявления</div>
-        <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>Объявления в разделе «Объявления» в ленте.</p>
+        <div className="row">
+          <div className="h2" style={{ marginBottom: 0 }}>Мои объявления</div>
+          <div className="spacer" />
+          <Link className="btn btn-primary" to="/posts/new">
+            + Добавить объявление
+          </Link>
+        </div>
+        <p className="muted" style={{ fontSize: 13, marginTop: 8, marginBottom: 10 }}>Объявления видны в разделе «Объявления» в ленте.</p>
         {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
         {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
-        {myPosts?.length === 0 && !postsErr && <div className="muted">Объявлений пока нет. Добавить можно в ленте, выбрав категорию «Объявления».</div>}
+        {myPosts?.length === 0 && !postsErr && <p className="muted" style={{ margin: 0 }}>Объявлений пока нет.</p>}
         {myPosts && myPosts.length > 0 && (
           <div style={{ display: "grid", gap: 10 }}>
             {myPosts.map((p) => {
@@ -247,11 +249,7 @@ export function RequestsScreen() {
           <StubCard
             title="💛 Заявок пока нет"
             desc="Создайте первую — специалисты увидят её в ленте и смогут откликнуться."
-          >
-            <Link className="btn btn-primary" to="/requests/new">
-              Создать заявку
-            </Link>
-          </StubCard>
+          />
         </div>
       )}
       {items && items.length > 0 && (
@@ -325,12 +323,7 @@ export function RequestsScreen() {
       {postsErr && <div className="error-message" style={{ marginBottom: 8 }} role="alert">{postsErr}</div>}
       {myPosts === null && !postsErr && <div className="muted">Загрузка…</div>}
       {myPosts?.length === 0 && !postsErr && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p className="muted" style={{ margin: 0 }}>Объявлений пока нет.</p>
-          <Link className="btn btn-primary" to="/posts/new" style={{ alignSelf: "flex-start" }}>
-            + Добавить объявление
-          </Link>
-        </div>
+        <p className="muted" style={{ margin: 0 }}>Объявлений пока нет.</p>
       )}
       {myPosts && myPosts.length > 0 && (
         <div style={{ display: "grid", gap: 10 }}>

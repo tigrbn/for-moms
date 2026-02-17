@@ -384,93 +384,142 @@ export default function App() {
               // if (!me.isAdmin) return <TechnicalWorksScreen />;
               const hasProfiles = me.profiles.length > 0;
 
-              if (hasProfiles) {
-                return (
-                  <>
-                    <Routes>
-                      <Route
-                        path="/"
-                        element={activeProfile ? <FeedScreen /> : <Navigate to="/profile" replace />}
-                      />
-                      <Route
-                        path="/requests"
-                        element={activeProfile ? <RequestsScreen /> : <Navigate to="/profile" replace />}
-                      />
-                      <Route
-                        path="/requests/new"
-                        element={activeProfile ? <NewRequestScreen /> : <Navigate to="/profile" replace />}
-                      />
-                      <Route
-                        path="/requests/:id"
-                        element={activeProfile ? <RequestDetailsScreen /> : <Navigate to="/profile" replace />}
-                      />
-                      <Route
-                        path="/offers"
-                        element={activeProfile ? <OffersScreen /> : <Navigate to="/profile" replace />}
-                      />
-                      <Route path="/profile" element={<ProfileScreen />} />
-                      <Route path="/profile/analytics" element={<AnalyticsScreen />} />
-                      <Route path="/profile/contact" element={<ContactScreen />} />
-                      <Route path="/profile/new/:roleType" element={<NewProfileByRoleRoute />} />
-                      <Route path="/profiles/:id" element={<PublicProfileScreen />} />
-                      <Route path="/posts/new" element={<NewPostScreen />} />
-                      <Route path="/posts/:id" element={<PostDetailScreen />} />
-                      <Route path="/docs/:docType" element={<DocPage />} />
-                      <Route
-                        path="*"
-                        element={
-                          activeProfile ? (
-                            <Navigate to="/" replace state={{ from: location.pathname }} />
-                          ) : (
-                            <Navigate to="/profile" replace />
-                          )
-                        }
-                      />
-                    </Routes>
-                  </>
-                );
-              }
-
-              if (!pendingRoleType) {
-                return (
-                  <div className="card">
-                    <div className="h2">Выберите роль</div>
-                    <p className="muted" style={{ marginTop: 8, marginBottom: 12 }}>
-                      Дальше нужно принять условия и заполнить профиль.
-                    </p>
-                    <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-                      <button
-                        className="btn"
-                        onClick={() => setPendingRoleType("parent")}
-                      >
-                        {PARENT_ROLE_EMOJI} Родитель
-                      </button>
-                      <button
-                        className="btn"
-                        onClick={() => setPendingRoleType("specialist")}
-                      >
-                        👩‍🏫 Специалист
-                      </button>
-                      <button
-                        className="btn"
-                        onClick={() => setPendingRoleType("company")}
-                      >
-                        🏢 Компания
-                      </button>
-                    </div>
+              const authRoleChoice = (
+                <div className="card">
+                  <div className="h2">Выберите роль</div>
+                  <p className="muted" style={{ marginTop: 8, marginBottom: 12 }}>
+                    Дальше нужно принять условия и заполнить профиль.
+                  </p>
+                  <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setPendingRoleType("parent")}
+                    >
+                      {PARENT_ROLE_EMOJI} Родитель
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setPendingRoleType("specialist")}
+                    >
+                      👩‍🏫 Специалист
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setPendingRoleType("company")}
+                    >
+                      🏢 Компания
+                    </button>
                   </div>
-                );
-              }
+                </div>
+              );
 
               return (
-                <Routes>
-                  <Route path="/docs/:docType" element={<DocPage />} />
-                  <Route path="*" element={<NewProfileScreen type={pendingRoleType as "parent" | "specialist" | "company"} />} />
-                </Routes>
+                <>
+                  <Routes>
+                    <Route path="/docs/:docType" element={<DocPage />} />
+                    <Route
+                      path="/"
+                      element={
+                        !hasProfiles ? (
+                          <FeedScreen />
+                        ) : activeProfile ? (
+                          <FeedScreen />
+                        ) : (
+                          <Navigate to="/profile" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/auth"
+                      element={
+                        hasProfiles ? (
+                          <Navigate to="/profile" replace />
+                        ) : !pendingRoleType ? (
+                          authRoleChoice
+                        ) : (
+                          <NewProfileScreen type={pendingRoleType} />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/requests"
+                      element={
+                        !hasProfiles ? (
+                          <Navigate to="/auth" replace />
+                        ) : activeProfile ? (
+                          <RequestsScreen />
+                        ) : (
+                          <Navigate to="/profile" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/requests/new"
+                      element={
+                        !hasProfiles ? (
+                          <Navigate to="/auth" replace />
+                        ) : activeProfile ? (
+                          <NewRequestScreen />
+                        ) : (
+                          <Navigate to="/profile" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/requests/:id"
+                      element={
+                        !hasProfiles ? (
+                          <Navigate to="/auth" replace />
+                        ) : activeProfile ? (
+                          <RequestDetailsScreen />
+                        ) : (
+                          <Navigate to="/profile" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/offers"
+                      element={
+                        !hasProfiles ? (
+                          <Navigate to="/auth" replace />
+                        ) : activeProfile ? (
+                          <OffersScreen />
+                        ) : (
+                          <Navigate to="/profile" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={!hasProfiles ? <Navigate to="/auth" replace /> : <ProfileScreen />}
+                    />
+                    <Route path="/profile/analytics" element={hasProfiles ? <AnalyticsScreen /> : <Navigate to="/auth" replace />} />
+                    <Route path="/profile/contact" element={hasProfiles ? <ContactScreen /> : <Navigate to="/auth" replace />} />
+                    <Route path="/profile/new/:roleType" element={hasProfiles ? <NewProfileByRoleRoute /> : <Navigate to="/auth" replace />} />
+                    <Route path="/profiles/:id" element={<PublicProfileScreen />} />
+                    <Route path="/posts/new" element={hasProfiles && activeProfile ? <NewPostScreen /> : <Navigate to={hasProfiles ? "/profile" : "/auth"} replace />} />
+                    <Route path="/posts/:id" element={<PostDetailScreen />} />
+                    <Route
+                      path="*"
+                      element={
+                        !hasProfiles ? (
+                          <Navigate to="/" replace />
+                        ) : activeProfile ? (
+                          <Navigate to="/" replace state={{ from: location.pathname }} />
+                        ) : (
+                          <Navigate to="/profile" replace />
+                        )
+                      }
+                    />
+                  </Routes>
+                </>
               );
             })()}
 
-            {me && me.profiles.length > 0 && activeProfile && me.isAdmin && <BottomNav />}
+            {me && <BottomNav />}
           </AppContext.Provider>
         )}
       </div>

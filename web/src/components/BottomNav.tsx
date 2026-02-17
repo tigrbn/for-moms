@@ -7,10 +7,28 @@ import menuAll from "../assets/img/menu/все заявки.png";
 
 export function BottomNav() {
   const location = useLocation();
-  const { activeProfileType, parentNewOffersCount } = useApp();
+  const { me, activeProfileType, parentNewOffersCount } = useApp();
+  const hasProfiles = (me?.profiles?.length ?? 0) > 0;
   const isProvider = activeProfileType === "specialist" || activeProfileType === "company";
   const showNewOffersBadge = !isProvider && parentNewOffersCount != null && parentNewOffersCount > 0;
 
+  /** Гость: только Лента и Авторизация */
+  if (!hasProfiles) {
+    return (
+      <nav className="bottom-nav">
+        <Link className={`bottom-nav-item ${location.pathname === "/" ? "active" : ""}`} to="/">
+          <img src={menuLenta} alt="" className="bottom-nav-icon-img" />
+          <span>Лента</span>
+        </Link>
+        <Link className={`bottom-nav-item ${location.pathname === "/auth" ? "active" : ""}`} to="/auth">
+          <img src={menuAll} alt="" className="bottom-nav-icon-img" />
+          <span>Авторизация</span>
+        </Link>
+      </nav>
+    );
+  }
+
+  /** Полное меню для авторизованных */
   return (
     <nav className="bottom-nav">
       <Link className={`bottom-nav-item ${location.pathname === "/" ? "active" : ""}`} to="/">

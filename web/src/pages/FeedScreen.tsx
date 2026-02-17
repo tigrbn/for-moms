@@ -29,6 +29,7 @@ export function FeedScreen() {
     setFeed,
     setFeedError,
     setFeedReloadKey,
+    activeProfile,
     activeProfileType,
     authedPost,
   } = useApp();
@@ -221,7 +222,19 @@ export function FeedScreen() {
       )}
       {!feed && (
         <div className="card">
-          <div className="muted">Загрузка…</div>
+          {!activeProfile ? (
+            <>
+              <div className="h2" style={{ marginBottom: 8 }}>Лента</div>
+              <p className="muted" style={{ marginBottom: 12 }}>
+                Авторизуйтесь, чтобы видеть заявки родителей и анкеты специалистов.
+              </p>
+              <Link className="btn btn-primary" to="/auth">
+                Авторизация
+              </Link>
+            </>
+          ) : (
+            <div className="muted">Загрузка…</div>
+          )}
         </div>
       )}
 
