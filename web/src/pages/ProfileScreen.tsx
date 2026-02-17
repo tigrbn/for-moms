@@ -4,7 +4,7 @@ import { useApp } from "../context/AppContext";
 import { uploadFile } from "../shared/api";
 import { compressImage } from "../lib/imageCompress";
 import { getAvatarSrc } from "../lib/avatar";
-import { formatPhoneMask, formatPhoneToDigits, formatDate } from "../lib/format";
+import { formatPhoneMask, formatPhoneToDigits, formatDate, formatPricePerHour } from "../lib/format";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 import { CATEGORY_TREE, getCategoryIcon } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
@@ -27,8 +27,8 @@ export function ProfileScreen() {
     authedGet,
     refreshMe,
     ensureActiveProfile,
-    missingRole,
-    addMissingRole,
+    missingRoles,
+    addRole,
     setMeError,
   } = useApp();
 
@@ -64,6 +64,7 @@ export function ProfileScreen() {
   const [childrenAges, setChildrenAges] = useState("");
   const [specialWishes, setSpecialWishes] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
+  const [priceOption, setPriceOption] = useState<"number" | "negotiable" | "unspecified">("number");
   const [about, setAbout] = useState("");
   const [specialistCategory, setSpecialistCategory] = useState("");
   const [portfolioImageUrls, setPortfolioImageUrls] = useState<string[]>([]);
@@ -107,7 +108,16 @@ export function ProfileScreen() {
     if (activeProfile.type === "specialist" || activeProfile.type === "company") {
       const spec = activeProfile.specialist;
       if (spec) {
-        setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
+        if (spec.pricePerHour === 0) {
+          setPriceOption("negotiable");
+          setPricePerHour("");
+        } else if (spec.pricePerHour != null && Number.isFinite(spec.pricePerHour)) {
+          setPriceOption("number");
+          setPricePerHour(String(spec.pricePerHour));
+        } else {
+          setPriceOption(activeProfile.type === "company" ? "unspecified" : "number");
+          setPricePerHour("");
+        }
         setAbout(spec.about ?? "");
         setPortfolioImageUrls(Array.isArray(spec.portfolioImageUrls) ? spec.portfolioImageUrls : []);
         const first =
@@ -118,6 +128,7 @@ export function ProfileScreen() {
               : "";
         setSpecialistCategory(first || "");
       } else {
+        setPriceOption(type === "company" ? "unspecified" : "number");
         setPricePerHour("");
         setAbout("");
         setPortfolioImageUrls([]);
@@ -189,7 +200,8 @@ export function ProfileScreen() {
       const districtOk = district.trim().length > 0;
       const categoryOk = specialistCategory.trim().length > 0;
       const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
-      const priceOk = priceNum != null && Number.isFinite(priceNum) && priceNum > 0;
+      const priceOk =
+        priceOption === "unspecified" || (priceNum != null && Number.isFinite(priceNum) && priceNum > 0);
       const aboutOk = about.trim().length > 0;
       if (!nameOk || !cityOk || !districtOk || !categoryOk || !priceOk || !aboutOk) {
         const parts: string[] = [];
@@ -197,8 +209,29 @@ export function ProfileScreen() {
         if (!cityOk) parts.push("город");
         if (!districtOk) parts.push("район");
         if (!categoryOk) parts.push("категорию");
-        if (!priceOk) parts.push("цену за час");
+        if (!priceOk) parts.push("цену за час или «Не указано»");
         if (!aboutOk) parts.push("«О компании»");
+        setErr(`Заполните обязательные поля: ${parts.join(", ")}`);
+        return;
+      }
+    }
+    if (type === "specialist") {
+      const nameOk = displayName.trim().length > 0;
+      const cityOk = city.trim().length > 0;
+      const districtOk = district.trim().length > 0;
+      const categoryOk = specialistCategory.trim().length > 0;
+      const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+      const priceOk =
+        priceOption === "negotiable" || (priceNum != null && Number.isFinite(priceNum) && priceNum > 0);
+      const aboutOk = about.trim().length > 0;
+      if (!nameOk || !cityOk || !districtOk || !categoryOk || !priceOk || !aboutOk) {
+        const parts: string[] = [];
+        if (!nameOk) parts.push("имя");
+        if (!cityOk) parts.push("город");
+        if (!districtOk) parts.push("район");
+        if (!categoryOk) parts.push("категорию");
+        if (!priceOk) parts.push("цену за час или «Договорная»");
+        if (!aboutOk) parts.push("«О себе»");
         setErr(`Заполните обязательные поля: ${parts.join(", ")}`);
         return;
       }
@@ -235,10 +268,23 @@ export function ProfileScreen() {
         });
       }
       if (type === "specialist" || type === "company") {
-        const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+        const priceValue =
+          type === "specialist"
+            ? priceOption === "negotiable"
+              ? 0
+              : (() => {
+                  const n = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+                  return n != null && Number.isFinite(n) ? n : null;
+                })()
+            : priceOption === "unspecified"
+              ? null
+              : (() => {
+                  const n = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+                  return n != null && Number.isFinite(n) ? n : null;
+                })();
         await authedPatch(`/profiles/${profileId}/specialist`, {
           skills: specialistCategory ? [specialistCategory] : [],
-          pricePerHour: priceNum != null && Number.isFinite(priceNum) ? priceNum : null,
+          pricePerHour: priceValue,
           about: about.trim() || null,
           portfolioImageUrls: portfolioImageUrls.length > 0 ? portfolioImageUrls : [],
         });
@@ -391,10 +437,24 @@ export function ProfileScreen() {
       <div className="row">
         <div className="h2">Профили</div>
         <div className="spacer" />
-        {missingRole && (
-          <button className="btn btn-primary roles-page-btn" onClick={() => void addMissingRole()}>
-            + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "👩‍🏫 Специалист"}
-          </button>
+        {missingRoles.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {missingRoles.includes("parent") && (
+              <button className="btn btn-primary roles-page-btn" onClick={() => addRole("parent")}>
+                + {PARENT_ROLE_EMOJI} Родитель
+              </button>
+            )}
+            {missingRoles.includes("specialist") && (
+              <button className="btn btn-primary roles-page-btn" onClick={() => addRole("specialist")}>
+                + 👩‍🏫 Специалист
+              </button>
+            )}
+            {missingRoles.includes("company") && (
+              <button className="btn btn-primary roles-page-btn" onClick={() => addRole("company")}>
+                + 🏢 Компания
+              </button>
+            )}
+          </div>
         )}
       </div>
       <div className="muted roles-page-desc">Выберите активный профиль или удалите ненужный.</div>
@@ -430,7 +490,7 @@ export function ProfileScreen() {
                 type="button"
                 className="btn danger roles-delete-btn roles-page-btn"
                 onClick={async () => {
-                  const roleName = p.type === "parent" ? getParentRoleLabel(p.gender) : "Специалист";
+                  const roleName = p.type === "parent" ? getParentRoleLabel(p.gender) : p.type === "company" ? "Компания" : "Специалист";
                   if (
                     !confirm(
                       `Удалить аккаунт «${roleName}»? Все данные этого профиля будут удалены безвозвратно.`,
@@ -670,11 +730,7 @@ export function ProfileScreen() {
               </div>
               <div className="profile-view-row">
                 <dt className="muted">Цена за час</dt>
-                <dd>
-                  {activeProfile.specialist?.pricePerHour != null
-                    ? `${activeProfile.specialist.pricePerHour} ₽`
-                    : "—"}
-                </dd>
+                <dd>{formatPricePerHour(activeProfile.specialist?.pricePerHour)}</dd>
               </div>
               <div className="profile-view-row">
                 <dt className="muted">{type === "company" ? "О компании" : "О себе"}</dt>
@@ -1012,13 +1068,71 @@ export function ProfileScreen() {
             </div>
             <div className="field">
               <label className="label">Цена за час (₽)</label>
-              <input
-                className="input"
-                value={pricePerHour}
-                onChange={(e) => setPricePerHour(e.target.value)}
-                inputMode="numeric"
-                placeholder="1000"
-              />
+              {type === "company" ? (
+                <>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="priceOption"
+                        checked={priceOption === "number"}
+                        onChange={() => setPriceOption("number")}
+                      />
+                      <span>Указать цену</span>
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="priceOption"
+                        checked={priceOption === "unspecified"}
+                        onChange={() => setPriceOption("unspecified")}
+                      />
+                      <span>Не указано</span>
+                    </label>
+                  </div>
+                  {priceOption === "number" && (
+                    <input
+                      className="input"
+                      value={pricePerHour}
+                      onChange={(e) => setPricePerHour(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="1000"
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="priceOption"
+                        checked={priceOption === "number"}
+                        onChange={() => setPriceOption("number")}
+                      />
+                      <span>Указать цену</span>
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="priceOption"
+                        checked={priceOption === "negotiable"}
+                        onChange={() => setPriceOption("negotiable")}
+                      />
+                      <span>Договорная</span>
+                    </label>
+                  </div>
+                  {priceOption === "number" && (
+                    <input
+                      className="input"
+                      value={pricePerHour}
+                      onChange={(e) => setPricePerHour(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="1000"
+                    />
+                  )}
+                </>
+              )}
             </div>
             <div className="field">
               <label className="label">О себе</label>

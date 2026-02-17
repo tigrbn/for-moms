@@ -4,6 +4,7 @@ import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { ReviewsSlider } from "../components/ReviewsSlider";
 import { getAvatarSrc } from "../lib/avatar";
+import { formatPricePerHour } from "../lib/format";
 import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
 import { ImageSlider } from "../components/ImageSlider";
@@ -144,10 +145,13 @@ export function PublicProfileScreen() {
                   )}
                 </>
               )}
-              {(p.type === "specialist" || p.type === "company") && p.specialist?.pricePerHour != null && (
+              {(p.type === "specialist" || p.type === "company") && (
                 <div className="profile-card-meta-row">
                   <span className="profile-card-meta-label">цена за час:</span>
-                  <strong className="profile-card-meta-value profile-card-meta-value--price">{p.specialist.pricePerHour} ₽</strong>
+                  <strong className="profile-card-meta-value profile-card-meta-value--price">
+                    {formatPricePerHour(p.specialist?.pricePerHour)}
+                    {typeof p.specialist?.pricePerHour === "number" && p.specialist.pricePerHour > 0 ? " /час" : ""}
+                  </strong>
                 </div>
               )}
             </div>

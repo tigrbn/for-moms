@@ -67,6 +67,10 @@ export default function App() {
     } catch {}
     setFeedReloadKey((k) => k + 1);
   }, []);
+  const [feedPage, setFeedPage] = useState(1);
+  useEffect(() => {
+    setFeedPage(1);
+  }, [feedCategory, feedSubcategory, feedView]);
   const [parentNewOffersCount, setParentNewOffersCount] = useState<number | null>(null);
   const [reauthing, setReauthing] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
@@ -251,17 +255,23 @@ export default function App() {
   }, [me?.activeProfileId, me?.profiles, refreshParentNewOffersCount]);
 
   const allTypes = useMemo(() => new Set((me?.profiles ?? []).map((p) => p.type)), [me]);
-  const missingRole = useMemo(() => {
-    if (!allTypes.has("parent")) return "parent" as const;
-    if (!allTypes.has("specialist")) return "specialist" as const;
-    return null;
+  const missingRoles = useMemo(() => {
+    const roles: ("parent" | "specialist" | "company")[] = [];
+    if (!allTypes.has("parent")) roles.push("parent");
+    if (!allTypes.has("specialist")) roles.push("specialist");
+    if (!allTypes.has("company")) roles.push("company");
+    return roles;
   }, [allTypes]);
+  const missingRole = missingRoles[0] ?? null;
 
+  const addRole = useCallback((role: "parent" | "specialist" | "company") => {
+    navigate(`/profile/new/${role}`);
+  }, [navigate]);
   const addMissingRole = useCallback((): Promise<void> => {
     if (!missingRole) return Promise.resolve();
-    navigate(`/profile/new/${missingRole}`);
+    addRole(missingRole);
     return Promise.resolve();
-  }, [missingRole, navigate]);
+  }, [missingRole, addRole]);
 
   const contextValue = useMemo(
     () => ({
@@ -284,6 +294,8 @@ export default function App() {
       setFeedReloadKey,
       feedView,
       setFeedView,
+      feedPage,
+      setFeedPage,
       activeProfile,
       activeProfileId: me?.activeProfileId ?? null,
       activeProfileType: activeProfile?.type ?? null,
@@ -299,7 +311,9 @@ export default function App() {
         else navigate(to, opts);
       },
       missingRole,
+      missingRoles,
       addMissingRole,
+      addRole,
       allTypes,
       parentNewOffersCount,
       refreshParentNewOffersCount,
@@ -317,6 +331,7 @@ export default function App() {
       feedSubcategory,
       feedReloadKey,
       feedView,
+      feedPage,
       activeProfile,
       ensureActiveProfile,
       createRole,
@@ -327,7 +342,9 @@ export default function App() {
       authedDelete,
       navigate,
       missingRole,
+      missingRoles,
       addMissingRole,
+      addRole,
       allTypes,
       parentNewOffersCount,
       refreshParentNewOffersCount,
@@ -339,11 +356,7 @@ export default function App() {
       <div className="container">
         <TopBar
           logo={mainLogoImg}
-          rightNode={
-            me?.isAdmin && activeProfile?.type === "specialist" ? (
-              <span className="topbar-feed-btn">📍 Якутск</span>
-            ) : undefined
-          }
+          rightNode={<span className="topbar-feed-btn">📍 г. Якутск</span>}
         />
 
         {error && <ErrorBox error={error} />}
@@ -368,9 +381,8 @@ export default function App() {
             {meError && <ErrorBox error={meError} />}
 
             {me && (() => {
-              if (!me.isAdmin) {
-                return <TechnicalWorksScreen />;
-              }
+              // Заглушка «Технические работы»: раскомментировать для режима обслуживания
+              // if (!me.isAdmin) return <TechnicalWorksScreen />;
               const hasProfiles = me.profiles.length > 0;
 
               if (hasProfiles) {

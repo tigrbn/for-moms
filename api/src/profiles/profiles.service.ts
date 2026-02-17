@@ -109,10 +109,11 @@ export class ProfilesService {
       const spec = dto.specialist;
       const skills = spec && Array.isArray(spec.skills) ? spec.skills : spec?.skills ? [spec.skills] : [];
       const hasCategory = skills.length > 0 && skills.some((s) => String(s).trim().length > 0);
+      const priceVal = spec?.pricePerHour;
       const priceOk =
-        spec?.pricePerHour != null &&
-        Number.isFinite(Number(spec.pricePerHour)) &&
-        Number(spec.pricePerHour) > 0;
+        type === "company"
+          ? priceVal === 0 || priceVal == null || (Number.isFinite(Number(priceVal)) && Number(priceVal) > 0)
+          : (type === "specialist" && (priceVal === 0 || (Number.isFinite(Number(priceVal)) && Number(priceVal) > 0)));
       const aboutOk = typeof spec?.about === "string" && spec.about.trim().length > 0;
       if (!hasCategory || !priceOk || !aboutOk) {
         const parts: string[] = [];

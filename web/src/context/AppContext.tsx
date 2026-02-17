@@ -21,6 +21,8 @@ export type AppContextValue = {
   setFeedReloadKey: (fn: (x: number) => number) => void;
   feedView: "specialists" | "requests";
   setFeedView: (view: "specialists" | "requests") => void;
+  feedPage: number;
+  setFeedPage: (n: number | ((prev: number) => number)) => void;
   activeProfile: MeResponse["profiles"][0] | null;
   activeProfileId: string | null;
   activeProfileType: "parent" | "specialist" | "company" | null;
@@ -32,8 +34,12 @@ export type AppContextValue = {
   authedPatch: <T>(path: string, body: unknown) => Promise<T>;
   authedDelete: <T>(path: string) => Promise<T>;
   navigate: (to: string | number, opts?: { replace?: boolean; state?: unknown }) => void;
-  missingRole: "parent" | "specialist" | null;
+  /** Первая недостающая роль (для заглушки в ленте). */
+  missingRole: "parent" | "specialist" | "company" | null;
+  /** Все недостающие роли — каждая может быть добавлена отдельно. */
+  missingRoles: ("parent" | "specialist" | "company")[];
   addMissingRole: () => Promise<void>;
+  addRole: (role: "parent" | "specialist" | "company") => void;
   allTypes: Set<string>;
   /** Количество непросмотренных откликов (для родителя). null = не загружено или не родитель. */
   parentNewOffersCount: number | null;

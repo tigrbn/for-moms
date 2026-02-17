@@ -3,13 +3,12 @@ import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { StubCard } from "../components/StubCard";
 import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
-import { formatMoney, formatRequestCreatedAt } from "../lib/format";
+import { formatMoney, formatRequestCreatedAt, formatPricePerHour } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
 import { getAvatarSrc } from "../lib/avatar";
 import { ImageSlider } from "../components/ImageSlider";
 import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
-import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import feedHeaderBg from "../assets/img/background.png";
 
 const VISIT_SENT_KEY = "for_moms_visit_sent";
@@ -25,12 +24,12 @@ export function FeedScreen() {
     setFeedSubcategory,
     feedView,
     setFeedView,
+    feedPage,
+    setFeedPage,
     setFeed,
     setFeedError,
     setFeedReloadKey,
     activeProfileType,
-    missingRole,
-    addMissingRole,
     authedPost,
   } = useApp();
 
@@ -96,15 +95,14 @@ export function FeedScreen() {
   }, [allItems, feedView]);
   const contentCount = contentItems.length;
 
-  const [feedPage, setFeedPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(contentCount / ITEMS_PER_PAGE));
   const paginatedItems = useMemo(
     () => contentItems.slice((feedPage - 1) * ITEMS_PER_PAGE, feedPage * ITEMS_PER_PAGE),
     [contentItems, feedPage],
   );
   useEffect(() => {
-    setFeedPage(1);
-  }, [contentCount, feedCategory, feedSubcategory, feedView]);
+    if (feedPage > totalPages && totalPages >= 1) setFeedPage(totalPages);
+  }, [totalPages, feedPage, setFeedPage]);
 
   const feedSubtitle =
     feedView === "requests"
@@ -262,15 +260,11 @@ export function FeedScreen() {
                 >
                   Показать все
                 </button>
-                {feedCategory === "Объявления" ? (
+                {feedCategory === "Объявления" && (
                   <Link className="btn btn-primary" to="/posts/new">
                     + Добавить объявление
                   </Link>
-                ) : missingRole ? (
-                  <button type="button" className="btn btn-primary" onClick={() => void addMissingRole()}>
-                    + {missingRole === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "Специалист"}
-                  </button>
-                ) : null}
+                )}
               </div>
             </StubCard>
           )}
@@ -311,12 +305,13 @@ export function FeedScreen() {
                             <span className="category-display-label">город, район:</span>
                             <span className="category-display-value">{[p.city, p.district].filter(Boolean).join(", ") || "—"}</span>
                           </div>
-                          {p.pricePerHour != null && (
-                            <div className="category-display-row">
-                              <span className="category-display-label">цена за час:</span>
-                              <span className="category-display-value profile-card-meta-value--price">{p.pricePerHour} ₽/час</span>
-                            </div>
-                          )}
+                          <div className="category-display-row">
+                            <span className="category-display-label">цена за час:</span>
+                            <span className="category-display-value profile-card-meta-value--price">
+                              {formatPricePerHour(p.pricePerHour)}
+                              {typeof p.pricePerHour === "number" && p.pricePerHour > 0 ? "/час" : ""}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

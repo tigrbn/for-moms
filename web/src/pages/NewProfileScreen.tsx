@@ -51,6 +51,7 @@ function validateSpecialist(
   district: string,
   specialistCategory: string,
   pricePerHour: string,
+  priceOption: "number" | "negotiable",
   about: string,
 ): { ok: boolean; message?: string } {
   const nameOk = displayName.trim().length > 0;
@@ -58,7 +59,8 @@ function validateSpecialist(
   const districtOk = district.trim().length > 0;
   const categoryOk = specialistCategory.trim().length > 0;
   const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
-  const priceOk = priceNum != null && Number.isFinite(priceNum) && priceNum > 0;
+  const priceOk =
+    priceOption === "negotiable" || (priceNum != null && Number.isFinite(priceNum) && priceNum > 0);
   const aboutOk = about.trim().length > 0;
   if (!nameOk || !cityOk || !districtOk || !categoryOk || !priceOk || !aboutOk) {
     const parts: string[] = [];
@@ -66,7 +68,7 @@ function validateSpecialist(
     if (!cityOk) parts.push("город");
     if (!districtOk) parts.push("район");
     if (!categoryOk) parts.push("категорию");
-    if (!priceOk) parts.push("цену за час");
+    if (!priceOk) parts.push("цену за час или «Договорная»");
     if (!aboutOk) parts.push("«О себе»");
     return { ok: false, message: `Заполните обязательные поля: ${parts.join(", ")}` };
   }
@@ -79,6 +81,7 @@ function validateCompany(
   district: string,
   specialistCategory: string,
   pricePerHour: string,
+  priceOption: "number" | "unspecified",
   about: string,
 ): { ok: boolean; message?: string } {
   const nameOk = companyName.trim().length > 0;
@@ -86,7 +89,8 @@ function validateCompany(
   const districtOk = district.trim().length > 0;
   const categoryOk = specialistCategory.trim().length > 0;
   const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
-  const priceOk = priceNum != null && Number.isFinite(priceNum) && priceNum > 0;
+  const priceOk =
+    priceOption === "unspecified" || (priceNum != null && Number.isFinite(priceNum) && priceNum > 0);
   const aboutOk = about.trim().length > 0;
   if (!nameOk || !cityOk || !districtOk || !categoryOk || !priceOk || !aboutOk) {
     const parts: string[] = [];
@@ -94,7 +98,7 @@ function validateCompany(
     if (!cityOk) parts.push("город");
     if (!districtOk) parts.push("район");
     if (!categoryOk) parts.push("категорию");
-    if (!priceOk) parts.push("цену за час");
+    if (!priceOk) parts.push("цену за час или «Не указано»");
     if (!aboutOk) parts.push("«О компании»");
     return { ok: false, message: `Заполните обязательные поля: ${parts.join(", ")}` };
   }
@@ -115,6 +119,7 @@ export function NewProfileScreen({ type }: Props) {
   const [childrenAges, setChildrenAges] = useState("");
   const [specialWishes, setSpecialWishes] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
+  const [priceOption, setPriceOption] = useState<"number" | "negotiable" | "unspecified">("number");
   const [about, setAbout] = useState("");
   const [specialistCategory, setSpecialistCategory] = useState("");
   const [saving, setSaving] = useState(false);
@@ -130,8 +135,8 @@ export function NewProfileScreen({ type }: Props) {
     type === "parent"
       ? validateParent(displayName, gender, age, city, district, childrenAges)
       : type === "company"
-        ? validateCompany(companyName, city, district, specialistCategory, pricePerHour, about)
-        : validateSpecialist(displayName, city, district, specialistCategory, pricePerHour, about);
+        ? validateCompany(companyName, city, district, specialistCategory, pricePerHour, priceOption as "number" | "unspecified", about)
+        : validateSpecialist(displayName, city, district, specialistCategory, pricePerHour, priceOption as "number" | "negotiable", about);
   const canSave = agreeUserAgreement && agreePolicy && validation.ok;
 
   const save = async () => {
@@ -172,10 +177,23 @@ export function NewProfileScreen({ type }: Props) {
         };
       }
       if (type === "specialist" || type === "company") {
-        const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+        const priceValue =
+          type === "specialist"
+            ? priceOption === "negotiable"
+              ? 0
+              : (() => {
+                  const n = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+                  return n != null && Number.isFinite(n) ? n : null;
+                })()
+            : priceOption === "unspecified"
+              ? null
+              : (() => {
+                  const n = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+                  return n != null && Number.isFinite(n) ? n : null;
+                })();
         body.specialist = {
           skills: specialistCategory ? [specialistCategory] : [],
-          pricePerHour: priceNum != null && Number.isFinite(priceNum) ? priceNum : null,
+          pricePerHour: priceValue,
           about: about.trim() || null,
           portfolioImageUrls: portfolioImageUrls.length > 0 ? portfolioImageUrls : [],
         };
@@ -397,13 +415,71 @@ export function NewProfileScreen({ type }: Props) {
               </div>
               <div className="field">
                 <label className="label">Цена за час (₽) <span className="muted">(обязательно)</span></label>
-                <input
-                  className="input"
-                  value={pricePerHour}
-                  onChange={(e) => setPricePerHour(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="1000"
-                />
+                {type === "company" ? (
+                  <>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                        <input
+                          type="radio"
+                          name="priceOption"
+                          checked={priceOption === "number"}
+                          onChange={() => setPriceOption("number")}
+                        />
+                        <span>Указать цену</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                        <input
+                          type="radio"
+                          name="priceOption"
+                          checked={priceOption === "unspecified"}
+                          onChange={() => setPriceOption("unspecified")}
+                        />
+                        <span>Не указано</span>
+                      </label>
+                    </div>
+                    {priceOption === "number" && (
+                      <input
+                        className="input"
+                        value={pricePerHour}
+                        onChange={(e) => setPricePerHour(e.target.value)}
+                        inputMode="numeric"
+                        placeholder="1000"
+                      />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                        <input
+                          type="radio"
+                          name="priceOption"
+                          checked={priceOption === "number"}
+                          onChange={() => setPriceOption("number")}
+                        />
+                        <span>Указать цену</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                        <input
+                          type="radio"
+                          name="priceOption"
+                          checked={priceOption === "negotiable"}
+                          onChange={() => setPriceOption("negotiable")}
+                        />
+                        <span>Договорная</span>
+                      </label>
+                    </div>
+                    {priceOption === "number" && (
+                      <input
+                        className="input"
+                        value={pricePerHour}
+                        onChange={(e) => setPricePerHour(e.target.value)}
+                        inputMode="numeric"
+                        placeholder="1000"
+                      />
+                    )}
+                  </>
+                )}
               </div>
               <div className="field">
                 <label className="label">{type === "company" ? "О компании" : "О себе"} <span className="muted">(обязательно)</span></label>

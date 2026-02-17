@@ -3,6 +3,13 @@ export function formatMoney(x: number | null | undefined): string {
   return `${x} ₽`;
 }
 
+/** Цена за час: null = «Не указано», 0 = «Договорная», иначе «N ₽». */
+export function formatPricePerHour(price: number | null | undefined): string {
+  if (price == null) return "Не указано";
+  if (price === 0) return "Договорная";
+  return `${price} ₽`;
+}
+
 /** Маска российского номера: +7 9XX XXX XX XX. Из ввода оставляем только цифры, 8 в начале заменяем на 7. */
 export function formatPhoneMask(value: string): string {
   let digits = value.replace(/\D/g, "");
