@@ -3,9 +3,11 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import { join } from "path";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
+import { AllExceptionsFilter } from "./common/http-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useGlobalFilters(new AllExceptionsFilter());
   app.use(helmet());
   // Без глобального префикса: nginx часто проксирует с proxy_pass .../ так, что путь приходит без /api
   app.enableCors({ origin: true });
