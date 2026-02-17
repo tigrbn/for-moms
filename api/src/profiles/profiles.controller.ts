@@ -54,7 +54,7 @@ export class ProfilesController {
       contactPhone?: string | null;
       showContactPhonePublicly?: boolean;
       parent?: { childrenAges?: number[] | null; specialWishes?: string | null };
-      specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null };
+      specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null; portfolioImageUrls?: string[] };
       company?: { companyName?: string | null; inn?: string | null; legalAddress?: string | null };
     },
   ) {

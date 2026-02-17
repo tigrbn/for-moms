@@ -95,7 +95,7 @@ export class ProfilesService {
       contactPhone?: string | null;
       showContactPhonePublicly?: boolean;
       parent?: { childrenAges?: number[] | null; specialWishes?: string | null };
-      specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null };
+      specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null; portfolioImageUrls?: string[] };
       company?: { companyName?: string | null; inn?: string | null; legalAddress?: string | null };
     },
   ) {
@@ -179,6 +179,14 @@ export class ProfilesService {
             about: dto.specialist.about?.trim() || null,
           },
         });
+        const portfolioUrls = Array.isArray(dto.specialist.portfolioImageUrls)
+          ? dto.specialist.portfolioImageUrls.filter((u): u is string => typeof u === "string" && u.trim().length > 0).slice(0, 10)
+          : [];
+        if (portfolioUrls.length > 0) {
+          await tx.specialistPortfolio.createMany({
+            data: portfolioUrls.map((imageUrl, sortOrder) => ({ profileId: created.id, imageUrl, sortOrder })),
+          });
+        }
       }
 
       await tx.user.updateMany({

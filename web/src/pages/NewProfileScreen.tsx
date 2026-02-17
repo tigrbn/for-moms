@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { uploadFile } from "../shared/api";
+import { compressImage } from "../lib/imageCompress";
 import { formatPhoneMask, formatPhoneToDigits } from "../lib/format";
 import { PARENT_ROLE_EMOJI } from "../lib/labels";
 import { CATEGORY_TREE } from "../constants/feed";
@@ -100,7 +102,7 @@ function validateCompany(
 }
 
 export function NewProfileScreen({ type }: Props) {
-  const { me, authedPost, refreshMe, setMeError, navigate } = useApp();
+  const { me, token, authedPost, refreshMe, setMeError, navigate } = useApp();
   const [agreeUserAgreement, setAgreeUserAgreement] = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -120,6 +122,9 @@ export function NewProfileScreen({ type }: Props) {
   const [companyName, setCompanyName] = useState("");
   const [inn, setInn] = useState("");
   const [legalAddress, setLegalAddress] = useState("");
+  const [portfolioImageUrls, setPortfolioImageUrls] = useState<string[]>([]);
+  const [portfolioUploading, setPortfolioUploading] = useState(false);
+  const portfolioFileInputRef = useRef<HTMLInputElement>(null);
 
   const validation =
     type === "parent"
@@ -172,6 +177,7 @@ export function NewProfileScreen({ type }: Props) {
           skills: specialistCategory ? [specialistCategory] : [],
           pricePerHour: priceNum != null && Number.isFinite(priceNum) ? priceNum : null,
           about: about.trim() || null,
+          portfolioImageUrls: portfolioImageUrls.length > 0 ? portfolioImageUrls : [],
         };
       }
       if (type === "company") {
@@ -409,6 +415,80 @@ export function NewProfileScreen({ type }: Props) {
                   rows={4}
                 />
                 <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>Без этих данных заказчик не сможет выбрать вас в анкете.</p>
+              </div>
+              <div className="field">
+                <label className="label">Фото в анкете <span className="muted">(до 10, по желанию)</span></label>
+                <p className="muted" style={{ marginTop: 0, marginBottom: 8, fontSize: 13 }}>
+                  Эти фото отображаются в анкете слайдером. При клике открываются в полном размере.
+                </p>
+                <input
+                  ref={portfolioFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files?.length || !token) {
+                      e.target.value = "";
+                      return;
+                    }
+                    const remaining = 10 - portfolioImageUrls.length;
+                    if (remaining <= 0) {
+                      e.target.value = "";
+                      return;
+                    }
+                    setPortfolioUploading(true);
+                    setErr(null);
+                    try {
+                      for (let i = 0; i < Math.min(files.length, remaining); i++) {
+                        const file = files[i]!;
+                        if (file.type && !file.type.startsWith("image/")) continue;
+                        let toUpload: File;
+                        try {
+                          toUpload = await compressImage(file);
+                        } catch {
+                          if (!/^image\/(jpeg|png|gif|webp)$/i.test(file.type)) continue;
+                          toUpload = file;
+                        }
+                        const { url } = await uploadFile("/upload", toUpload, token);
+                        setPortfolioImageUrls((prev) => [...prev, url].slice(0, 10));
+                      }
+                    } catch (err: unknown) {
+                      setErr(err instanceof Error ? err.message : "Не удалось загрузить фото");
+                    } finally {
+                      setPortfolioUploading(false);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+                {portfolioImageUrls.length < 10 && (
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    disabled={portfolioUploading}
+                    onClick={() => portfolioFileInputRef.current?.click()}
+                  >
+                    {portfolioUploading ? "Загрузка…" : "+ Добавить фото"}
+                  </button>
+                )}
+                {portfolioImageUrls.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                    {portfolioImageUrls.map((url, i) => (
+                      <div key={url} style={{ position: "relative" }}>
+                        <img src={url} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, display: "block" }} />
+                        <button
+                          type="button"
+                          onClick={() => setPortfolioImageUrls((prev) => prev.filter((_, j) => j !== i))}
+                          aria-label="Удалить"
+                          style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 14, cursor: "pointer" }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
