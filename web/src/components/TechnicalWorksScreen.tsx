@@ -1,7 +1,4 @@
-// Файл: web/src/assets/img/ведутся технические работы.png (или technical-works.png)
-// Положите картинку в web/src/assets/img/ с именем "ведутся технические работы.png"
-// или переименуйте импорт под своё имя файла (например technical-works.png)
-import technicalWorksImg from "../assets/img/ведутся технические работы.png";
+import technicalWorksImg from "../assets/img/technical-works.png";
 
 export function TechnicalWorksScreen() {
   return (
