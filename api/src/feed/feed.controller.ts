@@ -117,8 +117,9 @@ export class FeedController {
     const categoryNorm = category?.trim() ?? "";
     if (categoryNorm === "Объявления") {
       const postItems = await getOtherPostItems.call(this);
+      const role = active ? (active.type as "parent" | "specialist") : "parent";
       return {
-        role: active.type as "parent" | "specialist",
+        role,
         items: [...bannerItems, ...postItems],
       };
     }
