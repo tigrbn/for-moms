@@ -14,11 +14,12 @@ export type PublicProfileDto = {
   district: string | null;
   ratingAvg: string;
   ratingCount: number;
-  /** Только для специалиста и только если разрешил показ в анкете */
+  /** Только для специалиста/компании и только если разрешил показ в анкете */
   contactPhone?: string | null;
   user: { username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null };
   specialist: { category: string | null; pricePerHour: number | null; about: string | null; portfolioImageUrls?: string[] } | null;
   parent: { childrenAges: number[] | null; specialWishes: string | null } | null;
+  company: { companyName: string; inn: string | null; legalAddress: string | null } | null;
 };
 
 @Injectable()
@@ -28,7 +29,7 @@ export class ProfilesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createProfile(userId: bigint, type: ProfileType) {
-    if (type !== "parent" && type !== "specialist") {
+    if (type !== "parent" && type !== "specialist" && type !== "company") {
       throw new BadRequestException("Invalid profile type");
     }
 
@@ -41,6 +42,7 @@ export class ProfilesService {
             isActive: true,
             ...(type === "parent" ? { parentProfile: { create: {} } } : {}),
             ...(type === "specialist" ? { specialistProfile: { create: {} } } : {}),
+            ...(type === "company" ? { specialistProfile: { create: {} }, companyProfile: { create: { companyName: "Компания" } } } : {}),
           },
         });
 
@@ -84,7 +86,7 @@ export class ProfilesService {
   async createProfileWithData(
     userId: bigint,
     dto: {
-      type: "parent" | "specialist";
+      type: "parent" | "specialist" | "company";
       displayName?: string | null;
       gender?: string | null;
       age?: number | null;
@@ -94,14 +96,16 @@ export class ProfilesService {
       showContactPhonePublicly?: boolean;
       parent?: { childrenAges?: number[] | null; specialWishes?: string | null };
       specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null };
+      company?: { companyName?: string | null; inn?: string | null; legalAddress?: string | null };
     },
   ) {
     const { type } = dto;
-    if (type !== "parent" && type !== "specialist") {
+    if (type !== "parent" && type !== "specialist" && type !== "company") {
       throw new BadRequestException("Invalid profile type");
     }
 
-    if (type === "specialist") {
+    const isProvider = type === "specialist" || type === "company";
+    if (isProvider) {
       const spec = dto.specialist;
       const skills = spec && Array.isArray(spec.skills) ? spec.skills : spec?.skills ? [spec.skills] : [];
       const hasCategory = skills.length > 0 && skills.some((s) => String(s).trim().length > 0);
@@ -116,8 +120,14 @@ export class ProfilesService {
         if (!priceOk) parts.push("цена за час");
         if (!aboutOk) parts.push("о себе");
         throw new BadRequestException(
-          `Для профиля специалиста обязательны: ${parts.join(", ")}`,
+          `Для профиля ${type === "company" ? "компании" : "специалиста"} обязательны: ${parts.join(", ")}`,
         );
+      }
+    }
+    if (type === "company") {
+      const companyName = dto.company?.companyName?.trim();
+      if (!companyName) {
+        throw new BadRequestException("Укажите название компании");
       }
     }
 
@@ -128,14 +138,26 @@ export class ProfilesService {
           type,
           isActive: true,
           displayName: dto.displayName?.trim() || null,
-          gender: dto.gender === "male" || dto.gender === "female" ? dto.gender : null,
-          age: dto.age ?? null,
+          gender: type === "company" ? null : (dto.gender === "male" || dto.gender === "female" ? dto.gender : null),
+          age: type === "company" ? null : dto.age ?? null,
           city: dto.city?.trim() || null,
           district: dto.district?.trim() || null,
           contactPhone: dto.contactPhone?.trim() || null,
-          showContactPhonePublicly: type === "specialist" ? Boolean(dto.showContactPhonePublicly) : false,
+          showContactPhonePublicly: isProvider ? Boolean(dto.showContactPhonePublicly) : false,
           ...(type === "parent" ? { parentProfile: { create: {} } } : {}),
           ...(type === "specialist" ? { specialistProfile: { create: {} } } : {}),
+          ...(type === "company"
+            ? {
+                specialistProfile: { create: {} },
+                companyProfile: {
+                  create: {
+                    companyName: dto.company!.companyName!.trim(),
+                    inn: dto.company!.inn?.trim() || null,
+                    legalAddress: dto.company!.legalAddress?.trim() || null,
+                  },
+                },
+              }
+            : {}),
         },
       });
 
@@ -147,7 +169,7 @@ export class ProfilesService {
           data: { childrenAges: childrenAges ?? Prisma.JsonNull, specialWishes },
         });
       }
-      if (type === "specialist" && dto.specialist) {
+      if (isProvider && dto.specialist) {
         const skills = Array.isArray(dto.specialist.skills) ? dto.specialist.skills : dto.specialist.skills ? [dto.specialist.skills] : [];
         await tx.specialistProfile.update({
           where: { profileId: created.id },
@@ -236,6 +258,35 @@ export class ProfilesService {
     });
   }
 
+  async updateCompany(
+    userId: bigint,
+    profileId: bigint,
+    data: { companyName?: string | null; inn?: string | null; legalAddress?: string | null },
+  ) {
+    const profile = await this.getOwnedProfileOrThrow(userId, profileId);
+    if (profile.type !== "company") throw new BadRequestException("Not a company profile");
+
+    const companyName = data.companyName !== undefined ? (data.companyName?.trim() || "Компания") : undefined;
+    const inn = data.inn !== undefined ? data.inn : undefined;
+    const legalAddress = data.legalAddress !== undefined ? data.legalAddress : undefined;
+
+    const company = await this.prisma.companyProfile.upsert({
+      where: { profileId },
+      create: {
+        profileId,
+        companyName: companyName ?? "Компания",
+        inn: inn ?? null,
+        legalAddress: legalAddress ?? null,
+      },
+      update: {
+        ...(companyName !== undefined && { companyName }),
+        ...(inn !== undefined && { inn }),
+        ...(legalAddress !== undefined && { legalAddress }),
+      },
+    });
+    return company;
+  }
+
   async updateSpecialist(
     userId: bigint,
     profileId: bigint,
@@ -251,7 +302,7 @@ export class ProfilesService {
     },
   ) {
     const profile = await this.getOwnedProfileOrThrow(userId, profileId);
-    if (profile.type !== "specialist") throw new BadRequestException("Not a specialist profile");
+    if (profile.type !== "specialist" && profile.type !== "company") throw new BadRequestException("Not a specialist or company profile");
 
     const skillsJson = (() => {
       const s = data.skills;
@@ -381,17 +432,22 @@ export class ProfilesService {
         about: string | null;
         children_ages: unknown;
         special_wishes: string | null;
+        company_name: string | null;
+        inn: string | null;
+        legal_address: string | null;
       }>
     >(Prisma.sql`
       SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.gender, p.age, p.city, p.district,
              p.rating_avg::text AS rating_avg, p.rating_count, p.contact_phone, p.show_contact_phone_publicly,
              u.username, u.first_name, u.last_name, u.photo_url,
              sp.skills, sp.price_per_hour, sp.about,
-             pp.children_ages, pp.special_wishes
+             pp.children_ages, pp.special_wishes,
+             cp.company_name, cp.inn, cp.legal_address
       FROM profiles p
       LEFT JOIN users u ON u.id = p.user_id
       LEFT JOIN specialist_profiles sp ON sp.profile_id = p.id
       LEFT JOIN parent_profiles pp ON pp.profile_id = p.id
+      LEFT JOIN company_profiles cp ON cp.profile_id = p.id
       WHERE p.id = ${idNum} AND p.is_active = true
     `);
     const row = rows[0];
@@ -418,7 +474,7 @@ export class ProfilesService {
       district: row.district,
       ratingAvg,
       ratingCount: Number(row.rating_count) || 0,
-      ...(profileType === "specialist" && row.show_contact_phone_publicly && row.contact_phone
+      ...((profileType === "specialist" || profileType === "company") && row.show_contact_phone_publicly && row.contact_phone
         ? { contactPhone: row.contact_phone }
         : {}),
       user: {
@@ -428,7 +484,7 @@ export class ProfilesService {
         photoUrl: row.photo_url,
       },
       specialist:
-        profileType === "specialist"
+        (profileType === "specialist" || profileType === "company")
           ? await (async () => {
               const skills = row.skills;
               const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
@@ -440,6 +496,10 @@ export class ProfilesService {
       parent:
         profileType === "parent"
           ? { childrenAges: childrenAges && childrenAges.length > 0 ? childrenAges : null, specialWishes: row.special_wishes }
+          : null,
+      company:
+        profileType === "company" && row.company_name
+          ? { companyName: row.company_name, inn: row.inn ?? null, legalAddress: row.legal_address ?? null }
           : null,
     };
   }
@@ -453,6 +513,7 @@ export class ProfilesService {
         specialistProfile: true,
         specialistPortfolio: { orderBy: { sortOrder: "asc" }, select: { imageUrl: true } },
         parentProfile: true,
+        companyProfile: true,
       },
     });
     if (!p || !p.isActive) throw new NotFoundException("Profile not found");
@@ -479,7 +540,7 @@ export class ProfilesService {
       district: p.district ?? null,
       ratingAvg,
       ratingCount: Number(p.ratingCount) || 0,
-      ...(typeStr === "specialist" && p.showContactPhonePublicly && p.contactPhone
+      ...((typeStr === "specialist" || typeStr === "company") && p.showContactPhonePublicly && p.contactPhone
         ? { contactPhone: p.contactPhone }
         : {}),
       user: {
@@ -489,7 +550,7 @@ export class ProfilesService {
         photoUrl: p.user?.photoUrl ?? null,
       },
       specialist:
-        typeStr === "specialist" && p.specialistProfile
+        (typeStr === "specialist" || typeStr === "company") && p.specialistProfile
           ? (() => {
               const skills = p.specialistProfile.skills;
               const arr = Array.isArray(skills) ? skills : typeof skills === "string" ? [skills] : [];
@@ -508,6 +569,14 @@ export class ProfilesService {
           ? {
               childrenAges: childrenAges && childrenAges.length > 0 ? childrenAges : null,
               specialWishes: p.parentProfile?.specialWishes ?? null,
+            }
+          : null,
+      company:
+        typeStr === "company" && p.companyProfile?.companyName
+          ? {
+              companyName: p.companyProfile.companyName,
+              inn: p.companyProfile.inn ?? null,
+              legalAddress: p.companyProfile.legalAddress ?? null,
             }
           : null,
     };

@@ -101,6 +101,7 @@ model Profile {
   reviewsTo          Review[]            @relation("ReviewsTo")
   specialistPortfolio SpecialistPortfolio[]
   specialistProfile  SpecialistProfile?
+  companyProfile     CompanyProfile?
   feedPosts          FeedPost[]
   usersAsActive      User[]              @relation("UserActiveProfile")
   parentVisits       ParentVisit[]
@@ -109,6 +110,16 @@ model Profile {
   @@unique([userId, type])
   @@index([type, isActive], map: "idx_profiles_type_active")
   @@map("profiles")
+}
+
+model CompanyProfile {
+  profileId    BigInt  @id @map("profile_id")
+  companyName  String  @map("company_name")
+  inn          String? @map("inn")
+  legalAddress String? @map("legal_address")
+  profile      Profile @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("company_profiles")
 }
 
 model ParentVisit {
@@ -238,6 +249,7 @@ enum OfferStatus {
 enum ProfileType {
   parent
   specialist
+  company
   shop
 
   @@map("profile_type")

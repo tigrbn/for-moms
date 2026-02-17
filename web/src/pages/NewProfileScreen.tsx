@@ -7,7 +7,7 @@ import { CATEGORY_TREE } from "../constants/feed";
 
 const DOC_VERSION = "v1.0";
 
-type Props = { type: "parent" | "specialist" };
+type Props = { type: "parent" | "specialist" | "company" };
 
 function validateParent(
   displayName: string,
@@ -71,6 +71,34 @@ function validateSpecialist(
   return { ok: true };
 }
 
+function validateCompany(
+  companyName: string,
+  city: string,
+  district: string,
+  specialistCategory: string,
+  pricePerHour: string,
+  about: string,
+): { ok: boolean; message?: string } {
+  const nameOk = companyName.trim().length > 0;
+  const cityOk = city.trim().length > 0;
+  const districtOk = district.trim().length > 0;
+  const categoryOk = specialistCategory.trim().length > 0;
+  const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+  const priceOk = priceNum != null && Number.isFinite(priceNum) && priceNum > 0;
+  const aboutOk = about.trim().length > 0;
+  if (!nameOk || !cityOk || !districtOk || !categoryOk || !priceOk || !aboutOk) {
+    const parts: string[] = [];
+    if (!nameOk) parts.push("название компании");
+    if (!cityOk) parts.push("город");
+    if (!districtOk) parts.push("район");
+    if (!categoryOk) parts.push("категорию");
+    if (!priceOk) parts.push("цену за час");
+    if (!aboutOk) parts.push("«О компании»");
+    return { ok: false, message: `Заполните обязательные поля: ${parts.join(", ")}` };
+  }
+  return { ok: true };
+}
+
 export function NewProfileScreen({ type }: Props) {
   const { me, authedPost, refreshMe, setMeError, navigate } = useApp();
   const [agreeUserAgreement, setAgreeUserAgreement] = useState(false);
@@ -89,11 +117,16 @@ export function NewProfileScreen({ type }: Props) {
   const [specialistCategory, setSpecialistCategory] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("");
+  const [inn, setInn] = useState("");
+  const [legalAddress, setLegalAddress] = useState("");
 
   const validation =
     type === "parent"
       ? validateParent(displayName, gender, age, city, district, childrenAges)
-      : validateSpecialist(displayName, city, district, specialistCategory, pricePerHour, about);
+      : type === "company"
+        ? validateCompany(companyName, city, district, specialistCategory, pricePerHour, about)
+        : validateSpecialist(displayName, city, district, specialistCategory, pricePerHour, about);
   const canSave = agreeUserAgreement && agreePolicy && validation.ok;
 
   const save = async () => {
@@ -113,9 +146,9 @@ export function NewProfileScreen({ type }: Props) {
       const ageNum = age.trim() === "" ? null : Number(age);
       const body: Record<string, unknown> = {
         type,
-        displayName: displayName.trim() || null,
-        gender: gender === "male" || gender === "female" ? gender : null,
-        age: ageNum != null && Number.isFinite(ageNum) ? ageNum : null,
+        displayName: type === "company" ? (companyName.trim() || null) : (displayName.trim() || null),
+        gender: type === "company" ? null : (gender === "male" || gender === "female" ? gender : null),
+        age: type === "company" ? null : (ageNum != null && Number.isFinite(ageNum) ? ageNum : null),
         city: city.trim() || null,
         district: district.trim() || null,
         contactPhone: formatPhoneToDigits(contactPhone).trim() || null,
@@ -133,12 +166,19 @@ export function NewProfileScreen({ type }: Props) {
           specialWishes: specialWishes.trim() || null,
         };
       }
-      if (type === "specialist") {
+      if (type === "specialist" || type === "company") {
         const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
         body.specialist = {
           skills: specialistCategory ? [specialistCategory] : [],
           pricePerHour: priceNum != null && Number.isFinite(priceNum) ? priceNum : null,
           about: about.trim() || null,
+        };
+      }
+      if (type === "company") {
+        body.company = {
+          companyName: companyName.trim() || null,
+          inn: inn.trim() || null,
+          legalAddress: legalAddress.trim() || null,
         };
       }
       await authedPost("/profiles/with-data", body);
@@ -162,7 +202,7 @@ export function NewProfileScreen({ type }: Props) {
             Заполните профиль
           </h2>
           <p className="muted" style={{ margin: "4px 0 0" }}>
-            {type === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : "👩‍🏫 Специалист"}
+            {type === "parent" ? `${PARENT_ROLE_EMOJI} Родитель` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
           </p>
         </div>
         {err && (
@@ -196,33 +236,71 @@ export function NewProfileScreen({ type }: Props) {
           </label>
         </div>
         <div className="profile-edit-fields">
-          <div className="field">
-            <label className="label">{type === "parent" ? "Имя для отображения *" : "Имя для отображения *"}</label>
-            <input
-              className="input"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Как к вам обращаться"
-            />
-          </div>
-          <div className="field">
-            <label className="label">{type === "parent" ? "Пол *" : "Пол"}</label>
-            <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Не указан</option>
-              <option value="female">Женский</option>
-              <option value="male">Мужской</option>
-            </select>
-          </div>
-          <div className="field">
-            <label className="label">{type === "parent" ? "Возраст *" : "Возраст"}</label>
-            <input
-              className="input"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              inputMode="numeric"
-              placeholder="25"
-            />
-          </div>
+          {type !== "company" && (
+            <div className="field">
+              <label className="label">{type === "parent" ? "Имя для отображения *" : "Имя для отображения *"}</label>
+              <input
+                className="input"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Как к вам обращаться"
+              />
+            </div>
+          )}
+          {type === "company" && (
+            <>
+              <div className="field">
+                <label className="label">Название компании *</label>
+                <input
+                  className="input"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="ООО «Пример»"
+                />
+              </div>
+              <div className="field">
+                <label className="label">ИНН</label>
+                <input
+                  className="input"
+                  value={inn}
+                  onChange={(e) => setInn(e.target.value)}
+                  placeholder="Опционально"
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="field">
+                <label className="label">Юридический адрес</label>
+                <input
+                  className="input"
+                  value={legalAddress}
+                  onChange={(e) => setLegalAddress(e.target.value)}
+                  placeholder="Опционально"
+                />
+              </div>
+            </>
+          )}
+          {type !== "company" && (
+            <>
+              <div className="field">
+                <label className="label">{type === "parent" ? "Пол *" : "Пол"}</label>
+                <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
+                  <option value="">Не указан</option>
+                  <option value="female">Женский</option>
+                  <option value="male">Мужской</option>
+                </select>
+              </div>
+              <div className="field">
+                <label className="label">{type === "parent" ? "Возраст *" : "Возраст"}</label>
+                <input
+                  className="input"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="25"
+                />
+              </div>
+            </>
+          )}
           <div className="field">
             <label className="label">Город *</label>
             <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Якутск" />
@@ -251,13 +329,15 @@ export function NewProfileScreen({ type }: Props) {
               inputMode="tel"
             />
           </div>
-          {(type === "specialist" || type === "parent") && (
+          {(type === "specialist" || type === "parent" || type === "company") && (
             <div className="field">
               <label className="label profile-toggle-label">
                 <span>
-                  {type === "specialist"
+                  {type === "company"
                     ? "Разрешить показывать номер в анкете и в откликах"
-                    : "Разрешить показывать номер специалистам в карточке заявки"}
+                    : type === "specialist"
+                      ? "Разрешить показывать номер в анкете и в откликах"
+                      : "Разрешить показывать номер специалистам в карточке заявки"}
                 </span>
                 <input
                   type="checkbox"
@@ -291,7 +371,7 @@ export function NewProfileScreen({ type }: Props) {
               </div>
             </>
           )}
-          {type === "specialist" && (
+          {(type === "specialist" || type === "company") && (
             <>
               <div className="field">
                 <label className="label">Категория <span className="muted">(обязательно)</span></label>
@@ -320,12 +400,12 @@ export function NewProfileScreen({ type }: Props) {
                 />
               </div>
               <div className="field">
-                <label className="label">О себе <span className="muted">(обязательно)</span></label>
+                <label className="label">{type === "company" ? "О компании" : "О себе"} <span className="muted">(обязательно)</span></label>
                 <textarea
                   className="textarea"
                   value={about}
                   onChange={(e) => setAbout(e.target.value)}
-                  placeholder="Опыт, образование, чем можете помочь"
+                  placeholder={type === "company" ? "Услуги, опыт, чем можете помочь" : "Опыт, образование, чем можете помочь"}
                   rows={4}
                 />
                 <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>Без этих данных заказчик не сможет выбрать вас в анкете.</p>

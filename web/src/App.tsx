@@ -31,17 +31,17 @@ import { useParams } from "react-router-dom";
 
 function NewProfileByRoleRoute() {
   const { roleType } = useParams<{ roleType: string }>();
-  if (roleType !== "parent" && roleType !== "specialist") {
+  if (roleType !== "parent" && roleType !== "specialist" && roleType !== "company") {
     return <Navigate to="/profile" replace />;
   }
-  return <NewProfileScreen type={roleType} />;
+  return <NewProfileScreen type={roleType as "parent" | "specialist" | "company"} />;
 }
 
 export default function App() {
   const { token, clearToken, error } = useTelegramAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | null>(null);
+  const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | "company" | null>(null);
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
@@ -440,6 +440,12 @@ export default function App() {
                       >
                         👩‍🏫 Специалист
                       </button>
+                      <button
+                        className="btn"
+                        onClick={() => setPendingRoleType("company")}
+                      >
+                        🏢 Компания
+                      </button>
                     </div>
                   </div>
                 );
@@ -448,7 +454,7 @@ export default function App() {
               return (
                 <Routes>
                   <Route path="/docs/:docType" element={<DocPage />} />
-                  <Route path="*" element={<NewProfileScreen type={pendingRoleType} />} />
+                  <Route path="*" element={<NewProfileScreen type={pendingRoleType as "parent" | "specialist" | "company"} />} />
                 </Routes>
               );
             })()}

@@ -62,6 +62,7 @@ export class MeController {
 
     type SpecialistRow = { profile_id: bigint; skills: unknown; price_per_hour: number | null; about: string | null; notify_new_requests_in_category: boolean };
     type ParentRow = { profile_id: bigint; children_ages: unknown; special_wishes: string | null };
+    type CompanyRow = { profile_id: bigint; company_name: string; inn: string | null; legal_address: string | null };
 
     const specialists: SpecialistRow[] =
       profileIdsNum.length > 0
@@ -75,9 +76,16 @@ export class MeController {
             Prisma.sql`SELECT profile_id, children_ages, special_wishes FROM parent_profiles WHERE profile_id IN (${Prisma.join(profileIdsNum)})`,
           )
         : [];
+    const companies: CompanyRow[] =
+      profileIdsNum.length > 0
+        ? await this.prisma.$queryRaw<CompanyRow[]>(
+            Prisma.sql`SELECT profile_id, company_name, inn, legal_address FROM company_profiles WHERE profile_id IN (${Prisma.join(profileIdsNum)})`,
+          )
+        : [];
 
     const specialistByProfileId = new Map(specialists.map((s) => [String(Number(s.profile_id)), s]));
     const parentByProfileId = new Map(parents.map((p) => [String(Number(p.profile_id)), p]));
+    const companyByProfileId = new Map(companies.map((c) => [String(Number(c.profile_id)), c]));
 
     const portfolioRows =
       profileIdsNum.length > 0
@@ -112,7 +120,7 @@ export class MeController {
     }
 
     const profiles = profilesRaw.map((p) => {
-      const profileType = (typeof p.type === "string" ? p.type.toLowerCase() : String(p.type)) as "parent" | "specialist" | "shop";
+      const profileType = (typeof p.type === "string" ? p.type.toLowerCase() : String(p.type)) as "parent" | "specialist" | "company" | "shop";
       const base = {
         id: p.id.toString(),
         type: profileType,
@@ -132,6 +140,24 @@ export class MeController {
         const portfolioImageUrls = portfolioByProfileId.get(profileIdKey) ?? [];
         return {
           ...base,
+          specialist: {
+            skills: spec ? parseSkills(spec.skills) : [],
+            pricePerHour: spec?.price_per_hour ?? null,
+            about: spec?.about ?? null,
+            notifyNewRequestsInCategory: spec?.notify_new_requests_in_category ?? false,
+            portfolioImageUrls,
+          },
+        };
+      }
+      if (profileType === "company") {
+        const spec = specialistByProfileId.get(profileIdKey);
+        const company = companyByProfileId.get(profileIdKey);
+        const portfolioImageUrls = portfolioByProfileId.get(profileIdKey) ?? [];
+        return {
+          ...base,
+          company: company
+            ? { companyName: company.company_name, inn: company.inn ?? null, legalAddress: company.legal_address ?? null }
+            : null,
           specialist: {
             skills: spec ? parseSkills(spec.skills) : [],
             pricePerHour: spec?.price_per_hour ?? null,

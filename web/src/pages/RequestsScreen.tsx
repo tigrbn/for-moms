@@ -128,7 +128,7 @@ export function RequestsScreen() {
     [items, requestsPage],
   );
 
-  if (activeProfileType === "specialist") {
+  if (activeProfileType === "specialist" || activeProfileType === "company") {
     const { loading, err: archiveErr } = specialistArchive;
     return (
       <div style={{ display: "grid", gap: 12 }}>

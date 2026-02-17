@@ -52,7 +52,7 @@ export class RequestsService {
     if (!categoryTrim) return;
 
     const specialists = await this.prisma.profile.findMany({
-      where: { type: "specialist" },
+      where: { type: { in: ["specialist", "company"] } },
       include: {
         specialistProfile: true,
         user: { select: { telegramId: true } },
@@ -124,7 +124,7 @@ export class RequestsService {
   /** Записать просмотр заявки специалистом (для метрики Conversion Specialist → Response). */
   async recordView(userId: bigint, requestId: bigint): Promise<void> {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
-    if (active.type !== "specialist") return;
+    if (active.type !== "specialist" && active.type !== "company") return;
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
       select: { id: true },

@@ -192,7 +192,7 @@ export class FeedController {
       profile: Record<string, unknown>;
     };
     async function getSpecialistProfileItems(): Promise<SpecialistFeedItem[]> {
-      const profileWhere: any = { type: "specialist", isActive: true };
+      const profileWhere: any = { type: { in: ["specialist", "company"] }, isActive: true };
       if (district?.trim()) {
         profileWhere.district = { equals: district.trim(), mode: "insensitive" };
       }
@@ -270,7 +270,7 @@ export class FeedController {
       };
     }
 
-    if (active.type === "specialist") {
+    if (active.type === "specialist" || active.type === "company") {
       const requestItems = await getRequestItems.call(this);
       const specialistItems = await getSpecialistProfileItems.call(this);
       if (isCategoryAll) {

@@ -8,6 +8,7 @@ import { formatPhoneMask, formatPhoneToDigits, formatDate } from "../lib/format"
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 import { CATEGORY_TREE, getCategoryIcon } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
+import { ImageSlider } from "../components/ImageSlider";
 import { PaginationBar } from "../components/PaginationBar";
 import type { ReviewListItem } from "../types";
 
@@ -71,6 +72,9 @@ export function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("");
+  const [inn, setInn] = useState("");
+  const [legalAddress, setLegalAddress] = useState("");
 
   useEffect(() => {
     if (!activeProfile) return;
@@ -86,7 +90,13 @@ export function ProfileScreen() {
       setChildrenAges(Array.isArray(parent?.childrenAges) ? parent.childrenAges.join(", ") : "");
       setSpecialWishes(parent?.specialWishes ?? "");
     }
-    if (activeProfile.type === "specialist") {
+    if (activeProfile.type === "company") {
+      const company = activeProfile.company;
+      setCompanyName(company?.companyName ?? "");
+      setInn(company?.inn ?? "");
+      setLegalAddress(company?.legalAddress ?? "");
+    }
+    if (activeProfile.type === "specialist" || activeProfile.type === "company") {
       const spec = activeProfile.specialist;
       if (spec) {
         setPricePerHour(spec.pricePerHour != null ? String(spec.pricePerHour) : "");
@@ -165,13 +175,33 @@ export function ProfileScreen() {
         return;
       }
     }
+    if (type === "company") {
+      const nameOk = companyName.trim().length > 0;
+      const cityOk = city.trim().length > 0;
+      const districtOk = district.trim().length > 0;
+      const categoryOk = specialistCategory.trim().length > 0;
+      const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
+      const priceOk = priceNum != null && Number.isFinite(priceNum) && priceNum > 0;
+      const aboutOk = about.trim().length > 0;
+      if (!nameOk || !cityOk || !districtOk || !categoryOk || !priceOk || !aboutOk) {
+        const parts: string[] = [];
+        if (!nameOk) parts.push("название компании");
+        if (!cityOk) parts.push("город");
+        if (!districtOk) parts.push("район");
+        if (!categoryOk) parts.push("категорию");
+        if (!priceOk) parts.push("цену за час");
+        if (!aboutOk) parts.push("«О компании»");
+        setErr(`Заполните обязательные поля: ${parts.join(", ")}`);
+        return;
+      }
+    }
     setSaving(true);
     try {
       const ageNum = age.trim() === "" ? null : Number(age);
       await authedPatch(`/profiles/${profileId}`, {
-        displayName: displayName.trim() || null,
-        gender: gender === "male" || gender === "female" ? gender : null,
-        age: ageNum != null && Number.isFinite(ageNum) ? ageNum : null,
+        displayName: type === "company" ? (companyName.trim() || null) : (displayName.trim() || null),
+        gender: type === "company" ? null : (gender === "male" || gender === "female" ? gender : null),
+        age: type === "company" ? null : (ageNum != null && Number.isFinite(ageNum) ? ageNum : null),
         city: city.trim() || null,
         district: district.trim() || null,
         contactPhone: formatPhoneToDigits(contactPhone).trim() || null,
@@ -189,7 +219,14 @@ export function ProfileScreen() {
           specialWishes: specialWishes.trim() || null,
         });
       }
-      if (type === "specialist") {
+      if (type === "company") {
+        await authedPatch(`/profiles/${profileId}/company`, {
+          companyName: companyName.trim() || null,
+          inn: inn.trim() || null,
+          legalAddress: legalAddress.trim() || null,
+        });
+      }
+      if (type === "specialist" || type === "company") {
         const priceNum = pricePerHour.trim() === "" ? null : Number(pricePerHour);
         await authedPatch(`/profiles/${profileId}/specialist`, {
           skills: specialistCategory ? [specialistCategory] : [],
@@ -208,13 +245,15 @@ export function ProfileScreen() {
   };
 
   const roles = me.profiles
-    .filter((p) => p.type === "parent" || p.type === "specialist")
+    .filter((p) => p.type === "parent" || p.type === "specialist" || p.type === "company")
     .map((p) => ({
       ...p,
       title:
         p.type === "parent"
           ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(p.gender)}`
-          : "👩‍🏫 Специалист",
+          : p.type === "company"
+            ? "🏢 Компания"
+            : "👩‍🏫 Специалист",
     }));
 
   const renderReviewCard = (r: ReviewListItem) => {
@@ -417,21 +456,41 @@ export function ProfileScreen() {
               {activeProfile.displayName || "—"}
             </h2>
             <p className="muted" style={{ margin: "4px 0 0" }}>
-              {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : "👩‍🏫 Специалист"}
+              {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
             </p>
           </div>
         </div>
         <dl className="profile-view-dl">
-          <div className="profile-view-row">
-            <dt className="muted">Пол</dt>
-            <dd>
-              {activeProfile.gender === "male" ? "Мужской" : activeProfile.gender === "female" ? "Женский" : "—"}
-            </dd>
-          </div>
-          <div className="profile-view-row">
-            <dt className="muted">Возраст</dt>
-            <dd>{activeProfile.age != null ? `${activeProfile.age} лет` : "—"}</dd>
-          </div>
+          {type !== "company" && (
+            <>
+              <div className="profile-view-row">
+                <dt className="muted">Пол</dt>
+                <dd>
+                  {activeProfile.gender === "male" ? "Мужской" : activeProfile.gender === "female" ? "Женский" : "—"}
+                </dd>
+              </div>
+              <div className="profile-view-row">
+                <dt className="muted">Возраст</dt>
+                <dd>{activeProfile.age != null ? `${activeProfile.age} лет` : "—"}</dd>
+              </div>
+            </>
+          )}
+          {type === "company" && activeProfile.company && (
+            <>
+              <div className="profile-view-row">
+                <dt className="muted">Название компании</dt>
+                <dd>{activeProfile.company.companyName || "—"}</dd>
+              </div>
+              <div className="profile-view-row">
+                <dt className="muted">ИНН</dt>
+                <dd>{activeProfile.company.inn || "—"}</dd>
+              </div>
+              <div className="profile-view-row">
+                <dt className="muted">Юридический адрес</dt>
+                <dd>{activeProfile.company.legalAddress || "—"}</dd>
+              </div>
+            </>
+          )}
           <div className="profile-view-row">
             <dt className="muted">Город</dt>
             <dd>{activeProfile.city || "—"}</dd>
@@ -468,7 +527,7 @@ export function ProfileScreen() {
               </div>
             </>
           )}
-          {type === "specialist" && (
+          {(type === "specialist" || type === "company") && (
             <>
               <div className="profile-view-row">
                 <dt className="muted">Категория</dt>
@@ -487,7 +546,7 @@ export function ProfileScreen() {
                 </dd>
               </div>
               <div className="profile-view-row">
-                <dt className="muted">О себе</dt>
+                <dt className="muted">{type === "company" ? "О компании" : "О себе"}</dt>
                 <dd style={{ whiteSpace: "pre-wrap" }}>
                   {(activeProfile.specialist?.about ?? "").trim() || "—"}
                 </dd>
@@ -499,12 +558,18 @@ export function ProfileScreen() {
             </>
           )}
         </dl>
+        {(type === "specialist" || type === "company") && activeProfile.specialist?.portfolioImageUrls && activeProfile.specialist.portfolioImageUrls.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Фото в анкете</div>
+            <ImageSlider images={activeProfile.specialist.portfolioImageUrls} alt="Фото в анкете" height={200} />
+          </div>
+        )}
         <div className="profile-view-actions">
           <button type="button" className="btn btn-primary" onClick={() => setIsEditing(true)}>
             Редактировать
           </button>
         </div>
-        {type === "specialist" && profileId && (
+        {(type === "specialist" || type === "company") && profileId && (
           <div className="profile-notify-toggle" style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-color)" }}>
             <label className="profile-toggle-label" style={{ cursor: "pointer", flexWrap: "wrap" }}>
               <span style={{ flex: 1, minWidth: 0, fontSize: 14 }}>
@@ -529,7 +594,7 @@ export function ProfileScreen() {
             </label>
           </div>
         )}
-        {type === "specialist" && (
+        {(type === "specialist" || type === "company") && (
           <p className="muted" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
             Фотографии и описания размещены пользователем. Сервис «Для мам» не проверяет достоверность и законность размещённых материалов.
           </p>
@@ -577,7 +642,7 @@ export function ProfileScreen() {
           Редактирование профиля
         </h2>
         <p className="muted" style={{ margin: "4px 0 0" }}>
-          {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : "👩‍🏫 Специалист"}
+          {type === "parent" ? `${PARENT_ROLE_EMOJI} ${getParentRoleLabel(activeProfile.gender)}` : type === "company" ? "🏢 Компания" : "👩‍🏫 Специалист"}
         </p>
       </div>
       {err && (
@@ -586,33 +651,69 @@ export function ProfileScreen() {
         </div>
       )}
       <div className="profile-edit-fields">
-        <div className="field">
-          <label className="label">{type === "parent" ? "Имя для отображения *" : "Имя для отображения"}</label>
-          <input
-            className="input"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Как к вам обращаться"
-          />
-        </div>
-        <div className="field">
-          <label className="label">{type === "parent" ? "Пол *" : "Пол"}</label>
-          <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
-            <option value="">Не указан</option>
-            <option value="female">Женский</option>
-            <option value="male">Мужской</option>
-          </select>
-        </div>
-        <div className="field">
-          <label className="label">{type === "parent" ? "Возраст *" : "Возраст"}</label>
-          <input
-            className="input"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            inputMode="numeric"
-            placeholder="25"
-          />
-        </div>
+        {type !== "company" && (
+          <>
+            <div className="field">
+              <label className="label">{type === "parent" ? "Имя для отображения *" : "Имя для отображения"}</label>
+              <input
+                className="input"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Как к вам обращаться"
+              />
+            </div>
+            <div className="field">
+              <label className="label">{type === "parent" ? "Пол *" : "Пол"}</label>
+              <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
+                <option value="">Не указан</option>
+                <option value="female">Женский</option>
+                <option value="male">Мужской</option>
+              </select>
+            </div>
+            <div className="field">
+              <label className="label">{type === "parent" ? "Возраст *" : "Возраст"}</label>
+              <input
+                className="input"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                inputMode="numeric"
+                placeholder="25"
+              />
+            </div>
+          </>
+        )}
+        {type === "company" && (
+          <>
+            <div className="field">
+              <label className="label">Название компании *</label>
+              <input
+                className="input"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="ООО «Пример»"
+              />
+            </div>
+            <div className="field">
+              <label className="label">ИНН</label>
+              <input
+                className="input"
+                value={inn}
+                onChange={(e) => setInn(e.target.value)}
+                placeholder="Опционально"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="field">
+              <label className="label">Юридический адрес</label>
+              <input
+                className="input"
+                value={legalAddress}
+                onChange={(e) => setLegalAddress(e.target.value)}
+                placeholder="Опционально"
+              />
+            </div>
+          </>
+        )}
         <div className="field">
           <label className="label">{type === "parent" ? "Город *" : "Город"}</label>
           <input
@@ -656,18 +757,20 @@ export function ProfileScreen() {
             inputMode="tel"
           />
           <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
-            {type === "specialist"
+            {(type === "specialist" || type === "company")
               ? "Если разрешите показ ниже — номер будет виден в анкете и в карточках откликов. Иначе родитель увидит его только после принятия вашего отклика."
               : "По этому номеру смогут связаться специалисты после того, как вы примете их отклик."}
           </p>
         </div>
-        {(type === "specialist" || type === "parent") && (
+        {(type === "specialist" || type === "parent" || type === "company") && (
           <div className="field">
             <label className="label profile-toggle-label">
               <span>
-                {type === "specialist"
+                {type === "company"
                   ? "Разрешить показывать номер в анкете и в откликах"
-                  : "Разрешить показывать номер специалистам в карточке заявки"}
+                  : type === "specialist"
+                    ? "Разрешить показывать номер в анкете и в откликах"
+                    : "Разрешить показывать номер специалистам в карточке заявки"}
               </span>
               <input
                 type="checkbox"
@@ -679,7 +782,7 @@ export function ProfileScreen() {
             </label>
           </div>
         )}
-        {type === "specialist" && profileId && (
+        {(type === "specialist" || type === "company") && profileId && (
           <div className="field">
             <label className="label profile-toggle-label" style={{ cursor: "pointer" }}>
               <span>Разрешить боту присылать в Telegram сообщения о новых заявках по моей категории</span>
@@ -724,7 +827,7 @@ export function ProfileScreen() {
             </div>
           </>
         )}
-        {type === "specialist" && (
+        {(type === "specialist" || type === "company") && (
           <>
             <div className="field">
               <label className="label">Категория</label>
@@ -768,6 +871,9 @@ export function ProfileScreen() {
             </div>
             <div className="field">
               <label className="label">Фото в анкете <span className="muted">(до 10)</span></label>
+              <p className="muted" style={{ marginTop: 0, marginBottom: 8, fontSize: 13 }}>
+                Эти фото отображаются в вашей анкете слайдером. При клике открываются в полном размере, при нескольких фото — можно листать.
+              </p>
               <input
                 ref={specialistFileInputRef}
                 type="file"

@@ -18,7 +18,7 @@ export function OffersScreen() {
     const run = async () => {
       setErr(null);
       setItems(null);
-      if (activeProfileType !== "specialist") return;
+      if (activeProfileType !== "specialist" && activeProfileType !== "company") return;
       try {
         const data = await authedGet<OfferMineItem[]>("/offers/mine");
         setItems(data);
@@ -39,7 +39,7 @@ export function OffersScreen() {
     [items, page],
   );
 
-  if (activeProfileType !== "specialist") {
+  if (activeProfileType !== "specialist" && activeProfileType !== "company") {
     return (
       <div className="card">
         <div className="h2">Отклики</div>

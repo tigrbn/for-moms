@@ -8,8 +8,8 @@ import menuAll from "../assets/img/menu/все заявки.png";
 export function BottomNav() {
   const location = useLocation();
   const { activeProfileType, parentNewOffersCount } = useApp();
-  const isSpecialist = activeProfileType === "specialist";
-  const showNewOffersBadge = !isSpecialist && parentNewOffersCount != null && parentNewOffersCount > 0;
+  const isProvider = activeProfileType === "specialist" || activeProfileType === "company";
+  const showNewOffersBadge = !isProvider && parentNewOffersCount != null && parentNewOffersCount > 0;
 
   return (
     <nav className="bottom-nav">
@@ -21,7 +21,7 @@ export function BottomNav() {
         <img src={menuProfil} alt="" className="bottom-nav-icon-img" />
         <span>Профиль</span>
       </Link>
-      {isSpecialist ? (
+      {isProvider ? (
         <>
           <Link className={`bottom-nav-item ${location.pathname === "/offers" ? "active" : ""}`} to="/offers">
             <img src={menuCreate} alt="" className="bottom-nav-icon-img" />

@@ -87,7 +87,13 @@ export function FeedScreen() {
     ? [{ id: "", label: "Все" }, ...currentSection.children]
     : [];
 
-  const contentItems = feed?.items.filter((it) => it.kind !== "banner") ?? [];
+  const allItems = feed?.items.filter((it) => it.kind !== "banner") ?? [];
+  const contentItems = useMemo(() => {
+    if (feedView === "specialists") {
+      return allItems.filter((it) => it.kind === "specialist_profile" || it.kind === "other_post");
+    }
+    return allItems.filter((it) => it.kind === "request" || it.kind === "other_post");
+  }, [allItems, feedView]);
   const contentCount = contentItems.length;
   const role = activeProfileType;
 
@@ -99,7 +105,7 @@ export function FeedScreen() {
   );
   useEffect(() => {
     setFeedPage(1);
-  }, [contentCount, feedCategory, feedSubcategory]);
+  }, [contentCount, feedCategory, feedSubcategory, feedView]);
 
   const feedSubtitle =
     feedView === "requests"
@@ -108,35 +114,37 @@ export function FeedScreen() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div className="feed-view-switcher card" style={{ padding: "10px 12px" }}>
-        <div className="row" style={{ gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className={`btn ${feedView === "specialists" ? "btn-primary" : "secondary"}`}
-            onClick={() => {
-              if (feedView !== "specialists") {
-                setFeedCategory("");
-                setFeedSubcategory("");
-                setFeedView("specialists");
-              }
-            }}
-          >
-            Ищу специалиста
-          </button>
-          <button
-            type="button"
-            className={`btn ${feedView === "requests" ? "btn-primary" : "secondary"}`}
-            onClick={() => {
-              if (feedView !== "requests") {
-                setFeedCategory("");
-                setFeedSubcategory("");
-                setFeedView("requests");
-              }
-            }}
-          >
-            Ищу заказ
-          </button>
-        </div>
+      <div className="feed-segmented" role="tablist" aria-label="Режим ленты">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={feedView === "specialists"}
+          className={`feed-segmented-segment ${feedView === "specialists" ? "feed-segmented-segment--active" : ""}`}
+          onClick={() => {
+            if (feedView !== "specialists") {
+              setFeedCategory("");
+              setFeedSubcategory("");
+              setFeedView("specialists");
+            }
+          }}
+        >
+          Ищу специалиста
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={feedView === "requests"}
+          className={`feed-segmented-segment ${feedView === "requests" ? "feed-segmented-segment--active" : ""}`}
+          onClick={() => {
+            if (feedView !== "requests") {
+              setFeedCategory("");
+              setFeedSubcategory("");
+              setFeedView("requests");
+            }
+          }}
+        >
+          Ищу заказ
+        </button>
       </div>
       <div className="feed-header-card-wrap" ref={feedHeaderCardRef}>
         <div
@@ -234,7 +242,7 @@ export function FeedScreen() {
               title={
                 feedCategory === "Объявления"
                   ? "💬 Объявлений пока нет"
-                  : role === "specialist"
+                  : feedView === "requests"
                     ? "💛 Заявок пока нет"
                     : "💛 Специалистов пока нет"
               }

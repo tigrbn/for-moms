@@ -23,9 +23,9 @@ export type AppContextValue = {
   setFeedView: (view: "specialists" | "requests") => void;
   activeProfile: MeResponse["profiles"][0] | null;
   activeProfileId: string | null;
-  activeProfileType: "parent" | "specialist" | null;
+  activeProfileType: "parent" | "specialist" | "company" | null;
   ensureActiveProfile: (profileId: string) => Promise<void>;
-  createRole: (type: "parent" | "specialist") => Promise<void>;
+  createRole: (type: "parent" | "specialist" | "company") => Promise<void>;
   refreshMe: () => Promise<MeResponse | null>;
   authedGet: <T>(path: string) => Promise<T>;
   authedPost: <T>(path: string, body: unknown) => Promise<T>;

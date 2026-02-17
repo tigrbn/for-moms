@@ -45,7 +45,7 @@ export class ProfilesController {
     @Req() req: Request,
     @Body()
     body: {
-      type: "parent" | "specialist";
+      type: "parent" | "specialist" | "company";
       displayName?: string | null;
       gender?: string | null;
       age?: number | null;
@@ -55,6 +55,7 @@ export class ProfilesController {
       showContactPhonePublicly?: boolean;
       parent?: { childrenAges?: number[] | null; specialWishes?: string | null };
       specialist?: { skills?: string[] | null; pricePerHour?: number | null; about?: string | null };
+      company?: { companyName?: string | null; inn?: string | null; legalAddress?: string | null };
     },
   ) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
@@ -117,6 +118,23 @@ export class ProfilesController {
       profileId: parent.profileId.toString(),
       childrenAges: parent.childrenAges,
       specialWishes: parent.specialWishes,
+    };
+  }
+
+  @Patch(":id/company")
+  async updateCompany(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: { companyName?: string | null; inn?: string | null; legalAddress?: string | null },
+  ) {
+    this.logger.log(`PATCH /profiles/${id}/company body=${JSON.stringify(body)}`);
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const company = await this.profiles.updateCompany(userId, BigInt(id), body ?? {});
+    return {
+      profileId: id,
+      companyName: company.companyName,
+      inn: company.inn,
+      legalAddress: company.legalAddress,
     };
   }
 

@@ -115,7 +115,7 @@ export class OffersService {
 
   async createForRequest(userId: bigint, requestId: bigint, dto: { priceOffer?: number | null; comment?: string | null }) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
-    if (active.type !== "specialist") throw new BadRequestException("Active profile is not specialist");
+    if (active.type !== "specialist" && active.type !== "company") throw new BadRequestException("Active profile is not specialist or company");
 
     const request = await this.prisma.request.findUnique({ where: { id: requestId } });
     if (!request) throw new NotFoundException("Request not found");
@@ -171,7 +171,7 @@ export class OffersService {
 
   async mine(userId: bigint) {
     const active = await getActiveProfileOrThrow(this.prisma, userId);
-    if (active.type !== "specialist") throw new BadRequestException("Active profile is not specialist");
+    if (active.type !== "specialist" && active.type !== "company") throw new BadRequestException("Active profile is not specialist or company");
 
     return this.prisma.offer.findMany({
       where: { specialistProfileId: active.id },

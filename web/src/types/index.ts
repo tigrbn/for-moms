@@ -9,7 +9,7 @@ export type MeResponse = {
   };
   profiles: Array<{
     id: string;
-    type: "parent" | "specialist";
+    type: "parent" | "specialist" | "company";
     isActive: boolean;
     displayName?: string | null;
     avatarUrl?: string | null;
@@ -21,6 +21,7 @@ export type MeResponse = {
     showContactPhonePublicly?: boolean;
     specialist?: { skills: string[]; pricePerHour?: number | null; about?: string | null; notifyNewRequestsInCategory?: boolean; portfolioImageUrls?: string[] };
     parent?: { childrenAges: number[] | null; specialWishes?: string | null };
+    company?: { companyName: string; inn?: string | null; legalAddress?: string | null };
   }>;
   activeProfileId: string | null;
   consentedUserAgreement?: boolean;
@@ -70,7 +71,7 @@ export type FeedResponse =
       >;
     }
   | {
-      role: "specialist";
+      role: "specialist" | "company";
       items: Array<
         | { kind: "banner"; id: string; imageUrl: string; targetUrl?: string | null }
         | {
@@ -215,7 +216,7 @@ export type ReviewListItem = {
   /** null — автор отзыва удалил аккаунт; отзыв участвует в рейтинге */
   fromProfile: {
     id: string;
-    type: "parent" | "specialist";
+    type: "parent" | "specialist" | "company";
     displayName?: string | null;
     avatarUrl?: string | null;
     photoUrl?: string | null;
@@ -227,7 +228,7 @@ export type ReviewListItem = {
 
 export type PublicProfile = {
   id: string;
-  type: "parent" | "specialist";
+  type: "parent" | "specialist" | "company";
   isActive: boolean;
   displayName?: string | null;
   avatarUrl?: string | null;
@@ -237,11 +238,12 @@ export type PublicProfile = {
   district?: string | null;
   ratingAvg: string;
   ratingCount: number;
-  /** Телефон (только если специалист разрешил показ в анкете) */
+  /** Телефон (только если специалист/компания разрешил показ в анкете) */
   contactPhone?: string | null;
   user: { username?: string | null; firstName?: string | null; lastName?: string | null; photoUrl?: string | null };
   specialist: { category?: string | null; pricePerHour?: number | null; about?: string | null; portfolioImageUrls?: string[] } | null;
   parent: { childrenAges?: number[] | null; specialWishes?: string | null } | null;
+  company: { companyName: string; inn?: string | null; legalAddress?: string | null } | null;
 };
 
 /** Ответ GET /analytics/dashboard (только для админа) */

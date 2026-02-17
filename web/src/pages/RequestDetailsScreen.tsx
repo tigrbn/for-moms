@@ -53,7 +53,7 @@ export function RequestDetailsScreen() {
         const r = await authedGet<RequestDetailsType>(`/requests/${requestId}`);
         setData(r);
         void refreshParentNewOffersCount();
-        if (activeProfileType === "specialist") {
+        if (activeProfileType === "specialist" || activeProfileType === "company") {
           void authedPost(`/requests/${requestId}/view`, {}).catch(() => {});
         }
       } catch (e: unknown) {
@@ -225,13 +225,13 @@ export function RequestDetailsScreen() {
             </div>
             <div className="profile-card-meta-block">
               <CategoryDisplay category={data.category} />
-              {activeProfileType === "specialist" && data.parent.childrenAges != null && data.parent.childrenAges.length > 0 && (
+              {(activeProfileType === "specialist" || activeProfileType === "company") && data.parent.childrenAges != null && data.parent.childrenAges.length > 0 && (
                 <div className="profile-card-meta-row">
                   <span className="profile-card-meta-label">Возраст детей:</span>
                   <span className="profile-card-meta-value">{data.parent.childrenAges.join(", ")}</span>
                 </div>
               )}
-              {activeProfileType === "specialist" && data.parent.specialWishes != null && data.parent.specialWishes.trim() !== "" && (
+              {(activeProfileType === "specialist" || activeProfileType === "company") && data.parent.specialWishes != null && data.parent.specialWishes.trim() !== "" && (
                 <div className="profile-card-meta-row">
                   <span className="profile-card-meta-label">Пожелания:</span>
                   <span className="profile-card-meta-value">{data.parent.specialWishes}</span>
@@ -252,7 +252,7 @@ export function RequestDetailsScreen() {
             </div>
           </div>
         </div>
-        {activeProfileType === "specialist" && data.parent.contactPhone != null && data.parent.contactPhone.trim() !== "" && (
+        {(activeProfileType === "specialist" || activeProfileType === "company") && data.parent.contactPhone != null && data.parent.contactPhone.trim() !== "" && (
           <div className="profile-card-meta-block" style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border-color)" }}>
             <div className="profile-card-meta-row">
               <span className="profile-card-meta-label">Телефон для связи:</span>
@@ -320,7 +320,7 @@ export function RequestDetailsScreen() {
 
       {actionErr && <ErrorBox error={actionErr} />}
 
-      {activeProfileType === "specialist" &&
+      {(activeProfileType === "specialist" || activeProfileType === "company") &&
         (() => {
           const myOffer = data.offers.find((o) => o.specialistProfileId === activeProfileId);
           if (myOffer) {
@@ -525,7 +525,7 @@ export function RequestDetailsScreen() {
                     {reviewSending ? "Отправка…" : "Оставить отзыв специалисту"}
                   </button>
                 )}
-                {activeProfileType === "specialist" && (
+                {(activeProfileType === "specialist" || activeProfileType === "company") && (
                   <button
                     className="btn btn-primary"
                     disabled={reviewSending}

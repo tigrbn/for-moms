@@ -69,13 +69,16 @@ export function PublicProfileScreen() {
   if (err) return <ErrorBox error={err} />;
   if (!p) return <div className="card">Загрузка…</div>;
 
-  const title = p.displayName ?? p.user?.username ?? "Профиль";
-  const parentRoleLabel = p.type === "parent" ? getParentRoleLabel(p.gender) : null;
+  const title =
+    p.type === "company" && p.company?.companyName
+      ? p.company.companyName
+      : (p.displayName ?? p.user?.username ?? "Профиль");
+  const parentRoleLabel = p.type === "parent" ? getParentRoleLabel(p.gender) : p.type === "company" ? "Компания" : null;
   const tgUsername = p.user?.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
   const avatarSrc = getAvatarSrc(p.avatarUrl, p.user?.photoUrl, p.gender);
   const genderLabel = p.gender === "male" ? "Мужской" : p.gender === "female" ? "Женский" : "—";
-  const category = p.type === "specialist" ? p.specialist?.category ?? null : null;
+  const category = (p.type === "specialist" || p.type === "company") ? p.specialist?.category ?? null : null;
   const categoryIcon = getCategoryIcon(category);
 
   return (
@@ -86,7 +89,7 @@ export function PublicProfileScreen() {
             <div className="profile-card-avatar">
               <img src={avatarSrc} alt="" />
             </div>
-            {p.type === "specialist" && categoryIcon && (
+            {(p.type === "specialist" || p.type === "company") && categoryIcon && (
               <div className="profile-card-category-badge" title={getCategoryDisplayText(category)}>
                 <img src={categoryIcon} alt="" />
               </div>
@@ -108,22 +111,40 @@ export function PublicProfileScreen() {
               </p>
             )}
             <div className="profile-card-meta-block">
-              {p.type === "specialist" && <CategoryDisplay category={category} />}
+              {(p.type === "specialist" || p.type === "company") && <CategoryDisplay category={category} />}
               <div className="profile-card-meta-row">
                 <span className="profile-card-meta-label">город, район:</span>
                 <span className="profile-card-meta-value">
                   {[p.city, p.district].filter(Boolean).join(", ") || "—"}
                 </span>
               </div>
-              <div className="profile-card-meta-row">
-                <span className="profile-card-meta-label">Возраст:</span>
-                <span className="profile-card-meta-value">{p.age != null && p.age > 0 ? `${p.age} лет` : "—"}</span>
-              </div>
-              <div className="profile-card-meta-row">
-                <span className="profile-card-meta-label">Пол:</span>
-                <strong className="profile-card-meta-value">{genderLabel}</strong>
-              </div>
-              {p.type === "specialist" && p.specialist?.pricePerHour != null && (
+              {p.type !== "company" && (
+                <>
+                  <div className="profile-card-meta-row">
+                    <span className="profile-card-meta-label">Возраст:</span>
+                    <span className="profile-card-meta-value">{p.age != null && p.age > 0 ? `${p.age} лет` : "—"}</span>
+                  </div>
+                  <div className="profile-card-meta-row">
+                    <span className="profile-card-meta-label">Пол:</span>
+                    <strong className="profile-card-meta-value">{genderLabel}</strong>
+                  </div>
+                </>
+              )}
+              {p.type === "company" && p.company && (
+                <>
+                  <div className="profile-card-meta-row">
+                    <span className="profile-card-meta-label">ИНН:</span>
+                    <span className="profile-card-meta-value">{p.company.inn || "—"}</span>
+                  </div>
+                  {p.company.legalAddress && (
+                    <div className="profile-card-meta-row">
+                      <span className="profile-card-meta-label">Юридический адрес:</span>
+                      <span className="profile-card-meta-value">{p.company.legalAddress}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {(p.type === "specialist" || p.type === "company") && p.specialist?.pricePerHour != null && (
                 <div className="profile-card-meta-row">
                   <span className="profile-card-meta-label">цена за час:</span>
                   <strong className="profile-card-meta-value profile-card-meta-value--price">{p.specialist.pricePerHour} ₽</strong>
@@ -132,14 +153,14 @@ export function PublicProfileScreen() {
             </div>
           </div>
         </div>
-        {p.type === "specialist" && p.specialist?.portfolioImageUrls && p.specialist.portfolioImageUrls.length > 0 && (
+        {(p.type === "specialist" || p.type === "company") && p.specialist?.portfolioImageUrls && p.specialist.portfolioImageUrls.length > 0 && (
           <div style={{ marginTop: 12 }}>
             <ImageSlider images={p.specialist.portfolioImageUrls} alt="Фото в анкете" height={200} />
           </div>
         )}
-        {p.type === "specialist" && (p.specialist?.about ?? "").trim() && (
+        {(p.type === "specialist" || p.type === "company") && (p.specialist?.about ?? "").trim() && (
           <div className="profile-card-about">
-            <div className="profile-card-about-title">О специалисте</div>
+            <div className="profile-card-about-title">{p.type === "company" ? "О компании" : "О специалисте"}</div>
             <div className="profile-card-about-text">{(p.specialist?.about ?? "").trim()}</div>
           </div>
         )}
@@ -179,7 +200,7 @@ export function PublicProfileScreen() {
             Назад
           </button>
         </div>
-        {p.type === "specialist" && (
+        {(p.type === "specialist" || p.type === "company") && (
           <p className="muted service-disclaimer" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
             Фотографии и описания размещены пользователем. Сервис «Для мам» не проверяет достоверность и законность размещённых материалов.
           </p>
