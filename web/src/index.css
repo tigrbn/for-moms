@@ -380,6 +380,44 @@ a {
   box-shadow: none;
 }
 
+/* Компактные кнопки (например, для блока аватара) */
+.btn-sm {
+  padding: 6px 12px;
+  min-height: 32px;
+  font-size: 13px;
+  border-radius: 12px;
+}
+
+.btn-avatar-upload {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn-avatar-upload:hover:not(:disabled) {
+  background: #6a6beb;
+  border-color: #6a6beb;
+}
+
+.btn-avatar-remove {
+  background: var(--error);
+  color: #fff;
+  border-color: var(--error);
+}
+.btn-avatar-remove:hover {
+  background: #8b1515;
+  border-color: #8b1515;
+}
+
+.btn-avatar-telegram {
+  background: #0088cc;
+  color: #fff;
+  border-color: #0088cc;
+}
+.btn-avatar-telegram:hover {
+  background: #006699;
+  border-color: #006699;
+}
+
 .segmented {
   display: inline-flex;
   background: var(--surface-2, var(--tg-bg));
@@ -1706,4 +1744,12 @@ a {
 }
 .profile-consent-checkboxes a:hover {
   text-decoration: underline;
+}
+
+/* Модальное окно просмотра фото: без рывков при свайпе и скролле */
+.image-slider-modal-overlay {
+  touch-action: none;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }

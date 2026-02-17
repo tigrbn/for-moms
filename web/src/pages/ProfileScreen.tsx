@@ -465,91 +465,120 @@ export function ProfileScreen() {
         {profileId && (
           <div style={{ paddingBottom: 16, borderBottom: "1px solid var(--border-color)" }}>
             <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Фото профиля</div>
-            <p className="muted" style={{ margin: "0 0 10px", fontSize: 13 }}>
+            <p className="muted" style={{ margin: "0 0 12px", fontSize: 13 }}>
               По умолчанию подставляется фото из Telegram. Можно загрузить своё — оно не будет заменяться при входе.
             </p>
-            <input
-              ref={avatarFileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file || !token || !profileId) {
-                  e.target.value = "";
-                  return;
-                }
-                if (file.type && !file.type.startsWith("image/")) {
-                  e.target.value = "";
-                  return;
-                }
-                setAvatarUploading(true);
-                setErr(null);
-                try {
-                  let toUpload: File;
-                  try {
-                    toUpload = await compressImage(file);
-                  } catch {
-                    if (!/^image\/(jpeg|png|gif|webp)$/i.test(file.type)) {
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ flexShrink: 0 }}>
+                <div
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    background: "var(--border-color)",
+                    border: "2px solid var(--border-color)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  aria-hidden
+                >
+                  <img
+                    src={profileAvatarSrc}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                <p className="muted" style={{ margin: "6px 0 0", fontSize: 12, textAlign: "center" }}>
+                  Так в анкете
+                </p>
+              </div>
+              <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+                <input
+                  ref={avatarFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !token || !profileId) {
                       e.target.value = "";
                       return;
                     }
-                    toUpload = file;
-                  }
-                  const { url } = await uploadFile("/upload", toUpload, token);
-                  await authedPatch(`/profiles/${profileId}`, { avatarUrl: url });
-                  await refreshMe();
-                } catch (err: unknown) {
-                  const msg = err instanceof Error ? err.message : "Не удалось загрузить фото";
-                  setErr(msg);
-                  setMeError(msg);
-                } finally {
-                  setAvatarUploading(false);
-                  e.target.value = "";
-                }
-              }}
-            />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <button
-                type="button"
-                className="btn secondary"
-                disabled={avatarUploading}
-                onClick={() => avatarFileInputRef.current?.click()}
-              >
-                {avatarUploading ? "Загрузка…" : "Загрузить фото"}
-              </button>
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={async () => {
-                  if (!profileId) return;
-                  setErr(null);
-                  try {
-                    await authedPatch(`/profiles/${profileId}`, { avatarUrl: null });
-                    await refreshMe();
-                  } catch (err: unknown) {
-                    setMeError(err instanceof Error ? err.message : "Не удалось удалить фото");
-                  }
-                }}
-              >
-                Удалить фото
-              </button>
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={async () => {
-                  if (!profileId) return;
-                  setErr(null);
-                  try {
-                    await authedPatch(`/profiles/${profileId}`, { avatarUrl: null });
-                    await refreshMe();
-                  } catch (err: unknown) {
-                    setMeError(err instanceof Error ? err.message : "Не удалось обновить");
-                  }
-                }}
-              >
-                Обновить из Telegram
-              </button>
+                    if (file.type && !file.type.startsWith("image/")) {
+                      e.target.value = "";
+                      return;
+                    }
+                    setAvatarUploading(true);
+                    setErr(null);
+                    try {
+                      let toUpload: File;
+                      try {
+                        toUpload = await compressImage(file);
+                      } catch {
+                        if (!/^image\/(jpeg|png|gif|webp)$/i.test(file.type)) {
+                          e.target.value = "";
+                          return;
+                        }
+                        toUpload = file;
+                      }
+                      const { url } = await uploadFile("/upload", toUpload, token);
+                      await authedPatch(`/profiles/${profileId}`, { avatarUrl: url });
+                      await refreshMe();
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : "Не удалось загрузить фото";
+                      setErr(msg);
+                      setMeError(msg);
+                    } finally {
+                      setAvatarUploading(false);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-avatar-upload"
+                    disabled={avatarUploading}
+                    onClick={() => avatarFileInputRef.current?.click()}
+                  >
+                    {avatarUploading ? "Загрузка…" : "Загрузить фото"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-avatar-remove"
+                    onClick={async () => {
+                      if (!profileId) return;
+                      setErr(null);
+                      try {
+                        await authedPatch(`/profiles/${profileId}`, { avatarUrl: "" });
+                        await refreshMe();
+                      } catch (err: unknown) {
+                        setMeError(err instanceof Error ? err.message : "Не удалось удалить фото");
+                      }
+                    }}
+                  >
+                    Удалить фото
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-avatar-telegram"
+                    onClick={async () => {
+                      if (!profileId) return;
+                      setErr(null);
+                      try {
+                        await authedPatch(`/profiles/${profileId}`, { avatarUrl: null });
+                        await refreshMe();
+                      } catch (err: unknown) {
+                        setMeError(err instanceof Error ? err.message : "Не удалось обновить");
+                      }
+                    }}
+                  >
+                    Из Telegram
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

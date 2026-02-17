@@ -2,6 +2,33 @@ import { useRef, useState, useEffect } from "react";
 
 const SWIPE_THRESHOLD = 40;
 
+/** Блокировка скролла тела при открытом модальном окне, без скачков */
+function useLockBodyScroll(locked: boolean) {
+  const scrollYRef = useRef(0);
+  useEffect(() => {
+    if (!locked) return;
+    scrollYRef.current = window.scrollY ?? document.documentElement.scrollTop;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyPosition = document.body.style.position;
+    const prevBodyTop = document.body.style.top;
+    const prevBodyWidth = document.body.style.width;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollYRef.current}px`;
+    document.body.style.width = "100%";
+    return () => {
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.position = prevBodyPosition;
+      document.body.style.top = prevBodyTop;
+      document.body.style.width = prevBodyWidth;
+      window.scrollTo(0, scrollYRef.current);
+    };
+  }, [locked]);
+}
+
 type Props = {
   images: string[];
   alt?: string;
@@ -42,6 +69,8 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
     else if (delta < -SWIPE_THRESHOLD) goPrev();
   };
 
+  useLockBodyScroll(modalOpen);
+
   useEffect(() => {
     if (!modalOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -49,11 +78,12 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
       if (e.key === "ArrowLeft") modalGoPrev();
       if (e.key === "ArrowRight") modalGoNext();
     };
+    const onTouchMove = (e: TouchEvent) => e.preventDefault();
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.removeEventListener("touchmove", onTouchMove);
     };
   }, [modalOpen]);
 
@@ -160,6 +190,9 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
               alignItems: "center",
               justifyContent: "center",
               padding: 16,
+              overflow: "hidden",
+              touchAction: "none",
+              WebkitOverflowScrolling: "touch",
             }}
             onClick={closeModal}
           >
@@ -184,12 +217,13 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
             >
               ×
             </button>
-            <img
-              src={images[0]}
-              alt={alt}
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-              onClick={(e) => e.stopPropagation()}
-            />
+            <div style={{ minWidth: 0, minHeight: "50vh", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
+              <img
+                src={images[0]}
+                alt={alt}
+                style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain" }}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -263,6 +297,9 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
             alignItems: "center",
             justifyContent: "center",
             padding: 48,
+            overflow: "hidden",
+            touchAction: "none",
+            contain: "layout",
           }}
           onClick={closeModal}
         >
@@ -340,7 +377,16 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
             </>
           )}
           <div
-            style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", maxWidth: "100%", maxHeight: "100%" }}
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 0,
+              minHeight: "50vh",
+              maxWidth: "100%",
+              maxHeight: "85vh",
+            }}
             onTouchStart={(e) => { modalTouchStartX.current = e.touches[0].clientX; }}
             onTouchEnd={(e) => {
               if (images.length <= 1) return;
@@ -354,7 +400,8 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
             <img
               src={images[modalClamped]}
               alt={`${alt} ${modalClamped + 1} из ${images.length}`}
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+              style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", display: "block" }}
+              draggable={false}
             />
           </div>
           <div
@@ -365,6 +412,7 @@ export function ImageSlider({ images, alt = "", height = 280, className = "" }: 
               transform: "translateX(-50%)",
               color: "rgba(255,255,255,0.9)",
               fontSize: 14,
+              pointerEvents: "none",
             }}
           >
             {modalClamped + 1} из {images.length}
