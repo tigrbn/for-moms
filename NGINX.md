@@ -1,5 +1,32 @@
 # Настройка nginx для приложения
 
+## Только обновить фронт (на сервере)
+
+После `git pull` выполните на сервере:
+
+**1. Сборка:**
+```bash
+cd /root/formoms/web
+npm ci
+npm run build
+```
+
+**2. Если nginx раздаёт фронт из `/var/www/formoms`** (а не из `web/dist`), скопируйте собранные файлы с sudo:
+```bash
+sudo cp -r /root/formoms/web/dist/* /var/www/formoms/
+```
+(или `sudo rsync -av --delete /root/formoms/web/dist/ /var/www/formoms/` — тогда лишние старые файлы удалятся.)
+
+**3. Перезагрузить nginx** (если меняли конфиг или чтобы применить отдачу новых файлов):
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Кратко: сборка в `web`, копирование в каталог nginx через `sudo`, при необходимости `sudo systemctl reload nginx`.
+
+---
+
 ## Обновление приложения на сервере (после git pull)
 
 Чтобы изменения в интерфейсе (дизайн, кнопки, меню) появились у пользователей, нужно **пересобрать фронтенд** и отдавать новые файлы.
