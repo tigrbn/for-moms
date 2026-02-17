@@ -283,7 +283,7 @@ export function FeedScreen() {
                   <div className="feed-card-header">
                     <div className="feed-card-avatar-wrap">
                       <div className="feed-card-avatar">
-                        <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender)} alt="" />
+                        <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender, p.type)} alt="" />
                       </div>
                       {categoryIcon && (
                         <div className="feed-card-category-badge" title={getCategoryDisplayText(p.category ?? null)}>

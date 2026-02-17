@@ -2,7 +2,6 @@ import categoryNanny from "../assets/img/category/nanny.png";
 import categoryTutor from "../assets/img/category/tutor.png";
 import categoryLeisure from "../assets/img/category/leisure.png";
 import categoryCleaning from "../assets/img/category/cleaning.png";
-import categoryCourier from "../assets/img/category/courier.png";
 import categoryOther from "../assets/img/category/other.png";
 
 /** Раздел и его подкатегории (для выбора в заявках и профиле) */
@@ -68,15 +67,10 @@ export const CATEGORY_TREE: CategorySection[] = [
     ],
   },
   {
-    id: "Курьеры",
-    label: "Курьеры",
-    icon: categoryCourier,
-    children: [
-      { id: "Привезти продукты из магазина", label: "Привезти продукты из магазина" },
-      { id: "Забрать и привезти вещи", label: "Забрать и привезти вещи" },
-      { id: "Срочно нужно привезти", label: "Срочно нужно привезти" },
-      { id: "Курьер с машиной", label: "Курьер с машиной" },
-    ],
+    id: "Другое",
+    label: "Другое",
+    icon: categoryOther,
+    children: [],
   },
 ];
 

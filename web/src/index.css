@@ -457,6 +457,7 @@ a {
   font-size: 16px;
   border: 1px solid var(--border-color);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  caret-color: var(--primary);
 }
 
 .input:hover,

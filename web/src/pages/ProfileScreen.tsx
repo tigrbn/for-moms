@@ -78,9 +78,14 @@ export function ProfileScreen() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const [deletingPortfolioIndex, setDeletingPortfolioIndex] = useState<number | null>(null);
+  /** Не перезаписывать форму, пока пользователь редактирует этот же профиль (сохраняем несохранённые правки). */
+  const lastSyncedProfileIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!activeProfile) return;
+    const profileIdStr = activeProfile.id.toString();
+    if (isEditing && lastSyncedProfileIdRef.current === profileIdStr) return;
+    lastSyncedProfileIdRef.current = profileIdStr;
     setDisplayName(activeProfile.displayName ?? "");
     setGender(activeProfile.gender === "male" || activeProfile.gender === "female" ? activeProfile.gender : "");
     setAge(activeProfile.age != null ? String(activeProfile.age) : "");
@@ -119,7 +124,7 @@ export function ProfileScreen() {
         setSpecialistCategory("");
       }
     }
-  }, [activeProfile]);
+  }, [activeProfile, isEditing]);
 
   useEffect(() => {
     if (!profileId || !authedGet) return;

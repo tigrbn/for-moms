@@ -1,5 +1,5 @@
 /** По сколько элементов показывать на одной странице (при большем числе — навигация по страницам) */
-export const ITEMS_PER_PAGE = 10;
+export const ITEMS_PER_PAGE = 6;
 
 export function PaginationBar({
   currentPage,

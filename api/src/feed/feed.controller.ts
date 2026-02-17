@@ -238,6 +238,7 @@ export class FeedController {
           isPromoted: Boolean(p.promotedUntil && p.promotedUntil > now),
           profile: {
             id: p.id.toString(),
+            type: p.type,
             displayName: p.displayName,
             avatarUrl: p.avatarUrl,
             gender: p.gender ?? null,
