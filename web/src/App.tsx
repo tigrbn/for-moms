@@ -52,6 +52,21 @@ export default function App() {
   const [feedCategory, setFeedCategory] = useState("");
   const [feedSubcategory, setFeedSubcategory] = useState("");
   const [feedReloadKey, setFeedReloadKey] = useState(0);
+  const FEED_VIEW_KEY = "for_moms_feed_view";
+  const [feedView, setFeedViewState] = useState<"specialists" | "requests">(() => {
+    try {
+      const s = localStorage.getItem(FEED_VIEW_KEY);
+      if (s === "specialists" || s === "requests") return s;
+    } catch {}
+    return "specialists";
+  });
+  const setFeedView = useCallback((next: "specialists" | "requests") => {
+    setFeedViewState(next);
+    try {
+      localStorage.setItem(FEED_VIEW_KEY, next);
+    } catch {}
+    setFeedReloadKey((k) => k + 1);
+  }, []);
   const [parentNewOffersCount, setParentNewOffersCount] = useState<number | null>(null);
   const [reauthing, setReauthing] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
@@ -119,7 +134,8 @@ export default function App() {
         const qs = new URLSearchParams();
         const effectiveCategory = feedSubcategory.trim() || feedCategory.trim();
         if (effectiveCategory) qs.set("category", effectiveCategory);
-        const path = qs.toString() ? `/feed?${qs.toString()}` : "/feed";
+        qs.set("view", feedView);
+        const path = `/feed?${qs.toString()}`;
         const data = await getJSON<FeedResponse>(path, token);
         setFeed(data);
       } catch (e: unknown) {
@@ -136,7 +152,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token, me?.activeProfileId, feedCategory, feedSubcategory, feedReloadKey]);
+  }, [token, me?.activeProfileId, feedCategory, feedSubcategory, feedView, feedReloadKey]);
 
   useEffect(() => {
     if (token) setReauthing(false);
@@ -266,6 +282,8 @@ export default function App() {
       setFeedSubcategory,
       feedReloadKey,
       setFeedReloadKey,
+      feedView,
+      setFeedView,
       activeProfile,
       activeProfileId: me?.activeProfileId ?? null,
       activeProfileType: activeProfile?.type ?? null,
@@ -298,6 +316,7 @@ export default function App() {
       feedCategory,
       feedSubcategory,
       feedReloadKey,
+      feedView,
       activeProfile,
       ensureActiveProfile,
       createRole,
@@ -322,9 +341,7 @@ export default function App() {
           logo={mainLogoImg}
           rightNode={
             me?.isAdmin && activeProfile?.type === "specialist" ? (
-              <Link to="/" className="btn secondary topbar-feed-btn">
-                Общая лента
-              </Link>
+              <span className="topbar-feed-btn">📍 Якутск</span>
             ) : undefined
           }
         />

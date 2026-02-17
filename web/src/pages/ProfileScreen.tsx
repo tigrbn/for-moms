@@ -394,14 +394,6 @@ export function ProfileScreen() {
   if (!isEditing) {
     return (
       <div style={{ display: "grid", gap: 12 }}>
-      {isAdmin && (
-        <div className="card profile-docs-links" style={{ borderColor: "var(--tg-theme-button-color, #2481cc)" }}>
-          <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Админ</div>
-          <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-            <li><Link to="/profile/analytics" className="btn" style={{ display: "inline-block" }}>Дашборд метрик</Link></li>
-          </ul>
-        </div>
-      )}
       <div className="card profile-view-card">
         <div className="profile-view-header">
           <div

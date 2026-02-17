@@ -45,9 +45,11 @@ export class FeedController {
     @Req() req: Request,
     @Query("district") district?: string,
     @Query("category") category?: string,
+    @Query("view") view?: string,
   ) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
     const active = await getActiveProfileOrThrow(this.prisma, userId);
+    const viewMode = view?.toLowerCase() === "requests" ? "requests" : view?.toLowerCase() === "specialists" ? "specialists" : null;
 
     const now = new Date();
     const banners = await this.prisma.banner.findMany({
@@ -114,6 +116,74 @@ export class FeedController {
     }
 
     const isCategoryAll = categoryNorm === "";
+
+    /** Заявки от родителей (для режима «Ищу заказ»). */
+    async function getRequestItems(): Promise<Array<{ kind: "request"; request: Record<string, unknown> }>> {
+      const where: any = { status: "active" };
+      if (district?.trim()) {
+        where.district = { equals: district.trim(), mode: "insensitive" };
+      }
+      if (category?.trim()) {
+        where.category = { contains: category.trim(), mode: "insensitive" };
+      }
+      const requests = await this.prisma.request.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          parent: {
+            include: {
+              user: { select: { photoUrl: true } },
+            },
+          },
+        },
+      });
+      const toImages = (raw: unknown): string[] => {
+        if (Array.isArray(raw)) return raw.filter((u): u is string => typeof u === "string");
+        if (typeof raw === "string") return [raw];
+        return [];
+      };
+      return requests.map((r) => ({
+        kind: "request" as const,
+        request: {
+          id: r.id.toString(),
+          category: r.category,
+          childAge: r.childAge,
+          description: r.description,
+          images: toImages((r as { images?: unknown }).images),
+          startAt: r.startAt?.toISOString() ?? null,
+          durationMin: r.durationMin,
+          budget: r.budget,
+          district: r.district,
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+          parent: {
+            displayName: r.parent.displayName ?? null,
+            avatarUrl: r.parent.avatarUrl ?? null,
+            photoUrl: r.parent.user?.photoUrl ?? null,
+            gender: r.parent.gender ?? null,
+            ratingAvg: r.parent.ratingAvg != null ? String(r.parent.ratingAvg) : "0",
+            ratingCount: r.parent.ratingCount ?? 0,
+          },
+        },
+      }));
+    }
+
+    /** Режим «Ищу заказ»: только заявки (+ объявления при «Все»). */
+    if (viewMode === "requests") {
+      const requestItems = await getRequestItems.call(this);
+      if (isCategoryAll) {
+        const postItems = await getOtherPostItems.call(this);
+        return {
+          role: active.type as "parent" | "specialist",
+          items: [...bannerItems, ...requestItems, ...postItems],
+        };
+      }
+      return {
+        role: active.type as "parent" | "specialist",
+        items: [...bannerItems, ...requestItems],
+      };
+    }
 
     /** Карточки специалистов в ленте (и родители, и специалисты видят других специалистов для связи). */
     type SpecialistFeedItem = {
@@ -184,55 +254,24 @@ export class FeedController {
       });
     }
 
-    if (active.type === "specialist") {
-      const where: any = { status: "active" };
-      if (district?.trim()) {
-        where.district = { equals: district.trim(), mode: "insensitive" };
+    /** Режим «Ищу специалиста»: только анкеты специалистов (+ объявления при «Все»). */
+    if (viewMode === "specialists") {
+      const specialistItems = await getSpecialistProfileItems.call(this);
+      if (isCategoryAll) {
+        const postItems = await getOtherPostItems.call(this);
+        return {
+          role: active.type as "parent" | "specialist",
+          items: [...bannerItems, ...specialistItems, ...postItems],
+        };
       }
-      if (category?.trim()) {
-        where.category = { contains: category.trim(), mode: "insensitive" };
-      }
-      const requests = await this.prisma.request.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        include: {
-          parent: {
-            include: {
-              user: { select: { photoUrl: true } },
-            },
-          },
-        },
-      });
-      const toImages = (raw: unknown): string[] => {
-        if (Array.isArray(raw)) return raw.filter((u): u is string => typeof u === "string");
-        if (typeof raw === "string") return [raw];
-        return [];
+      return {
+        role: active.type as "parent" | "specialist",
+        items: [...bannerItems, ...specialistItems],
       };
-      const requestItems = requests.map((r) => ({
-        kind: "request" as const,
-        request: {
-          id: r.id.toString(),
-          category: r.category,
-          childAge: r.childAge,
-          description: r.description,
-          images: toImages((r as { images?: unknown }).images),
-          startAt: r.startAt?.toISOString() ?? null,
-          durationMin: r.durationMin,
-          budget: r.budget,
-          district: r.district,
-          status: r.status,
-          createdAt: r.createdAt.toISOString(),
-          parent: {
-            displayName: r.parent.displayName ?? null,
-            avatarUrl: r.parent.avatarUrl ?? null,
-            photoUrl: r.parent.user?.photoUrl ?? null,
-            gender: r.parent.gender ?? null,
-            ratingAvg: r.parent.ratingAvg != null ? String(r.parent.ratingAvg) : "0",
-            ratingCount: r.parent.ratingCount ?? 0,
-          },
-        },
-      }));
+    }
+
+    if (active.type === "specialist") {
+      const requestItems = await getRequestItems.call(this);
       const specialistItems = await getSpecialistProfileItems.call(this);
       if (isCategoryAll) {
         const postItems = await getOtherPostItems.call(this);

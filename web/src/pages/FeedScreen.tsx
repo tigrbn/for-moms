@@ -23,6 +23,8 @@ export function FeedScreen() {
     setFeedCategory,
     feedSubcategory,
     setFeedSubcategory,
+    feedView,
+    setFeedView,
     setFeed,
     setFeedError,
     setFeedReloadKey,
@@ -100,12 +102,42 @@ export function FeedScreen() {
   }, [contentCount, feedCategory, feedSubcategory]);
 
   const feedSubtitle =
-    activeProfileType === "specialist"
+    feedView === "requests"
       ? "👋 Заявки от родителей"
       : "👋 Кого сегодня ищем?";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div className="feed-view-switcher card" style={{ padding: "10px 12px" }}>
+        <div className="row" style={{ gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className={`btn ${feedView === "specialists" ? "btn-primary" : "secondary"}`}
+            onClick={() => {
+              if (feedView !== "specialists") {
+                setFeedCategory("");
+                setFeedSubcategory("");
+                setFeedView("specialists");
+              }
+            }}
+          >
+            Ищу специалиста
+          </button>
+          <button
+            type="button"
+            className={`btn ${feedView === "requests" ? "btn-primary" : "secondary"}`}
+            onClick={() => {
+              if (feedView !== "requests") {
+                setFeedCategory("");
+                setFeedSubcategory("");
+                setFeedView("requests");
+              }
+            }}
+          >
+            Ищу заказ
+          </button>
+        </div>
+      </div>
       <div className="feed-header-card-wrap" ref={feedHeaderCardRef}>
         <div
           className="card feed-header-card"

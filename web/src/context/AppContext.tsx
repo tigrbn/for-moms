@@ -19,6 +19,8 @@ export type AppContextValue = {
   setFeedSubcategory: (s: string) => void;
   feedReloadKey: number;
   setFeedReloadKey: (fn: (x: number) => number) => void;
+  feedView: "specialists" | "requests";
+  setFeedView: (view: "specialists" | "requests") => void;
   activeProfile: MeResponse["profiles"][0] | null;
   activeProfileId: string | null;
   activeProfileType: "parent" | "specialist" | null;
