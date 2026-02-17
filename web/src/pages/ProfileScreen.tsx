@@ -523,9 +523,9 @@ export function ProfileScreen() {
     return (
       <div style={{ display: "grid", gap: 12 }}>
       <div className="card profile-view-card">
-        <div className="profile-view-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div>
-            <h2 className="h2" style={{ margin: 0 }}>
+        <div className="profile-view-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "nowrap" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 className="h2" style={{ margin: 0, overflowWrap: "break-word", wordBreak: "break-word" }}>
               {activeProfile.displayName || "—"}
             </h2>
             <p className="muted" style={{ margin: "4px 0 0" }}>
