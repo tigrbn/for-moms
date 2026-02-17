@@ -91,7 +91,7 @@ export function AnalyticsScreen() {
       </div>
 
       {isProvider && specialistData && (
-        <div className="card" style={{ padding: 16, background: "var(--tg-secondary-bg-color, #f8f8fa)", borderLeft: "4px solid var(--tg-theme-button-color, #3390ec)" }}>
+        <div className="card" style={{ padding: 16, background: "var(--secondary-bg, #f4efff)", borderLeft: "4px solid var(--primary, #7b7cff)" }}>
           <h2 className="h2" style={{ margin: "0 0 4px", fontSize: 18 }}>Ваша аналитика</h2>
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>Как идёт работа в системе: анкета, отклики, заказы</p>
           <div style={{ marginTop: 16, display: "grid", gap: 16 }}>
