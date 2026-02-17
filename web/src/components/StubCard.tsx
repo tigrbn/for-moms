@@ -3,7 +3,7 @@ import stubImg from "../assets/img/заглушка.png";
 type StubCardProps = {
   title: string;
   desc: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 };
 
 export function StubCard(props: StubCardProps) {
@@ -14,7 +14,7 @@ export function StubCard(props: StubCardProps) {
         <div className="feed-empty-text-overlay">
           <div className="feed-empty-title">{props.title}</div>
           <div className="feed-empty-desc">{props.desc}</div>
-          <div className="feed-empty-actions">{props.children}</div>
+          {props.children != null && <div className="feed-empty-actions">{props.children}</div>}
         </div>
       </div>
     </div>
