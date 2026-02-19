@@ -191,6 +191,7 @@ export type RequestDetails = {
     createdAt: string;
     specialist: {
       profileId: string;
+      type?: "parent" | "specialist" | "company";
       displayName?: string | null;
       avatarUrl?: string | null;
       gender?: string | null;

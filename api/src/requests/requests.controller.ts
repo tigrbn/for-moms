@@ -139,6 +139,7 @@ export class RequestsController {
         createdAt: o.createdAt.toISOString(),
         specialist: {
           profileId: o.specialistProfile.id.toString(),
+          type: o.specialistProfile.type,
           displayName: o.specialistProfile.displayName,
           avatarUrl: o.specialistProfile.avatarUrl ?? null,
           gender: o.specialistProfile.gender ?? null,
