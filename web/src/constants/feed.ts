@@ -2,6 +2,9 @@ import categoryNanny from "../assets/img/category/nanny.png";
 import categoryTutor from "../assets/img/category/tutor.png";
 import categoryLeisure from "../assets/img/category/leisure.png";
 import categoryCleaning from "../assets/img/category/cleaning.png";
+import categoryCakes from "../assets/img/category/cakes.png";
+import categoryPsychologist from "../assets/img/category/psychologist.png";
+import categoryLogopedist from "../assets/img/category/logopedist.png";
 import categoryOther from "../assets/img/category/other.png";
 
 /** Раздел и его подкатегории (для выбора в заявках и профиле) */
@@ -64,6 +67,40 @@ export const CATEGORY_TREE: CategorySection[] = [
       { id: "Химчистка", label: "Химчистка" },
       { id: "После ремонта", label: "После ремонта" },
       { id: "Регулярная уборка", label: "Регулярная уборка" },
+    ],
+  },
+  {
+    id: "Торты",
+    label: "Торты",
+    icon: categoryCakes,
+    children: [
+      { id: "Торты на заказ", label: "Торты на заказ" },
+      { id: "Детские торты", label: "Детские торты" },
+      { id: "Капкейки", label: "Капкейки" },
+      { id: "Пирожные и десерты", label: "Пирожные и десерты" },
+      { id: "Праздничная выпечка", label: "Праздничная выпечка" },
+    ],
+  },
+  {
+    id: "Психолог",
+    label: "Психолог",
+    icon: categoryPsychologist,
+    children: [
+      { id: "Детский психолог", label: "Детский психолог" },
+      { id: "Семейный психолог", label: "Семейный психолог" },
+      { id: "Подростковый психолог", label: "Подростковый психолог" },
+      { id: "Консультации для родителей", label: "Консультации для родителей" },
+    ],
+  },
+  {
+    id: "Логопед",
+    label: "Логопед",
+    icon: categoryLogopedist,
+    children: [
+      { id: "Постановка звуков", label: "Постановка звуков" },
+      { id: "Развитие речи", label: "Развитие речи" },
+      { id: "Подготовка к школе (речь)", label: "Подготовка к школе (речь)" },
+      { id: "Логопедический массаж", label: "Логопедический массаж" },
     ],
   },
   {

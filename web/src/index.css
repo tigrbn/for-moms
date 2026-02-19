@@ -131,10 +131,6 @@ a {
   color: var(--text-secondary);
 }
 
-.card:active {
-  transform: scale(0.99);
-}
-
 /* Выделенная карточка метрики (специалист и админ): фиксированный светлый фон и тёмный текст, чтобы в Telegram не уходила в чёрный */
 .analytics-card--north {
   border-color: var(--tg-theme-button-color, #3390ec);
@@ -324,10 +320,6 @@ a {
   align-items: center;
   justify-content: center;
   transition: transform 0.1s ease-out, box-shadow 0.15s ease-out;
-}
-
-.btn:active:not(:disabled) {
-  transform: scale(0.96);
 }
 
 /* По умолчанию — нейтральная кнопка (серый), чтобы на одной странице не было сплошь фиолетовых */
@@ -657,18 +649,12 @@ a {
 .bottom-nav-item:hover {
   color: var(--text-primary);
 }
-.bottom-nav-item:active {
-  transform: scale(0.95);
-}
 .bottom-nav-item.active {
   color: #7b7cff;
   background: #f4efff;
   border-radius: 12px;
   padding: 4px 6px;
   box-shadow: 0 4px 12px rgba(123, 124, 255, 0.25);
-}
-.bottom-nav-item.active:active {
-  transform: scale(0.95);
 }
 /* Иконки с прозрачным фоном — активность только подложка + цвет текста, иконку не красим чтобы не было сплошного квадрата */
 .bottom-nav-icon-img {
