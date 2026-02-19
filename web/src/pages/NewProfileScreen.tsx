@@ -106,7 +106,7 @@ function validateCompany(
 }
 
 export function NewProfileScreen({ type }: Props) {
-  const { me, token, authedPost, refreshMe, setMeError, navigate } = useApp();
+  const { me, token, authedPost, refreshMe, ensureActiveProfile, setMeError, navigate } = useApp();
   const [agreeUserAgreement, setAgreeUserAgreement] = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -205,7 +205,8 @@ export function NewProfileScreen({ type }: Props) {
           legalAddress: legalAddress.trim() || null,
         };
       }
-      await authedPost("/profiles/with-data", body);
+      const created = await authedPost<{ id: string }>("/profiles/with-data", body);
+      await ensureActiveProfile(created.id);
       await refreshMe();
       navigate("/", { replace: true });
     } catch (e: unknown) {
