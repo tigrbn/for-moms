@@ -467,6 +467,10 @@ a {
   border: 1px solid var(--border-color);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   caret-color: var(--primary);
+  /* Разрешить вставку из буфера: контекстное меню (долгое нажатие) в мобильном WebView */
+  touch-action: auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .input:hover,
@@ -480,6 +484,15 @@ a {
 .select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+  /* Каретка заметнее при перемещении (тёмнее фиолетовый) */
+  caret-color: #5c5dcc;
+}
+
+/* Выделение текста в полях ввода — видно при перемещении каретки и выделении */
+.input::selection,
+.textarea::selection {
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--text-primary);
 }
 
 .input::placeholder,

@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { ImageSlider } from "../components/ImageSlider";
-import { getAvatarSrc } from "../lib/avatar";
+import { AvatarImage } from "../components/AvatarImage";
 import { formatRequestCreatedAt } from "../lib/format";
 
 type PostDetail = {
@@ -52,7 +52,6 @@ export function PostDetailScreen() {
   if (!post) return <div className="card">Загрузка…</div>;
 
   const author = post.author;
-  const avatarSrc = getAvatarSrc(author.avatarUrl, author.photoUrl, null);
   const tgUsername = author.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
   const isAuthor = Boolean(post.authorProfileId && activeProfileId && post.authorProfileId === activeProfileId);
@@ -79,7 +78,7 @@ export function PostDetailScreen() {
         <div className="profile-card-header">
           <div className="profile-card-avatar-wrap">
             <div className="profile-card-avatar">
-              <img src={avatarSrc} alt="" />
+              <AvatarImage avatarUrl={author.avatarUrl} telegramPhotoUrl={author.photoUrl} />
             </div>
           </div>
           <div className="profile-card-title-block">

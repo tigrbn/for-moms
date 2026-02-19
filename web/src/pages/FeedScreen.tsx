@@ -5,7 +5,7 @@ import { StubCard } from "../components/StubCard";
 import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { formatMoney, formatRequestCreatedAt, formatPricePerHour } from "../lib/format";
 import { labelRequestStatus } from "../lib/labels";
-import { getAvatarSrc } from "../lib/avatar";
+import { AvatarImage } from "../components/AvatarImage";
 import { ImageSlider } from "../components/ImageSlider";
 import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
@@ -281,7 +281,7 @@ export function FeedScreen() {
                   <div className="feed-card-header">
                     <div className="feed-card-avatar-wrap">
                       <div className="feed-card-avatar">
-                        <img src={getAvatarSrc(p.avatarUrl, p.photoUrl, p.gender, p.type)} alt="" />
+                        <AvatarImage avatarUrl={p.avatarUrl} telegramPhotoUrl={p.photoUrl} gender={p.gender} profileType={p.type} />
                       </div>
                       {categoryIcon && (
                         <div className="feed-card-category-badge" title={getCategoryDisplayText(p.category ?? null)}>
@@ -346,7 +346,7 @@ export function FeedScreen() {
                   <div className="feed-card-header">
                     <div className="feed-card-avatar-wrap">
                       <div className="feed-card-avatar">
-                        <img src={getAvatarSrc(post.author.avatarUrl, post.author.photoUrl, null)} alt="" />
+                        <AvatarImage avatarUrl={post.author.avatarUrl} telegramPhotoUrl={post.author.photoUrl} />
                       </div>
                     </div>
                     <div className="feed-card-title-block">
@@ -375,11 +375,6 @@ export function FeedScreen() {
               const r = it.request;
               const parent = r.parent;
               const requestAuthorName = parent?.displayName?.trim() || "Родитель";
-              const requestAvatarSrc = getAvatarSrc(
-                parent?.avatarUrl ?? null,
-                parent?.photoUrl ?? null,
-                parent?.gender ?? null,
-              );
               const requestCategoryIcon = getCategoryIcon(r.category);
               const isCompleted = r.status === "done" || r.status === "cancelled";
               return (
@@ -392,7 +387,11 @@ export function FeedScreen() {
                       <div className="feed-card-header">
                         <div className="feed-card-avatar-wrap">
                           <div className="feed-card-avatar">
-                            <img src={requestAvatarSrc} alt="" />
+                            <AvatarImage
+                              avatarUrl={parent?.avatarUrl ?? null}
+                              telegramPhotoUrl={parent?.photoUrl ?? null}
+                              gender={parent?.gender ?? null}
+                            />
                           </div>
                           {requestCategoryIcon && (
                             <div className="feed-card-category-badge" title={getCategoryDisplayText(r.category)}>
@@ -438,7 +437,11 @@ export function FeedScreen() {
                       <div className="feed-card-header">
                         <div className="feed-card-avatar-wrap">
                           <div className="feed-card-avatar">
-                            <img src={requestAvatarSrc} alt="" />
+                            <AvatarImage
+                              avatarUrl={parent?.avatarUrl ?? null}
+                              telegramPhotoUrl={parent?.photoUrl ?? null}
+                              gender={parent?.gender ?? null}
+                            />
                           </div>
                           {requestCategoryIcon && (
                             <div className="feed-card-category-badge" title={getCategoryDisplayText(r.category)}>

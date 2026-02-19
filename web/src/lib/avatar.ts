@@ -2,8 +2,8 @@ import userpicMan from "../assets/img/userpic/man.png";
 import userpicWoman from "../assets/img/userpic/woman.png";
 import userpicCompany from "../assets/img/userpic/company.png";
 
-/** Дефолтная картинка по типу профиля (для компании — своя иконка). */
-function getDefaultAvatar(gender: string | null | undefined, profileType?: string): string {
+/** Дефолтная картинка по типу профиля (для компании — своя иконка). Экспорт для fallback при ошибке загрузки. */
+export function getDefaultAvatar(gender: string | null | undefined, profileType?: string): string {
   if (profileType === "company") return userpicCompany;
   return gender === "male" ? userpicMan : userpicWoman;
 }

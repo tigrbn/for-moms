@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { ErrorBox } from "../components/ErrorBox";
 import { ReviewsSlider } from "../components/ReviewsSlider";
-import { getAvatarSrc } from "../lib/avatar";
+import { AvatarImage } from "../components/AvatarImage";
 import { formatPricePerHour } from "../lib/format";
 import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
@@ -77,7 +77,6 @@ export function PublicProfileScreen() {
   const parentRoleLabel = p.type === "parent" ? getParentRoleLabel(p.gender) : p.type === "company" ? "Компания" : null;
   const tgUsername = p.user?.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
-  const avatarSrc = getAvatarSrc(p.avatarUrl, p.user?.photoUrl, p.gender, p.type);
   const genderLabel = p.gender === "male" ? "Мужской" : p.gender === "female" ? "Женский" : "—";
   const category = (p.type === "specialist" || p.type === "company") ? p.specialist?.category ?? null : null;
   const categoryIcon = getCategoryIcon(category);
@@ -88,7 +87,7 @@ export function PublicProfileScreen() {
         <div className="profile-card-header">
           <div className="profile-card-avatar-wrap">
             <div className="profile-card-avatar">
-              <img src={avatarSrc} alt="" />
+              <AvatarImage avatarUrl={p.avatarUrl} telegramPhotoUrl={p.user?.photoUrl} gender={p.gender} profileType={p.type} />
             </div>
             {(p.type === "specialist" || p.type === "company") && categoryIcon && (
               <div className="profile-card-category-badge" title={getCategoryDisplayText(category)}>

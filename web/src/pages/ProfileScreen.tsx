@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { uploadFile } from "../shared/api";
 import { compressImage } from "../lib/imageCompress";
-import { getAvatarSrc } from "../lib/avatar";
+import { AvatarImage } from "../components/AvatarImage";
 import { formatPhoneMask, formatPhoneToDigits, formatDate, formatPricePerHour } from "../lib/format";
 import { getParentRoleLabel, PARENT_ROLE_EMOJI } from "../lib/labels";
 import { CATEGORY_TREE, getCategoryIcon } from "../constants/feed";
@@ -42,8 +42,6 @@ export function ProfileScreen() {
   const profileId = activeProfile?.id;
   const type = activeProfile?.type;
   const telegramPhotoUrl = me?.user?.photoUrl ?? null;
-  const profileAvatarSrc = getAvatarSrc(activeProfile?.avatarUrl ?? null, telegramPhotoUrl, activeProfile?.gender ?? null, activeProfile?.type);
-
   const openedWithEditRef = useRef(Boolean((location.state as { openEdit?: boolean })?.openEdit));
   const [isEditing, setIsEditing] = useState(openedWithEditRef.current);
 
@@ -338,22 +336,20 @@ export function ProfileScreen() {
       [fromProfile?.firstName, fromProfile?.lastName].filter(Boolean).join(" ") ||
       "";
     const authorName = !fromProfile || !namePart ? "Удалённый аккаунт" : namePart;
-    const authorAvatar =
-      fromProfile && namePart
-        ? getAvatarSrc(
-            fromProfile.avatarUrl ?? null,
-            fromProfile.photoUrl ?? null,
-            fromProfile.gender ?? null,
-            fromProfile.type,
-          )
-        : null;
+    const showAuthorAvatar = fromProfile && namePart;
     const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
     return (
       <div key={r.id} className="card review-card" style={{ background: "var(--tg-bg)" }}>
         <div className="row" style={{ alignItems: "center", gap: 12 }}>
-          {authorAvatar ? (
+          {showAuthorAvatar ? (
             <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#fff", flexShrink: 0 }}>
-              <img src={authorAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <AvatarImage
+                avatarUrl={fromProfile.avatarUrl ?? null}
+                telegramPhotoUrl={fromProfile.photoUrl ?? null}
+                gender={fromProfile.gender ?? null}
+                profileType={fromProfile.type}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             </div>
             ) : (
               <div
@@ -560,9 +556,11 @@ export function ProfileScreen() {
                   }}
                   aria-hidden
                 >
-                  <img
-                    src={profileAvatarSrc}
-                    alt=""
+                  <AvatarImage
+                    avatarUrl={activeProfile?.avatarUrl ?? null}
+                    telegramPhotoUrl={telegramPhotoUrl}
+                    gender={activeProfile?.gender ?? null}
+                    profileType={activeProfile?.type}
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 </div>

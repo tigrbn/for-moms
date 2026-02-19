@@ -6,7 +6,7 @@ import { PaginationBar, ITEMS_PER_PAGE } from "../components/PaginationBar";
 import { ReviewsSlider } from "../components/ReviewsSlider";
 import { formatMoney, formatDate, formatOfferCreatedAt, formatPhoneForDisplay, formatPhoneToDigits } from "../lib/format";
 import { labelRequestStatus, labelOfferStatus } from "../lib/labels";
-import { getAvatarSrc } from "../lib/avatar";
+import { AvatarImage } from "../components/AvatarImage";
 import { getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
 import { ImageSlider } from "../components/ImageSlider";
@@ -182,11 +182,6 @@ export function RequestDetailsScreen() {
       ? [data.parent.firstName, data.parent.lastName].filter(Boolean).join(" ")
       : null) ||
     "Родитель";
-  const parentAvatarSrc = getAvatarSrc(
-    data.parent.avatarUrl ?? null,
-    data.parent.photoUrl ?? null,
-    data.parent.gender ?? null,
-  );
   const categoryIcon = getCategoryIcon(data.category);
   const isCompleted = data.status === "done" || data.status === "cancelled";
 
@@ -197,7 +192,11 @@ export function RequestDetailsScreen() {
         <div className="profile-card-header">
           <div className="profile-card-avatar-wrap">
             <div className="profile-card-avatar">
-              <img src={parentAvatarSrc} alt="" />
+              <AvatarImage
+                avatarUrl={data.parent.avatarUrl ?? null}
+                telegramPhotoUrl={data.parent.photoUrl ?? null}
+                gender={data.parent.gender ?? null}
+              />
             </div>
             {categoryIcon && (
               <div className="profile-card-category-badge" title={getCategoryDisplayText(data.category)}>
@@ -391,9 +390,11 @@ export function RequestDetailsScreen() {
               <div key={o.id} className="card offer-card" style={{ background: "var(--tg-bg)" }}>
                 <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
                   <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", background: "#fff", flexShrink: 0 }}>
-                    <img
-                      src={getAvatarSrc(o.specialist.avatarUrl, o.specialist.photoUrl, o.specialist.gender)}
-                      alt=""
+                    <AvatarImage
+                      avatarUrl={o.specialist.avatarUrl}
+                      telegramPhotoUrl={o.specialist.photoUrl}
+                      gender={o.specialist.gender}
+                      profileType={o.specialist.type}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   </div>

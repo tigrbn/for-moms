@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { getAvatarSrc } from "../lib/avatar";
+import { AvatarImage } from "../components/AvatarImage";
 import { getCategoryIcon } from "../constants/feed";
 import { CategoryDisplay } from "./CategoryDisplay";
 import { formatDate } from "../lib/format";
@@ -33,14 +33,6 @@ export function ReviewsSlider({ reviews, authorFallbackLabel = "Пользова
       ? namePart
       : authorFallbackLabel;
   const showAuthorAvatar = fromProfile && namePart;
-  const authorAvatar = showAuthorAvatar
-    ? getAvatarSrc(
-        fromProfile.avatarUrl ?? null,
-        fromProfile.photoUrl ?? null,
-        fromProfile.gender ?? null,
-        fromProfile.type,
-      )
-    : "";
   const categoryIcon = r.requestCategory ? getCategoryIcon(r.requestCategory) : null;
 
   const goPrev = () => setCurrentIndex((i) => Math.max(0, i - 1));
@@ -68,9 +60,15 @@ export function ReviewsSlider({ reviews, authorFallbackLabel = "Пользова
       >
         <div className="card review-card reviews-slider-card" style={{ background: "var(--tg-bg)" }}>
           <div className="row" style={{ alignItems: "center", gap: 12 }}>
-            {authorAvatar ? (
+            {showAuthorAvatar ? (
               <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#fff", flexShrink: 0 }}>
-                <img src={authorAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <AvatarImage
+                  avatarUrl={fromProfile!.avatarUrl ?? null}
+                  telegramPhotoUrl={fromProfile!.photoUrl ?? null}
+                  gender={fromProfile!.gender ?? null}
+                  profileType={fromProfile!.type}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
               </div>
             ) : (
               <div
