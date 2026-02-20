@@ -137,29 +137,36 @@ export default function App() {
   useEffect(() => {
     const run = async () => {
       setFeedError(null);
+      const qs = new URLSearchParams();
+      const effectiveCategory = feedSubcategory.trim() || feedCategory.trim();
+      if (effectiveCategory) qs.set("category", effectiveCategory);
+      qs.set("view", feedView);
+      const path = `/feed?${qs.toString()}`;
+      // В браузере (не Mini App) ленту всегда запрашиваем без токена
+      const feedToken = isMiniApp ? token ?? undefined : undefined;
       try {
-        const qs = new URLSearchParams();
-        const effectiveCategory = feedSubcategory.trim() || feedCategory.trim();
-        if (effectiveCategory) qs.set("category", effectiveCategory);
-        qs.set("view", feedView);
-        const path = `/feed?${qs.toString()}`;
-        const data = await getJSON<FeedResponse>(path, token ?? undefined);
+        const data = await getJSON<FeedResponse>(path, feedToken);
         setFeed(data);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Failed to load feed";
-        if (token && typeof msg === "string" && msg.includes("401")) {
-          setReauthing(true);
+        if (typeof msg === "string" && msg.includes("401")) {
           clearToken();
           setMe(null);
           setFeed(null);
           setFeedError(null);
+          try {
+            const dataRetry = await getJSON<FeedResponse>(path);
+            setFeed(dataRetry);
+          } catch (e2) {
+            setFeedError(e2 instanceof Error ? e2.message : "Не удалось загрузить ленту");
+          }
         } else {
           setFeedError(msg);
         }
       }
     };
     void run();
-  }, [token, feedCategory, feedSubcategory, feedView, feedReloadKey]);
+  }, [token, isMiniApp, feedCategory, feedSubcategory, feedView, feedReloadKey, clearToken]);
 
   useEffect(() => {
     if (token) setReauthing(false);
