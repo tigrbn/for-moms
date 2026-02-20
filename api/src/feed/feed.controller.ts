@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
-import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { AuthedRequest, JwtAuthOptionalGuard } from "../auth/jwt-auth.guard";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -35,7 +35,7 @@ const PARENT_CATEGORY_SKILLS: Record<string, string[]> = {
   ],
 };
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthOptionalGuard)
 @Controller("feed")
 export class FeedController {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,15 +47,15 @@ export class FeedController {
     @Query("category") category?: string,
     @Query("view") view?: string,
   ) {
-    const { userId } = (req as unknown as AuthedRequest).auth!;
-    // Активный профиль может отсутствовать (гость без заполненного профиля):
-    // в этом случае показываем «гостевую» ленту с тем же составом карточек,
-    // но без привязки к роли.
+    const userId = (req as unknown as AuthedRequest).auth?.userId;
+    // Без токена (открыто вне Telegram) или без активного профиля — гостевая лента.
     let active: Awaited<ReturnType<typeof getActiveProfileOrThrow>> | null = null;
-    try {
-      active = await getActiveProfileOrThrow(this.prisma, userId);
-    } catch {
-      active = null;
+    if (userId) {
+      try {
+        active = await getActiveProfileOrThrow(this.prisma, userId);
+      } catch {
+        active = null;
+      }
     }
     const viewMode = view?.toLowerCase() === "requests" ? "requests" : view?.toLowerCase() === "specialists" ? "specialists" : null;
 

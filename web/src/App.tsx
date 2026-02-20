@@ -42,6 +42,11 @@ export default function App() {
   const location = useLocation();
   const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | "company" | null>(null);
 
+  // Сообщаем MAX, что мини-приложение готово (избегаем экрана «нет сети» через 15 сек)
+  useEffect(() => {
+    (window as any).WebApp?.ready?.();
+  }, []);
+
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
   const [meError, setMeError] = useState<string | null>(null);
@@ -131,7 +136,6 @@ export default function App() {
 
   useEffect(() => {
     const run = async () => {
-      if (!token) return;
       setFeedError(null);
       try {
         const qs = new URLSearchParams();
@@ -139,11 +143,11 @@ export default function App() {
         if (effectiveCategory) qs.set("category", effectiveCategory);
         qs.set("view", feedView);
         const path = `/feed?${qs.toString()}`;
-        const data = await getJSON<FeedResponse>(path, token);
+        const data = await getJSON<FeedResponse>(path, token ?? undefined);
         setFeed(data);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Failed to load feed";
-        if (typeof msg === "string" && msg.includes("401")) {
+        if (token && typeof msg === "string" && msg.includes("401")) {
           setReauthing(true);
           clearToken();
           setMe(null);
@@ -365,90 +369,82 @@ export default function App() {
           </div>
         )}
 
-        {!token && (
-          <div className="card">
-            <div className="h2">Вход</div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Этот экран работает только внутри Telegram WebApp (Mini App).
-            </div>
-          </div>
-        )}
+        <AppContext.Provider value={contextValue}>
+          {token && (meLoading || !me) && <div className="card">Загрузка профиля…</div>}
+          {token && meError && <ErrorBox error={meError} />}
 
-        {token && (
-          <AppContext.Provider value={contextValue}>
-            {(meLoading || !me) && <div className="card">Загрузка профиля…</div>}
-            {meError && <ErrorBox error={meError} />}
+          {(!token || me) && (() => {
+            // Заглушка «Технические работы»: добавить import { TechnicalWorksScreen } from "./components/TechnicalWorksScreen" и раскомментировать:
+            // if (!me.isAdmin) return <TechnicalWorksScreen />;
+            const hasProfiles = (me?.profiles?.length ?? 0) > 0;
 
-            {me && (() => {
-              // Заглушка «Технические работы»: добавить import { TechnicalWorksScreen } from "./components/TechnicalWorksScreen" и раскомментировать:
-              // if (!me.isAdmin) return <TechnicalWorksScreen />;
-              const hasProfiles = me.profiles.length > 0;
-
-              const authRoleChoice = (
-                <div className="card">
-                  <div className="h2">Выберите роль</div>
-                  <p className="muted" style={{ marginTop: 8, marginBottom: 12 }}>
-                    Дальше нужно принять условия и заполнить профиль.
-                  </p>
-                  <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => setPendingRoleType("parent")}
-                    >
-                      {PARENT_ROLE_EMOJI} Родитель
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => setPendingRoleType("specialist")}
-                    >
-                      👩‍🏫 Специалист
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => setPendingRoleType("company")}
-                    >
-                      🏢 Компания
-                    </button>
-                  </div>
+            const authRoleChoice = (
+              <div className="card">
+                <div className="h2">Выберите роль</div>
+                <p className="muted" style={{ marginTop: 8, marginBottom: 12 }}>
+                  Дальше нужно принять условия и заполнить профиль.
+                </p>
+                <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setPendingRoleType("parent")}
+                  >
+                    {PARENT_ROLE_EMOJI} Родитель
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setPendingRoleType("specialist")}
+                  >
+                    👩‍🏫 Специалист
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setPendingRoleType("company")}
+                  >
+                    🏢 Компания
+                  </button>
                 </div>
-              );
+              </div>
+            );
 
-              return (
-                <>
-                  <Routes>
-                    <Route path="/docs/:docType" element={<DocPage />} />
-                    <Route
-                      path="/"
-                      element={
-                        !hasProfiles ? (
-                          <FeedScreen />
-                        ) : activeProfile ? (
-                          <FeedScreen />
-                        ) : (
-                          <Navigate to="/profile" replace />
-                        )
-                      }
-                    />
-                    <Route
-                      path="/auth"
-                      element={
-                        hasProfiles ? (
-                          <Navigate to="/profile" replace />
-                        ) : !pendingRoleType ? (
-                          authRoleChoice
-                        ) : (
-                          <NewProfileScreen type={pendingRoleType} />
-                        )
-                      }
-                    />
+            return (
+              <>
+                <Routes>
+                  <Route path="/docs/:docType" element={<DocPage />} />
+                  <Route
+                    path="/"
+                    element={
+                      !token || !hasProfiles ? (
+                        <FeedScreen />
+                      ) : activeProfile ? (
+                        <FeedScreen />
+                      ) : (
+                        <Navigate to="/profile" replace />
+                      )
+                    }
+                  />
+                  <Route
+                    path="/auth"
+                    element={
+                      !token ? (
+                        <Navigate to="/" replace />
+                      ) : hasProfiles ? (
+                        <Navigate to="/profile" replace />
+                      ) : !pendingRoleType ? (
+                        authRoleChoice
+                      ) : (
+                        <NewProfileScreen type={pendingRoleType} />
+                      )
+                    }
+                  />
                     <Route
                       path="/requests"
                       element={
-                        !hasProfiles ? (
-                          <Navigate to="/auth" replace />
+                        !token || !hasProfiles ? (
+                          <Navigate to={!token ? "/" : "/auth"} replace />
                         ) : activeProfile ? (
                           <RequestsScreen />
                         ) : (
@@ -459,8 +455,8 @@ export default function App() {
                     <Route
                       path="/requests/new"
                       element={
-                        !hasProfiles ? (
-                          <Navigate to="/auth" replace />
+                        !token || !hasProfiles ? (
+                          <Navigate to={!token ? "/" : "/auth"} replace />
                         ) : activeProfile ? (
                           <NewRequestScreen />
                         ) : (
@@ -471,8 +467,8 @@ export default function App() {
                     <Route
                       path="/requests/:id"
                       element={
-                        !hasProfiles ? (
-                          <Navigate to="/auth" replace />
+                        !token || !hasProfiles ? (
+                          <Navigate to={!token ? "/" : "/auth"} replace />
                         ) : activeProfile ? (
                           <RequestDetailsScreen />
                         ) : (
@@ -483,8 +479,8 @@ export default function App() {
                     <Route
                       path="/offers"
                       element={
-                        !hasProfiles ? (
-                          <Navigate to="/auth" replace />
+                        !token || !hasProfiles ? (
+                          <Navigate to={!token ? "/" : "/auth"} replace />
                         ) : activeProfile ? (
                           <OffersScreen />
                         ) : (
@@ -494,18 +490,18 @@ export default function App() {
                     />
                     <Route
                       path="/profile"
-                      element={!hasProfiles ? <Navigate to="/auth" replace /> : <ProfileScreen />}
+                      element={!token || !hasProfiles ? <Navigate to={!token ? "/" : "/auth"} replace /> : <ProfileScreen />}
                     />
-                    <Route path="/profile/analytics" element={hasProfiles ? <AnalyticsScreen /> : <Navigate to="/auth" replace />} />
-                    <Route path="/profile/contact" element={hasProfiles ? <ContactScreen /> : <Navigate to="/auth" replace />} />
-                    <Route path="/profile/new/:roleType" element={hasProfiles ? <NewProfileByRoleRoute /> : <Navigate to="/auth" replace />} />
+                    <Route path="/profile/analytics" element={token && hasProfiles ? <AnalyticsScreen /> : <Navigate to={!token ? "/" : "/auth"} replace />} />
+                    <Route path="/profile/contact" element={token && hasProfiles ? <ContactScreen /> : <Navigate to={!token ? "/" : "/auth"} replace />} />
+                    <Route path="/profile/new/:roleType" element={token && hasProfiles ? <NewProfileByRoleRoute /> : <Navigate to={!token ? "/" : "/auth"} replace />} />
                     <Route path="/profiles/:id" element={<PublicProfileScreen />} />
-                    <Route path="/posts/new" element={hasProfiles && activeProfile ? <NewPostScreen /> : <Navigate to={hasProfiles ? "/profile" : "/auth"} replace />} />
+                    <Route path="/posts/new" element={token && hasProfiles && activeProfile ? <NewPostScreen /> : <Navigate to={!token || !hasProfiles ? "/" : "/profile"} replace />} />
                     <Route path="/posts/:id" element={<PostDetailScreen />} />
                     <Route
                       path="*"
                       element={
-                        !hasProfiles ? (
+                        !token || !hasProfiles ? (
                           <Navigate to="/" replace />
                         ) : activeProfile ? (
                           <Navigate to="/" replace state={{ from: location.pathname }} />
@@ -519,9 +515,8 @@ export default function App() {
               );
             })()}
 
-            {me && <BottomNav />}
-          </AppContext.Provider>
-        )}
+          {(!token || me) && <BottomNav />}
+        </AppContext.Provider>
       </div>
     </div>
   );

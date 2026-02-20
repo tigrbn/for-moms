@@ -39,3 +39,29 @@ export class JwtAuthGuard implements CanActivate {
     }
   }
 }
+
+/** Не выбрасывает ошибку при отсутствии токена — req.auth остаётся undefined (для публичной ленты). */
+@Injectable()
+export class JwtAuthOptionalGuard implements CanActivate {
+  constructor(private readonly config: ConfigService) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const req = context.switchToHttp().getRequest<Request>();
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return true;
+    }
+    const token = authHeader.slice(7);
+    const secret = this.config.get<string>("JWT_SECRET");
+    if (!secret) return true;
+    try {
+      const payload = jwt.verify(token, secret) as { sub?: string };
+      if (payload?.sub) {
+        (req as AuthedRequest).auth = { userId: BigInt(payload.sub) };
+      }
+    } catch {
+      // не устанавливаем auth
+    }
+    return true;
+  }
+}

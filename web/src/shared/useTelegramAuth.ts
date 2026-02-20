@@ -22,11 +22,21 @@ type SessionResponse = {
   activeProfileId: string | null;
 };
 
-function getInitData(): string | null {
-  // Telegram SDK кладёт всё в window.Telegram.WebApp
+export type MiniAppPlatform = "telegram" | "max";
+
+function getInitData(): { initData: string; platform: MiniAppPlatform } | null {
+  // MAX: window.WebApp (подключается через max-web-app.js)
+  const max = (window as any)?.WebApp;
+  if (max?.initData && typeof max.initData === "string" && max.initData.length > 0) {
+    return { initData: max.initData, platform: "max" };
+  }
+  // Telegram: window.Telegram.WebApp
   const tg = (window as any)?.Telegram?.WebApp;
   const initData = tg?.initData;
-  return typeof initData === "string" && initData.length > 0 ? initData : null;
+  if (typeof initData === "string" && initData.length > 0) {
+    return { initData, platform: "telegram" };
+  }
+  return null;
 }
 
 export function useTelegramAuth() {
@@ -42,11 +52,12 @@ export function useTelegramAuth() {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    const initData = getInitData();
-    if (!initData) return;
+    const data = getInitData();
+    if (!data) return;
     try {
       const session = await postJSON<SessionResponse>("/auth/session", {
-        initData,
+        initData: data.initData,
+        platform: data.platform,
       });
       localStorage.setItem("accessToken", session.accessToken);
       setToken(session.accessToken);
@@ -57,9 +68,9 @@ export function useTelegramAuth() {
 
   useEffect(() => {
     const run = async () => {
-      const initData = getInitData();
+      const data = getInitData();
 
-      if (!initData) return;
+      if (!data) return;
       if (token) return;
 
       setLoading(true);
@@ -67,7 +78,8 @@ export function useTelegramAuth() {
 
       try {
         const session = await postJSON<SessionResponse>("/auth/session", {
-          initData,
+          initData: data.initData,
+          platform: data.platform,
         });
 
         localStorage.setItem("accessToken", session.accessToken);

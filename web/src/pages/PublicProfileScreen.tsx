@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { getJSON } from "../shared/api";
 import { ErrorBox } from "../components/ErrorBox";
 import { ReviewsSlider } from "../components/ReviewsSlider";
 import { AvatarImage } from "../components/AvatarImage";
@@ -24,14 +25,16 @@ export function PublicProfileScreen() {
       setErr(null);
       setP(null);
       try {
-        const data = await authedGet<PublicProfile>(`/profiles/${profileId}`);
+        const data = token
+          ? await authedGet<PublicProfile>(`/profiles/${profileId}`)
+          : await getJSON<PublicProfile>(`/profiles/${profileId}`);
         setP(data);
       } catch (e: unknown) {
         setErr(e instanceof Error ? e.message : "Не удалось загрузить профиль");
       }
     };
     void run();
-  }, [profileId, activeProfileId, authedGet]);
+  }, [profileId, activeProfileId, token, authedGet]);
 
   useEffect(() => {
     let cancelled = false;

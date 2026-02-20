@@ -1,16 +1,16 @@
 import { BadRequestException, Body, Controller, Delete, Get, Logger, NotFoundException, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { ProfileType } from "@prisma/client";
 import type { Request } from "express";
-import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { AuthedRequest, JwtAuthGuard, JwtAuthOptionalGuard } from "../auth/jwt-auth.guard";
 import { ProfilesService } from "./profiles.service";
 
-@UseGuards(JwtAuthGuard)
 @Controller("profiles")
 export class ProfilesController {
   private readonly logger = new Logger(ProfilesController.name);
 
   constructor(private readonly profiles: ProfilesService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post(":id/activate")
   async activate(@Req() req: Request, @Param("id") id: string) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
@@ -18,6 +18,7 @@ export class ProfilesController {
     return { id: profile.id.toString(), isActive: profile.isActive };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post(":id/deactivate")
   async deactivate(@Req() req: Request, @Param("id") id: string) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
@@ -25,6 +26,7 @@ export class ProfilesController {
     return { id: profile.id.toString(), isActive: profile.isActive };
   }
 
+  @UseGuards(JwtAuthOptionalGuard)
   @Get(":id")
   async get(@Req() req: Request, @Param("id") id: string) {
     const idTrim = id?.trim();
@@ -34,8 +36,10 @@ export class ProfilesController {
     const profileId = BigInt(idTrim);
     try {
       const profile = await this.profiles.getPublicProfileOrThrow(profileId);
-      const { userId } = (req as unknown as AuthedRequest).auth!;
-      await this.profiles.recordProfileView(profileId, userId).catch(() => {});
+      const userId = (req as unknown as AuthedRequest).auth?.userId;
+      if (userId) {
+        await this.profiles.recordProfileView(profileId, userId).catch(() => {});
+      }
       return profile;
     } catch (e: unknown) {
       if (e instanceof NotFoundException) throw e;
@@ -44,6 +48,7 @@ export class ProfilesController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post("with-data")
   async createWithData(
     @Req() req: Request,
@@ -72,6 +77,7 @@ export class ProfilesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Req() req: Request, @Body() body: { type: ProfileType }) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
@@ -87,6 +93,7 @@ export class ProfilesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(":id")
   async updateBase(
     @Req() req: Request,
@@ -112,6 +119,7 @@ export class ProfilesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(":id/parent")
   async updateParent(@Req() req: Request, @Param("id") id: string, @Body() body: { childrenAges?: number[] | null; specialWishes?: string | null }) {
     this.logger.log(`PATCH /profiles/${id}/parent body=${JSON.stringify(body)}`);
@@ -125,6 +133,7 @@ export class ProfilesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(":id/company")
   async updateCompany(
     @Req() req: Request,
@@ -142,6 +151,7 @@ export class ProfilesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(":id/specialist")
   async updateSpecialist(
     @Req() req: Request,
@@ -176,6 +186,7 @@ export class ProfilesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(":id")
   async delete(@Req() req: Request, @Param("id") id: string) {
     const { userId } = (req as unknown as AuthedRequest).auth!;

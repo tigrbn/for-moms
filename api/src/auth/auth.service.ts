@@ -10,16 +10,27 @@ export class AuthService {
 
   constructor(private prisma: PrismaService, private config: ConfigService) {}
 
-  async createSession(initData: string) {
-    const botToken = this.config.get<string>("BOT_TOKEN");
+  async createSession(initData: string, platform: "telegram" | "max" = "telegram") {
     const jwtSecret = this.config.get<string>("JWT_SECRET");
+    const botToken =
+      platform === "max"
+        ? this.config.get<string>("MAX_BOT_TOKEN")
+        : this.config.get<string>("BOT_TOKEN");
 
     if (!botToken || !jwtSecret) {
-      throw new Error("BOT_TOKEN or JWT_SECRET is missing in .env");
+      throw new Error(
+        platform === "max"
+          ? "MAX_BOT_TOKEN or JWT_SECRET is missing in .env"
+          : "BOT_TOKEN or JWT_SECRET is missing in .env",
+      );
     }
 
     const verified = verifyTelegramInitData(initData, botToken);
-    if (!verified.ok) throw new UnauthorizedException("Invalid Telegram initData");
+    if (!verified.ok) {
+      throw new UnauthorizedException(
+        platform === "max" ? "Invalid MAX initData" : "Invalid Telegram initData",
+      );
+    }
 
     const tg = verified.user as {
       id: number;
@@ -49,7 +60,7 @@ export class AuthService {
       include: { profiles: true },
     });
 
-    if (botToken) {
+    if (platform === "telegram" && botToken) {
       try {
         const photosRes = await fetch(
           `https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${tg.id}&limit=1`,
