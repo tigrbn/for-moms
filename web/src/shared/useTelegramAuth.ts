@@ -40,8 +40,9 @@ function getInitData(): { initData: string; platform: MiniAppPlatform } | null {
 }
 
 export function useTelegramAuth() {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("accessToken"),
+  const isMiniApp = typeof window !== "undefined" && !!getInitData();
+  const [token, setToken] = useState<string | null>(() =>
+    isMiniApp ? localStorage.getItem("accessToken") : null,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,13 @@ export function useTelegramAuth() {
     localStorage.removeItem("accessToken");
     setToken(null);
   }, []);
+
+  useEffect(() => {
+    if (!isMiniApp) {
+      localStorage.removeItem("accessToken");
+      setToken(null);
+    }
+  }, [isMiniApp]);
 
   const refreshSession = useCallback(async () => {
     const data = getInitData();
@@ -109,5 +117,5 @@ export function useTelegramAuth() {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [token, refreshSession]);
 
-  return { token, setToken, clearToken, refreshSession, loading, error };
+  return { token, setToken, clearToken, refreshSession, loading, error, isMiniApp };
 }

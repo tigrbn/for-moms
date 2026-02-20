@@ -7,12 +7,12 @@ import menuAll from "../assets/img/menu/все заявки.png";
 
 export function BottomNav() {
   const location = useLocation();
-  const { me, activeProfileType, parentNewOffersCount } = useApp();
+  const { me, activeProfileType, parentNewOffersCount, isMiniApp } = useApp();
   const hasProfiles = (me?.profiles?.length ?? 0) > 0;
   const isProvider = activeProfileType === "specialist" || activeProfileType === "company";
   const showNewOffersBadge = !isProvider && parentNewOffersCount != null && parentNewOffersCount > 0;
 
-  /** Гость: только Лента и Авторизация */
+  /** Гость: в браузере только Лента; в Telegram — Лента и Авторизация */
   if (!hasProfiles) {
     return (
       <nav className="bottom-nav">
@@ -20,10 +20,12 @@ export function BottomNav() {
           <img src={menuLenta} alt="" className="bottom-nav-icon-img" />
           <span>Лента</span>
         </Link>
-        <Link className={`bottom-nav-item ${location.pathname === "/auth" ? "active" : ""}`} to="/auth">
-          <img src={menuAll} alt="" className="bottom-nav-icon-img" />
-          <span>Авторизация</span>
-        </Link>
+        {isMiniApp && (
+          <Link className={`bottom-nav-item ${location.pathname === "/auth" ? "active" : ""}`} to="/auth">
+            <img src={menuAll} alt="" className="bottom-nav-icon-img" />
+            <span>Авторизация</span>
+          </Link>
+        )}
       </nav>
     );
   }

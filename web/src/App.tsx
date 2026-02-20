@@ -37,7 +37,7 @@ function NewProfileByRoleRoute() {
 }
 
 export default function App() {
-  const { token, clearToken, error } = useTelegramAuth();
+  const { token, clearToken, error, isMiniApp } = useTelegramAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | "company" | null>(null);
@@ -321,6 +321,7 @@ export default function App() {
       parentNewOffersCount,
       refreshParentNewOffersCount,
       isAdmin: me?.isAdmin ?? false,
+      isMiniApp,
     }),
     [
       token,
@@ -351,6 +352,7 @@ export default function App() {
       allTypes,
       parentNewOffersCount,
       refreshParentNewOffersCount,
+      isMiniApp,
     ],
   );
 

@@ -46,6 +46,8 @@ export type AppContextValue = {
   refreshParentNewOffersCount: () => Promise<void>;
   /** true для пользователя с админскими правами (например, username tigrbn) */
   isAdmin: boolean;
+  /** true при открытии внутри Telegram/MAX Mini App; false в обычном браузере */
+  isMiniApp: boolean;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
