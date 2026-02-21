@@ -1,6 +1,7 @@
-import { Controller, Get, Query, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, Req } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
-import { AuthedRequest, JwtAuthOptionalGuard } from "../auth/jwt-auth.guard";
+import jwt from "jsonwebtoken";
 import { getActiveProfileOrThrow } from "../common/active-profile";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -35,10 +36,12 @@ const PARENT_CATEGORY_SKILLS: Record<string, string[]> = {
   ],
 };
 
-@UseGuards(JwtAuthOptionalGuard)
 @Controller("feed")
 export class FeedController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Get()
   async getFeed(
@@ -47,8 +50,19 @@ export class FeedController {
     @Query("category") category?: string,
     @Query("view") view?: string,
   ) {
-    const userId = (req as unknown as AuthedRequest).auth?.userId;
-    // Без токена (открыто вне Telegram) или без активного профиля — гостевая лента.
+    let userId: bigint | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      const secret = this.config.get<string>("JWT_SECRET");
+      if (secret) {
+        try {
+          const payload = jwt.verify(authHeader.slice(7), secret) as { sub?: string };
+          if (payload?.sub) userId = BigInt(payload.sub);
+        } catch {
+          // невалидный токен — работаем как гость
+        }
+      }
+    }
     let active: Awaited<ReturnType<typeof getActiveProfileOrThrow>> | null = null;
     if (userId) {
       try {
