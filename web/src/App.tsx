@@ -41,7 +41,7 @@ function NewProfileByRoleRoute() {
 }
 
 export default function App() {
-  const { token, clearToken, error, isMiniApp, platform, loading: authLoading } = useTelegramAuth();
+  const { token, setToken, clearToken, error, isMiniApp, platform, loading: authLoading } = useTelegramAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | "company" | null>(null);
@@ -301,6 +301,10 @@ export default function App() {
   const contextValue = useMemo(
     () => ({
       token,
+      setToken: (newToken: string) => {
+        if (isMiniApp) localStorage.setItem("accessToken", newToken);
+        setToken(newToken);
+      },
       clearToken,
       me,
       setMe,
@@ -348,6 +352,7 @@ export default function App() {
     }),
     [
       token,
+      setToken,
       clearToken,
       me,
       meLoading,

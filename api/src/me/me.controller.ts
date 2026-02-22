@@ -1,13 +1,19 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { AuthService } from "../auth/auth.service";
+import { LinkService } from "../auth/link.service";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { isAdminUser } from "../common/admin";
 import type { Request } from "express";
 
 @Controller("me")
 export class MeController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly linkService: LinkService,
+    private readonly authService: AuthService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -279,9 +285,45 @@ export class MeController {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
     await this.prisma.linkCode.create({
-      data: { userId, code, expiresAt },
+      data: { userId, code, expiresAt, linkType: "telegram" },
     });
     return { code, expiresAt: expiresAt.toISOString() };
+  }
+
+  /** Запросить код для привязки MAX (вызывается из Telegram). Код вводят в приложении MAX. */
+  @UseGuards(JwtAuthGuard)
+  @Post("link-max-request")
+  async linkMaxRequest(@Req() req: Request) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { telegramId: true, maxId: true },
+    });
+    if (u?.maxId != null) {
+      throw new BadRequestException("Аккаунт уже привязан к MAX");
+    }
+    if (u?.telegramId == null) {
+      throw new BadRequestException("Привязка MAX доступна только для аккаунта из Telegram");
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    await this.prisma.linkCode.create({
+      data: { userId, code, expiresAt, linkType: "max" },
+    });
+    return { code, expiresAt: expiresAt.toISOString() };
+  }
+
+  /** Погасить код привязки MAX (вызывается из MAX). Объединяет текущий MAX-аккаунт с Telegram-аккаунтом. */
+  @UseGuards(JwtAuthGuard)
+  @Post("link-max-redeem")
+  async linkMaxRedeem(@Req() req: Request, @Body() body: { code?: string }) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const { joinedUserId } = await this.linkService.redeemMax(
+      body?.code?.trim() ?? "",
+      userId,
+    );
+    const accessToken = await this.authService.createTokenForUserId(joinedUserId);
+    return { accessToken };
   }
 
   @UseGuards(JwtAuthGuard)

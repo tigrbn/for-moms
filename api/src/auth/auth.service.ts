@@ -1,8 +1,13 @@
 import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { randomUUID } from "crypto";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import jwt from "jsonwebtoken";
+import { extname, join } from "path";
 import { PrismaService } from "../prisma/prisma.service";
 import { verifyTelegramInitData } from "./telegram-initdata";
+
+const UPLOAD_DIR = join(process.cwd(), "uploads");
 
 type UserUpsertPayload = {
   firstName: string | null;
@@ -127,12 +132,23 @@ export class AuthService {
           );
           const fileData = (await fileRes.json()) as { ok?: boolean; result?: { file_path?: string } };
           if (fileData?.ok && fileData.result?.file_path) {
-            const photoUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
-            await this.prisma.user.update({
-              where: { id: user.id },
-              data: { photoUrl },
-            });
-            (user as { photoUrl: string | null }).photoUrl = photoUrl;
+            const tgFileUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
+            const imgRes = await fetch(tgFileUrl);
+            if (imgRes.ok) {
+              const buf = Buffer.from(await imgRes.arrayBuffer());
+              const ext = extname(fileData.result.file_path) || ".jpg";
+              const safeExt = /^[a-zA-Z0-9.]+$/.test(ext) ? ext : ".jpg";
+              if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
+              const filename = `tg-${randomUUID()}${safeExt}`;
+              const filepath = join(UPLOAD_DIR, filename);
+              writeFileSync(filepath, buf);
+              const photoUrl = `/uploads/${filename}`;
+              await this.prisma.user.update({
+                where: { id: user.id },
+                data: { photoUrl },
+              });
+              (user as { photoUrl: string | null }).photoUrl = photoUrl;
+            }
           }
         }
       } catch (e) {
@@ -168,5 +184,20 @@ export class AuthService {
       })),
       activeProfileId: user.activeProfileId ? user.activeProfileId.toString() : null,
     };
+  }
+
+  /** Создать JWT для пользователя по id (для сценария привязки Telegram→MAX). */
+  async createTokenForUserId(userId: bigint): Promise<string> {
+    const jwtSecret = this.config.get<string>("JWT_SECRET");
+    if (!jwtSecret) throw new Error("JWT_SECRET is missing");
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { telegramId: true },
+    });
+    return jwt.sign(
+      { sub: userId.toString(), telegramId: user?.telegramId?.toString() ?? null },
+      jwtSecret,
+      { expiresIn: "7d" },
+    );
   }
 }

@@ -248,6 +248,8 @@ model LinkCode {
   userId    BigInt   @map("user_id")
   code      String
   expiresAt DateTime @db.Timestamptz(6) @map("expires_at")
+  /** "telegram" = привязать TG к MAX-аккаунту; "max" = привязать MAX к TG-аккаунту */
+  linkType  String   @default("telegram") @map("link_type")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

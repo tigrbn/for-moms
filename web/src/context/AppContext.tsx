@@ -3,6 +3,8 @@ import type { MeResponse, FeedResponse } from "../types";
 
 export type AppContextValue = {
   token: string | null;
+  /** Установить новый токен (например, после привязки MAX→Telegram) */
+  setToken: (token: string) => void;
   clearToken: () => void;
   me: MeResponse | null;
   setMe: (me: MeResponse | null) => void;

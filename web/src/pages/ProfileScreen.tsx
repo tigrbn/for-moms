@@ -14,6 +14,157 @@ import type { ReviewListItem } from "../types";
 
 const REVIEWS_PER_PAGE = 3;
 
+/** Блок привязки MAX → Telegram: пользователь в MAX, получает код и открывает бота. */
+function LinkMaxBlock({
+  linkLoading,
+  setLinkLoading,
+  setMeError,
+  setToken,
+  authedPost,
+}: {
+  linkLoading: boolean;
+  setLinkLoading: (v: boolean) => void;
+  setMeError: (s: string | null) => void;
+  setToken: (t: string) => void;
+  authedPost: (path: string, body: unknown) => Promise<unknown>;
+}) {
+  const [linkCode, setLinkCode] = useState("");
+  const [redeemLoading, setRedeemLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const link = params.get("link");
+    if (link?.trim()) setLinkCode(link.trim());
+  }, []);
+
+  return (
+    <div className="card" style={{ marginTop: 12, padding: 16, background: "var(--secondary-bg, #f4efff)", borderLeft: "4px solid var(--primary, #7b7cff)" }}>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Привязать профиль MAX к Telegram</div>
+      <p className="muted" style={{ margin: "0 0 12px", fontSize: 13 }}>
+        Один аккаунт в обоих приложениях, уведомления в Telegram и доступ к истории заявок.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <button
+          type="button"
+          className="btn btn-telegram"
+          disabled={linkLoading}
+          onClick={async () => {
+            setLinkLoading(true);
+            setMeError(null);
+            try {
+              const res = await authedPost("/me/link-telegram-request", {}) as { code: string };
+              const link = `https://t.me/formoms_ykt_bot?start=${encodeURIComponent(res.code)}`;
+              (window as any).WebApp?.openLink?.(link) ?? (window as any).Telegram?.WebApp?.openLink?.(link) ?? window.open(link, "_blank");
+            } catch {
+              setMeError("Не удалось получить код. Попробуйте позже.");
+            } finally {
+              setLinkLoading(false);
+            }
+          }}
+        >
+          {linkLoading ? "Загрузка…" : "Привязать в Telegram"}
+        </button>
+        <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+          Откроется Telegram. Нажмите «Старт» или «Открыть» в чате с ботом — привязка произойдёт автоматически.
+        </p>
+        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 12, marginTop: 4 }}>
+          <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>Или введите код из Telegram</p>
+          <p className="muted" style={{ margin: "0 0 8px", fontSize: 12 }}>Если у вас уже есть аккаунт в Telegram, получите код там и введите ниже.</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input
+              type="text"
+              className="input"
+              placeholder="Код из Telegram"
+              value={linkCode}
+              onChange={(e) => setLinkCode(e.target.value)}
+              style={{ flex: "1 1 120px", minWidth: 0 }}
+            />
+            <button
+              type="button"
+              className="btn btn-avatar-max"
+              disabled={redeemLoading || !linkCode.trim()}
+              onClick={async () => {
+                setRedeemLoading(true);
+                setMeError(null);
+                try {
+                  const res = await authedPost("/me/link-max-redeem", { code: linkCode.trim() }) as { accessToken: string };
+                  setToken(res.accessToken);
+                  window.location.reload();
+                } catch (e: unknown) {
+                  setMeError(e instanceof Error ? e.message : "Не удалось привязать");
+                } finally {
+                  setRedeemLoading(false);
+                }
+              }}
+            >
+              {redeemLoading ? "Загрузка…" : "Привязать"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Блок привязки Telegram → MAX: пользователь в Telegram, получает код и открывает приложение в MAX. */
+function LinkTelegramBlock({
+  linkLoading,
+  setLinkLoading,
+  setMeError,
+  authedPost,
+}: {
+  linkLoading: boolean;
+  setLinkLoading: (v: boolean) => void;
+  setMeError: (s: string | null) => void;
+  authedPost: (path: string, body: unknown) => Promise<unknown>;
+}) {
+  const [linkCode, setLinkCode] = useState<string | null>(null);
+
+  return (
+    <div className="card" style={{ marginTop: 12, padding: 16, background: "var(--secondary-bg, #e8f5e9)", borderLeft: "4px solid #00c853" }}>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Привязать профиль Telegram к MAX</div>
+      <p className="muted" style={{ margin: "0 0 12px", fontSize: 13 }}>
+        Один аккаунт в обоих приложениях. Откройте приложение в MAX и введите код.
+      </p>
+      {linkCode ? (
+        <>
+          <p style={{ margin: "8px 0", fontWeight: 600 }}>Код: {linkCode}</p>
+          <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>
+            Откройте приложение в MAX → Профиль → введите этот код в поле «Код из Telegram».
+          </p>
+          <p className="muted" style={{ margin: "0 0 8px", fontSize: 12 }}>
+            Ссылка для открытия в MAX:{" "}
+            <a href={`${window.location.origin}?link=${encodeURIComponent(linkCode)}`} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
+              Открыть приложение
+            </a>
+          </p>
+          <button type="button" className="btn secondary" onClick={() => setLinkCode(null)}>Скрыть</button>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-avatar-max"
+          disabled={linkLoading}
+          onClick={async () => {
+            setLinkLoading(true);
+            setMeError(null);
+            try {
+              const res = await authedPost("/me/link-max-request", {}) as { code: string };
+              setLinkCode(res.code);
+            } catch {
+              setMeError("Не удалось получить код. Попробуйте позже.");
+            } finally {
+              setLinkLoading(false);
+            }
+          }}
+        >
+          {linkLoading ? "Загрузка…" : "Получить код для MAX"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ProfileScreen() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -22,6 +173,7 @@ export function ProfileScreen() {
     me,
     isAdmin,
     token,
+    setToken,
     authedPatch,
     authedPost,
     authedDelete,
@@ -77,7 +229,6 @@ export function ProfileScreen() {
   const [inn, setInn] = useState("");
   const [legalAddress, setLegalAddress] = useState("");
   const [maxProfileUrl, setMaxProfileUrl] = useState(me?.user?.maxProfileUrl ?? "");
-  const [linkCode, setLinkCode] = useState<string | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
   const [pendingDeleteProfileId, setPendingDeleteProfileId] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -731,40 +882,21 @@ export function ProfileScreen() {
             <dd>{me?.user?.maxProfileUrl ? me.user.maxProfileUrl : "—"}</dd>
           </div>
           {platform === "max" && !me?.user?.telegramId && (
-            <div className="card" style={{ marginTop: 12, padding: 12 }}>
-              <div className="muted" style={{ marginBottom: 8, fontSize: 14 }}>Связать с Telegram</div>
-              <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>
-                Чтобы получать уведомления в Telegram и использовать один аккаунт в обоих приложениях, привяжите Telegram.
-              </p>
-              {linkCode ? (
-                <>
-                  <p style={{ margin: "8px 0", fontWeight: 600 }}>Код: {linkCode}</p>
-                  <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>
-                    Откройте Telegram и отправьте боту <strong>@formoms_ykt_bot</strong> команду: <code>/start {linkCode}</code>
-                  </p>
-                  <button type="button" className="btn secondary" onClick={() => setLinkCode(null)}>Скрыть</button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="btn secondary"
-                  disabled={linkLoading}
-                  onClick={async () => {
-                    setLinkLoading(true);
-                    try {
-                      const res = await authedPost<{ code: string }>("/me/link-telegram-request", {});
-                      setLinkCode(res.code);
-                    } catch {
-                      setMeError("Не удалось получить код");
-                    } finally {
-                      setLinkLoading(false);
-                    }
-                  }}
-                >
-                  {linkLoading ? "Загрузка…" : "Получить код привязки"}
-                </button>
-              )}
-            </div>
+            <LinkMaxBlock
+              linkLoading={linkLoading}
+              setLinkLoading={setLinkLoading}
+              setMeError={setMeError}
+              setToken={setToken}
+              authedPost={authedPost}
+            />
+          )}
+          {platform === "telegram" && !me?.user?.maxId && (
+            <LinkTelegramBlock
+              linkLoading={linkLoading}
+              setLinkLoading={setLinkLoading}
+              setMeError={setMeError}
+              authedPost={authedPost}
+            />
           )}
           <div className="profile-view-row">
             <dt className="muted">Телефон для связи</dt>
