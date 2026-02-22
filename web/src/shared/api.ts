@@ -4,7 +4,6 @@ export const API_BASE =
 export async function getJSON<TResponse>(path: string, token?: string): Promise<TResponse> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "GET",
-    cache: "no-store",
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
