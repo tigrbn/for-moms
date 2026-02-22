@@ -12,7 +12,7 @@ export function BottomNav() {
   const isProvider = activeProfileType === "specialist" || activeProfileType === "company";
   const showNewOffersBadge = !isProvider && parentNewOffersCount != null && parentNewOffersCount > 0;
 
-  /** Гость: в браузере только Лента; в Telegram — Лента и Авторизация */
+  /** Гость: в браузере только Лента; в Telegram/MAX — Лента и Авторизация */
   if (!hasProfiles) {
     return (
       <nav className="bottom-nav">

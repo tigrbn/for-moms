@@ -41,10 +41,8 @@ function getInitData(): { initData: string; platform: MiniAppPlatform } | null {
 
 function isMiniAppEnv(): boolean {
   if (typeof window === "undefined") return false;
-  if (getInitData()) return true;
-  if ((window as any).Telegram?.WebApp) return true;
-  if ((window as any).WebApp) return true;
-  return false;
+  // Только при наличии initData — в браузере его нет, в Telegram/MAX есть
+  return getInitData() !== null;
 }
 
 export function useTelegramAuth() {
