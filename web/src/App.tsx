@@ -58,7 +58,14 @@ export default function App() {
         tg.expand?.();
         setTimeout(() => tg?.expand?.(), 150);
         setTimeout(() => tg?.expand?.(), 600);
-        /* requestFullscreen убран: не поддерживается в WebApp 6.0, вызывает WebAppMethodUnsupported */
+        // requestFullscreen — только в Telegram (для Menu Button fullsize); в браузере/MAX вызывает WebAppMethodUnsupported
+        if (platform === "telegram") {
+          try {
+            tg.requestFullscreen?.();
+          } catch {
+            /* Не поддерживается в WebApp 6.0 */
+          }
+        }
         tg.disableVerticalSwipes?.();
       }
       if (max) {
@@ -70,7 +77,7 @@ export default function App() {
     } catch {
       /* Игнорируем ошибки WebApp при открытии в браузере/MAX */
     }
-  }, []);
+  }, [platform]);
 
   // При свайпе вниз (viewport уменьшился) — возвращаем expanded
   useEffect(() => {
