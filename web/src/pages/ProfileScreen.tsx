@@ -242,6 +242,12 @@ export function ProfileScreen() {
     }
     setSaving(true);
     try {
+      // Сначала сохраняем username и maxProfileUrl — они не зависят от валидации профиля
+      const usernameVal = telegramUsername.trim().replace(/^@/, "") || null;
+      await authedPatch("/me", {
+        maxProfileUrl: maxProfileUrl.trim() || null,
+        username: usernameVal,
+      });
       const ageNum = age.trim() === "" ? null : Number(age);
       await authedPatch(`/profiles/${profileId}`, {
         displayName: type === "company" ? (companyName.trim() || null) : (displayName.trim() || null),
@@ -293,11 +299,6 @@ export function ProfileScreen() {
           portfolioImageUrls: portfolioImageUrls.length > 0 ? portfolioImageUrls : [],
         });
       }
-      const usernameVal = telegramUsername.trim().replace(/^@/, "") || null;
-      await authedPatch("/me", {
-        maxProfileUrl: maxProfileUrl.trim() || null,
-        username: usernameVal,
-      });
       await refreshMe();
       setIsEditing(false);
     } catch (e: unknown) {
