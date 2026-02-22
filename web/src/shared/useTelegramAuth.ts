@@ -39,8 +39,17 @@ function getInitData(): { initData: string; platform: MiniAppPlatform } | null {
   return null;
 }
 
+function isMiniAppEnv(): boolean {
+  if (typeof window === "undefined") return false;
+  if (getInitData()) return true;
+  if ((window as any).Telegram?.WebApp) return true;
+  if ((window as any).WebApp) return true;
+  return false;
+}
+
 export function useTelegramAuth() {
-  const isMiniApp = typeof window !== "undefined" && !!getInitData();
+  const [miniAppDetected, setMiniAppDetected] = useState(() => isMiniAppEnv());
+  const isMiniApp = typeof window !== "undefined" && miniAppDetected;
   const [token, setToken] = useState<string | null>(() =>
     isMiniApp ? localStorage.getItem("accessToken") : null,
   );
@@ -58,6 +67,20 @@ export function useTelegramAuth() {
       setToken(null);
     }
   }, [isMiniApp]);
+
+  // В MAX скрипт подгружается с задержкой — ждём появления window.WebApp и показываем кнопку «Авторизация»
+  useEffect(() => {
+    if (miniAppDetected) return;
+    const maxWait = 6000;
+    const id = setInterval(() => {
+      if (isMiniAppEnv()) setMiniAppDetected(true);
+    }, 300);
+    const stop = setTimeout(() => clearInterval(id), maxWait);
+    return () => {
+      clearInterval(id);
+      clearTimeout(stop);
+    };
+  }, [miniAppDetected]);
 
   const refreshSession = useCallback(async () => {
     const data = getInitData();
