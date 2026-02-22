@@ -252,7 +252,7 @@ location /api/ {
 3. **Добавьте блок `location /api/uploads/` ПЕРЕД `location /api/`** (более специфичный location должен быть выше):
 
    ```nginx
-   location /api/uploads/ {
+   location ^~ /api/uploads/ {
        proxy_pass http://127.0.0.1:3000/uploads/;
        proxy_http_version 1.1;
        proxy_set_header Host $host;
@@ -262,6 +262,7 @@ location /api/ {
 
        add_header Cache-Control "public, max-age=86400";   # кэш на сутки
    }
+   ```
 
    location /api/ {
        client_max_body_size 10M;
@@ -269,6 +270,8 @@ location /api/ {
        # ... остальные proxy_set_header
    }
    ```
+
+   **Важно:** модификатор `^~` обязателен, если у вас есть `location ~* \.(jpg|png|...)$` — иначе regex перехватит `/api/uploads/xxx.jpg` и вернёт 404.
 
 4. **Проверьте конфиг и перезагрузите nginx:**
    ```bash

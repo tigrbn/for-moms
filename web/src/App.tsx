@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { getJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
+import { getTg, getMax } from "./shared/telegramWebApp";
 import "./App.css";
 
 import mainLogoImg from "./assets/img/main_logo.png";
@@ -46,15 +47,22 @@ export default function App() {
   const location = useLocation();
   const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | "company" | null>(null);
 
-  // Сообщаем MAX, что мини-приложение готово (избегаем экрана «нет сети» через 15 сек)
+  // Инициализация Telegram / MAX: ready + expand (на iOS первый expand иногда игнорируется)
   useEffect(() => {
-    (window as any).WebApp?.ready?.();
-  }, []);
+    const tg = getTg();
+    const max = getMax();
 
-  // Уточняющее окно при нажатии «Закрыть» в Telegram и MAX
-  useEffect(() => {
-    const tg = (window as any).Telegram?.WebApp;
-    const max = (window as any).WebApp;
+    if (tg) {
+      tg.ready?.();
+      tg.expand?.();
+      setTimeout(() => tg?.expand?.(), 150);
+      setTimeout(() => tg?.expand?.(), 600);
+      tg.requestFullscreen?.();
+    }
+    if (max) {
+      max.ready?.();
+    }
+
     if (tg?.enableClosingConfirmation) tg.enableClosingConfirmation();
     if (max?.enableClosingConfirmation) max.enableClosingConfirmation();
   }, []);
@@ -62,7 +70,7 @@ export default function App() {
   // Только для Telegram: светлый цвет шапки — индикаторы (время, батарея) будут тёмными и читаемыми
   useEffect(() => {
     if (platform !== "telegram") return;
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = getTg();
     if (tg?.setHeaderColor) tg.setHeaderColor("#fff9f6");
   }, [platform]);
 
