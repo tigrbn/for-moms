@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useApp } from "../context/AppContext";
 
 const SWIPE_THRESHOLD = 40;
 
@@ -40,7 +41,14 @@ type Props = {
   allowModal?: boolean;
 };
 
+/** Отступ сверху для кнопок в модалке — в Telegram под шапку (Закрыть, время, батарея) */
+function getModalButtonTop(platform: "telegram" | "max" | null): number | string {
+  if (platform === "telegram") return "calc(56px + env(safe-area-inset-top, 0px))";
+  return 12;
+}
+
 export function ImageSlider({ images, alt = "", height = 280, className = "", allowModal = true }: Props) {
+  const { platform } = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
@@ -67,6 +75,7 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
   const modalGoPrev = () => setModalIndex((i) => Math.max(0, i - 1));
   const modalGoNext = () => setModalIndex((i) => Math.min(images.length - 1, i + 1));
   const modalClamped = Math.max(0, Math.min(modalIndex, images.length - 1));
+  const modalBtnTop = getModalButtonTop(platform);
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -221,22 +230,24 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
             >
               <button
                 type="button"
-                onClick={closeModal}
+                onClick={(e) => { e.stopPropagation(); closeModal(); }}
                 aria-label="Закрыть"
                 className="image-slider-modal-btn"
                 style={{
                   position: "absolute",
-                  top: 12,
+                  top: modalBtnTop,
                   right: 12,
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 48,
+                  minWidth: 48,
+                  minHeight: 48,
                   borderRadius: "50%",
                   border: "none",
-                  background: "rgba(255,255,255,0.2)",
+                  background: "rgba(255,255,255,0.25)",
                   color: "#fff",
-                  fontSize: 24,
+                  fontSize: 28,
                   cursor: "pointer",
-                  zIndex: 1,
+                  zIndex: 10001,
                 }}
               >
                 ×
@@ -342,22 +353,24 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
           >
             <button
               type="button"
-              onClick={closeModal}
+              onClick={(e) => { e.stopPropagation(); closeModal(); }}
               aria-label="Закрыть"
               className="image-slider-modal-btn"
               style={{
                 position: "absolute",
-                top: 12,
+                top: modalBtnTop,
                 right: 12,
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
+                minWidth: 48,
+                minHeight: 48,
                 borderRadius: "50%",
                 border: "none",
-                background: "rgba(255,255,255,0.2)",
+                background: "rgba(255,255,255,0.25)",
                 color: "#fff",
-                fontSize: 24,
+                fontSize: 28,
                 cursor: "pointer",
-                zIndex: 2,
+                zIndex: 10001,
               }}
             >
               ×
@@ -375,16 +388,18 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
                     left: 12,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    width: 48,
-                    height: 48,
+                    width: 52,
+                    height: 52,
+                    minWidth: 52,
+                    minHeight: 52,
                     borderRadius: "50%",
                     border: "none",
-                    background: "rgba(255,255,255,0.2)",
+                    background: "rgba(255,255,255,0.25)",
                     color: "#fff",
                     fontSize: 24,
                     cursor: modalClamped <= 0 ? "default" : "pointer",
                     opacity: modalClamped <= 0 ? 0.4 : 1,
-                    zIndex: 2,
+                    zIndex: 10001,
                   }}
                 >
                   ←
@@ -400,16 +415,18 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
                     right: 12,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    width: 48,
-                    height: 48,
+                    width: 52,
+                    height: 52,
+                    minWidth: 52,
+                    minHeight: 52,
                     borderRadius: "50%",
                     border: "none",
-                    background: "rgba(255,255,255,0.2)",
+                    background: "rgba(255,255,255,0.25)",
                     color: "#fff",
                     fontSize: 24,
                     cursor: modalClamped >= images.length - 1 ? "default" : "pointer",
                     opacity: modalClamped >= images.length - 1 ? 0.4 : 1,
-                    zIndex: 2,
+                    zIndex: 10001,
                   }}
                 >
                   →
