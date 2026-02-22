@@ -74,38 +74,66 @@ export function useTelegramAuth() {
     }
   }, []);
 
+  const tryFetchSession = useCallback(async () => {
+    const data = getInitData();
+    if (!data) return false;
+    setLoading(true);
+    setError(null);
+    try {
+      const session = await postJSON<SessionResponse>("/auth/session", {
+        initData: data.initData,
+        platform: data.platform,
+      });
+      localStorage.setItem("accessToken", session.accessToken);
+      setToken(session.accessToken);
+      return true;
+    } catch (e: any) {
+      const msg = e?.message ?? "Auth failed";
+      setError(
+        typeof msg === "string" && (msg.includes("401") || msg.includes("Unauthorized"))
+          ? "Сессия истекла. Закройте и откройте приложение снова."
+          : msg,
+      );
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
+    if (token) return;
+    let cancelled = false;
     const run = async () => {
       const data = getInitData();
-
       if (!data) return;
-      if (token) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const session = await postJSON<SessionResponse>("/auth/session", {
-          initData: data.initData,
-          platform: data.platform,
-        });
-
-        localStorage.setItem("accessToken", session.accessToken);
-        setToken(session.accessToken);
-      } catch (e: any) {
-        const msg = e?.message ?? "Auth failed";
-        setError(
-          typeof msg === "string" && (msg.includes("401") || msg.includes("Unauthorized"))
-            ? "Сессия истекла. Закройте и откройте приложение снова."
-            : msg,
-        );
-      } finally {
-        setLoading(false);
-      }
+      if (cancelled) return;
+      await tryFetchSession();
     };
-
     void run();
-  }, [token]);
+    return () => {
+      cancelled = true;
+    };
+  }, [token, tryFetchSession]);
+
+  // MAX Bridge (и др.) может подгрузиться с задержкой — ждём initData и запрашиваем сессию
+  useEffect(() => {
+    if (token) return;
+    const maxWait = 6000;
+    const interval = 400;
+    let attempts = 0;
+    const id = setInterval(async () => {
+      attempts += 1;
+      if (attempts * interval > maxWait) {
+        clearInterval(id);
+        return;
+      }
+      const data = getInitData();
+      if (!data) return;
+      clearInterval(id);
+      await tryFetchSession();
+    }, interval);
+    return () => clearInterval(id);
+  }, [token, tryFetchSession]);
 
   useEffect(() => {
     const onVisible = () => {
