@@ -2,9 +2,10 @@ import { BadRequestException, Controller, Post, UploadedFile, UseGuards, UseInte
 import { FileInterceptor } from "@nestjs/platform-express";
 import { randomUUID } from "crypto";
 import { existsSync, mkdirSync } from "fs";
-import { diskStorage } from "multer";
+import { memoryStorage } from "multer";
 import { extname, join } from "path";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { compressAndSaveImage } from "./image-compress";
 
 const UPLOAD_DIR = join(process.cwd(), "uploads");
 if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -15,21 +16,11 @@ interface MulterFile {
   encoding: string;
   mimetype: string;
   size: number;
-  destination: string;
-  filename: string;
-  path: string;
   buffer: Buffer;
 }
 
 const multerConfig = {
-  storage: diskStorage({
-    destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-    filename: (_req, file, cb) => {
-      const ext = extname(file.originalname) || ".jpg";
-      const safe = /^[a-zA-Z0-9.]+$/.test(ext) ? ext : ".jpg";
-      cb(null, `${randomUUID()}${safe}`);
-    },
-  }),
+  storage: memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (_req: unknown, file: MulterFile, cb: (err: Error | null, acceptFile: boolean) => void) => {
     const ok = /^image\/(jpeg|png|gif|webp)$/i.test(file.mimetype);
@@ -42,8 +33,12 @@ const multerConfig = {
 export class UploadController {
   @Post()
   @UseInterceptors(FileInterceptor("file", multerConfig))
-  upload(@UploadedFile() file: MulterFile) {
+  async upload(@UploadedFile() file: MulterFile) {
     if (!file) throw new BadRequestException("Файл не загружен");
-    return { url: `/uploads/${file.filename}` };
+    const ext = extname(file.originalname) || ".jpg";
+    const safe = /^[a-zA-Z0-9.]+$/.test(ext) ? ext : ".jpg";
+    const baseFilename = `${randomUUID()}${safe}`;
+    const filename = await compressAndSaveImage(file.buffer, UPLOAD_DIR, baseFilename);
+    return { url: `/uploads/${filename}` };
   }
 }

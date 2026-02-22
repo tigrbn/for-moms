@@ -1,10 +1,11 @@
 import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "crypto";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import jwt from "jsonwebtoken";
 import { extname, join } from "path";
 import { PrismaService } from "../prisma/prisma.service";
+import { compressAndSaveImage } from "../upload/image-compress";
 import { verifyTelegramInitData } from "./telegram-initdata";
 
 const UPLOAD_DIR = join(process.cwd(), "uploads");
@@ -139,9 +140,8 @@ export class AuthService {
               const ext = extname(fileData.result.file_path) || ".jpg";
               const safeExt = /^[a-zA-Z0-9.]+$/.test(ext) ? ext : ".jpg";
               if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
-              const filename = `tg-${randomUUID()}${safeExt}`;
-              const filepath = join(UPLOAD_DIR, filename);
-              writeFileSync(filepath, buf);
+              const baseFilename = `tg-${randomUUID()}${safeExt}`;
+              const filename = await compressAndSaveImage(buf, UPLOAD_DIR, baseFilename);
               const photoUrl = `/uploads/${filename}`;
               await this.prisma.user.update({
                 where: { id: user.id },
