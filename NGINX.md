@@ -232,3 +232,48 @@ location /api/ {
 ```
 
 Запросы к загрузкам идут как `/api/uploads/файл` → nginx переводит в `/uploads/файл` → бэкенд отдаёт файл.
+
+---
+
+## Кэш для картинок (ускорение в Telegram/MAX)
+
+Картинки в Telegram и MAX грузятся медленнее, чем в браузере. Чтобы ускорить загрузку, включите кэширование для `/api/uploads/`.
+
+**На сервере выполните:**
+
+1. **Откройте конфиг nginx** (обычно `/etc/nginx/sites-available/formoms-ykt` или `/etc/nginx/conf.d/formoms.conf`):
+   ```bash
+   sudo nano /etc/nginx/sites-available/formoms-ykt
+   ```
+   (путь может отличаться — проверьте `ls /etc/nginx/sites-available/`)
+
+2. **Найдите блок `location /api/`** — он проксирует запросы на бэкенд.
+
+3. **Добавьте блок `location /api/uploads/` ПЕРЕД `location /api/`** (более специфичный location должен быть выше):
+
+   ```nginx
+   location /api/uploads/ {
+       proxy_pass http://127.0.0.1:3000/uploads/;
+       proxy_http_version 1.1;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+
+       add_header Cache-Control "public, max-age=86400";   # кэш на сутки
+   }
+
+   location /api/ {
+       client_max_body_size 10M;
+       proxy_pass http://127.0.0.1:3000/;
+       # ... остальные proxy_set_header
+   }
+   ```
+
+4. **Проверьте конфиг и перезагрузите nginx:**
+   ```bash
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+**Важно:** `proxy_pass` должен заканчиваться на `/uploads/`, чтобы путь `/api/uploads/файл.jpg` корректно превращался в `/uploads/файл.jpg` на бэкенде.

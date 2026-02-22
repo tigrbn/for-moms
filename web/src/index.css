@@ -84,6 +84,28 @@ a {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Только для Telegram (FULLSCREEN): отступ под шапку, чтобы лого и колокольчик не перекрывались кнопкой «Закрыть» */
+.app.app--telegram {
+  padding-top: max(env(safe-area-inset-top), 56px);
+}
+.app.app--telegram .topbar.topbar--logo {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  min-height: 52px;
+}
+.app.app--telegram .topbar-right {
+  position: relative;
+  z-index: 10;
+}
+.app.app--telegram .topbar-notifications-link {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .app {
   min-height: 100%;
   min-height: 100vh;
