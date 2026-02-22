@@ -64,7 +64,7 @@ export class PostsController {
       include: {
         profile: {
           include: {
-            user: { select: { username: true, photoUrl: true } },
+            user: { select: { username: true, photoUrl: true, maxProfileUrl: true } },
           },
         },
       },
@@ -89,6 +89,7 @@ export class PostsController {
         photoUrl: p.user?.photoUrl ?? null,
         contactPhone: p.showContactPhonePublicly ? p.contactPhone ?? null : null,
         username,
+        maxProfileUrl: p.user?.maxProfileUrl ?? null,
       },
     };
   }

@@ -150,6 +150,7 @@ export class RequestsController {
           username: o.specialistProfile.user?.username ?? null,
           firstName: o.specialistProfile.user?.firstName ?? null,
           lastName: o.specialistProfile.user?.lastName ?? null,
+          maxProfileUrl: o.specialistProfile.user?.maxProfileUrl ?? null,
           pricePerHour: o.specialistProfile.specialistProfile?.pricePerHour ?? null,
           contactPhone:
             o.status === "accepted" || o.specialistProfile.showContactPhonePublicly

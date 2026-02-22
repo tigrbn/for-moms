@@ -153,6 +153,7 @@ export class RequestsService {
                     firstName: true,
                     lastName: true,
                     photoUrl: true,
+                    maxProfileUrl: true,
                   },
                 },
                 specialistProfile: true,

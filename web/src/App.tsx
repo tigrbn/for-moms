@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { getJSON } from "./shared/api";
 import { useTelegramAuth } from "./shared/useTelegramAuth";
 import "./App.css";
 
 import mainLogoImg from "./assets/img/main_logo.png";
+import notificationsIcon from "./assets/img/notifications.png";
 
 import type { MeResponse, FeedResponse } from "./types";
 import { AppContext } from "./context/AppContext";
@@ -26,6 +27,8 @@ import { NewProfileScreen } from "./pages/NewProfileScreen";
 import { NewPostScreen } from "./pages/NewPostScreen";
 import { PostDetailScreen } from "./pages/PostDetailScreen";
 import { AnalyticsScreen } from "./pages/AnalyticsScreen";
+import { NotificationsScreen } from "./pages/NotificationsScreen";
+import { MessengerLinksFooter } from "./components/MessengerLinksFooter";
 import { useParams } from "react-router-dom";
 
 function NewProfileByRoleRoute() {
@@ -37,7 +40,7 @@ function NewProfileByRoleRoute() {
 }
 
 export default function App() {
-  const { token, clearToken, error, isMiniApp } = useTelegramAuth();
+  const { token, clearToken, error, isMiniApp, platform } = useTelegramAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | "company" | null>(null);
@@ -337,6 +340,7 @@ export default function App() {
       refreshParentNewOffersCount,
       isAdmin: me?.isAdmin ?? false,
       isMiniApp,
+      platform,
     }),
     [
       token,
@@ -368,6 +372,7 @@ export default function App() {
       parentNewOffersCount,
       refreshParentNewOffersCount,
       isMiniApp,
+      platform,
     ],
   );
 
@@ -376,7 +381,15 @@ export default function App() {
       <div className="container">
         <TopBar
           logo={mainLogoImg}
-          rightNode={<span className="topbar-feed-btn">📍 г. Якутск</span>}
+          rightNode={
+            token && me ? (
+              <Link to="/notifications" className="topbar-notifications-link" aria-label="Уведомления от приложения">
+                <img src={notificationsIcon} alt="" />
+              </Link>
+            ) : (
+              <span className="topbar-feed-btn">📍 г. Якутск</span>
+            )
+          }
         />
 
         {error && <ErrorBox error={error} />}
@@ -509,6 +522,7 @@ export default function App() {
                       path="/profile"
                       element={!token || !hasProfiles ? <Navigate to={!token ? "/" : "/auth"} replace /> : <ProfileScreen />}
                     />
+                    <Route path="/notifications" element={token && hasProfiles ? <NotificationsScreen /> : <Navigate to={!token ? "/" : "/auth"} replace />} />
                     <Route path="/profile/analytics" element={token && hasProfiles ? <AnalyticsScreen /> : <Navigate to={!token ? "/" : "/auth"} replace />} />
                     <Route path="/profile/contact" element={token && hasProfiles ? <ContactScreen /> : <Navigate to={!token ? "/" : "/auth"} replace />} />
                     <Route path="/profile/new/:roleType" element={token && hasProfiles ? <NewProfileByRoleRoute /> : <Navigate to={!token ? "/" : "/auth"} replace />} />
@@ -528,6 +542,7 @@ export default function App() {
                       }
                     />
                   </Routes>
+                  <MessengerLinksFooter />
                 </>
               );
             })()}

@@ -48,6 +48,8 @@ export type AppContextValue = {
   isAdmin: boolean;
   /** true при открытии внутри Telegram/MAX Mini App; false в обычном браузере */
   isMiniApp: boolean;
+  /** "telegram" | "max" при открытии в Mini App; null в браузере или до определения */
+  platform: "telegram" | "max" | null;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);

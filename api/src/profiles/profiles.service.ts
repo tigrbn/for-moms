@@ -16,7 +16,7 @@ export type PublicProfileDto = {
   ratingCount: number;
   /** Только для специалиста/компании и только если разрешил показ в анкете */
   contactPhone?: string | null;
-  user: { username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null };
+  user: { username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null; maxProfileUrl: string | null };
   specialist: { category: string | null; pricePerHour: number | null; about: string | null; portfolioImageUrls?: string[] } | null;
   parent: { childrenAges: number[] | null; specialWishes: string | null } | null;
   company: { companyName: string; inn: string | null; legalAddress: string | null } | null;
@@ -454,6 +454,7 @@ export class ProfilesService {
         first_name: string | null;
         last_name: string | null;
         photo_url: string | null;
+        max_profile_url: string | null;
         skills: unknown;
         price_per_hour: number | null;
         about: string | null;
@@ -466,7 +467,7 @@ export class ProfilesService {
     >(Prisma.sql`
       SELECT p.id, p.type, p.is_active, p.display_name, p.avatar_url, p.gender, p.age, p.city, p.district,
              p.rating_avg::text AS rating_avg, p.rating_count, p.contact_phone, p.show_contact_phone_publicly,
-             u.username, u.first_name, u.last_name, u.photo_url,
+             u.username, u.first_name, u.last_name, u.photo_url, u.max_profile_url,
              sp.skills, sp.price_per_hour, sp.about,
              pp.children_ages, pp.special_wishes,
              cp.company_name, cp.inn, cp.legal_address
@@ -509,6 +510,7 @@ export class ProfilesService {
         firstName: row.first_name,
         lastName: row.last_name,
         photoUrl: row.photo_url,
+        maxProfileUrl: (row as { max_profile_url?: string | null }).max_profile_url ?? null,
       },
       specialist:
         (profileType === "specialist" || profileType === "company")
@@ -536,7 +538,7 @@ export class ProfilesService {
     const p = await this.prisma.profile.findUnique({
       where: { id: profileId },
       include: {
-        user: { select: { username: true, firstName: true, lastName: true, photoUrl: true } },
+        user: { select: { username: true, firstName: true, lastName: true, photoUrl: true, maxProfileUrl: true } },
         specialistProfile: true,
         specialistPortfolio: { orderBy: { sortOrder: "asc" }, select: { imageUrl: true } },
         parentProfile: true,
@@ -575,6 +577,7 @@ export class ProfilesService {
         firstName: p.user?.firstName ?? null,
         lastName: p.user?.lastName ?? null,
         photoUrl: p.user?.photoUrl ?? null,
+        maxProfileUrl: p.user?.maxProfileUrl ?? null,
       },
       specialist:
         (typeStr === "specialist" || typeStr === "company") && p.specialistProfile

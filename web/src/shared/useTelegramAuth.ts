@@ -49,12 +49,18 @@ function isMiniAppEnv(): boolean {
 
 export function useTelegramAuth() {
   const [miniAppDetected, setMiniAppDetected] = useState(() => isMiniAppEnv());
+  const [platform, setPlatform] = useState<MiniAppPlatform | null>(() => getInitData()?.platform ?? null);
   const isMiniApp = typeof window !== "undefined" && miniAppDetected;
   const [token, setToken] = useState<string | null>(() =>
     isMiniApp ? localStorage.getItem("accessToken") : null,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const data = getInitData();
+    if (data) setPlatform(data.platform);
+  }, [miniAppDetected]);
 
   const clearToken = useCallback(() => {
     localStorage.removeItem("accessToken");
@@ -168,5 +174,5 @@ export function useTelegramAuth() {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [token, refreshSession]);
 
-  return { token, setToken, clearToken, refreshSession, loading, error, isMiniApp };
+  return { token, setToken, clearToken, refreshSession, loading, error, isMiniApp, platform };
 }

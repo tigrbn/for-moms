@@ -24,7 +24,8 @@ export class OffersService {
     });
     if (!offer) return;
 
-    const parentChatId = offer.request.parent.user.telegramId;
+    const parentChatId = offer.request.parent.user?.telegramId;
+    if (parentChatId == null) return; // родитель только в MAX — уведомления в Telegram не отправляем
     const webApp = this.telegram.buildWebAppUrl(`/requests/${offer.requestId.toString()}`);
 
     const specialistTitle = offer.specialistProfile.displayName ?? offer.specialistProfile.user.username ?? "Специалист";
@@ -68,49 +69,55 @@ export class OffersService {
 
     const webApp = this.telegram.buildWebAppUrl(`/requests/${offer.requestId.toString()}`);
 
-    const parentTitle = parent.displayName ?? parent.user.username ?? "Мама";
-    const specialistTitle = specialist.displayName ?? specialist.user.username ?? "Специалист";
+    const parentTitle = parent.displayName ?? parent.user?.username ?? "Мама";
+    const specialistTitle = specialist.displayName ?? specialist.user?.username ?? "Специалист";
 
-    const parentChatUrl = `tg://user?id=${parent.user.telegramId.toString()}`;
-    const specialistChatUrl = `tg://user?id=${specialist.user.telegramId.toString()}`;
+    const parentTgId = parent.user?.telegramId;
+    const specialistTgId = specialist.user?.telegramId;
+    const parentChatUrl = parentTgId != null ? `tg://user?id=${parentTgId.toString()}` : null;
+    const specialistChatUrl = specialistTgId != null ? `tg://user?id=${specialistTgId.toString()}` : null;
 
-    // Message to parent
-    await this.telegram.sendMessage(
-      parent.user.telegramId,
-      [
-        "✅ Вы приняли отклик",
-        "",
-        `Заявка: ${offer.request.category}`,
-        `Исполнитель: ${specialistTitle}`,
-        "",
-        "Теперь можно перейти в личные сообщения и договориться о деталях.",
-      ].join("\n"),
-      {
-        buttons: [
-          { text: "Написать исполнителю", url: specialistChatUrl },
-          ...(webApp ? [{ text: "Открыть заявку", web_app: { url: webApp } } as const] : []),
-        ],
-      },
-    );
+    // Message to parent (только если привязан Telegram)
+    if (parentTgId != null) {
+      await this.telegram.sendMessage(
+        parentTgId,
+        [
+          "✅ Вы приняли отклик",
+          "",
+          `Заявка: ${offer.request.category}`,
+          `Исполнитель: ${specialistTitle}`,
+          "",
+          "Теперь можно перейти в личные сообщения и договориться о деталях.",
+        ].join("\n"),
+        {
+          buttons: [
+            ...(specialistChatUrl ? [{ text: "Написать исполнителю", url: specialistChatUrl } as const] : []),
+            ...(webApp ? [{ text: "Открыть заявку", web_app: { url: webApp } } as const] : []),
+          ],
+        },
+      );
+    }
 
-    // Message to specialist
-    await this.telegram.sendMessage(
-      specialist.user.telegramId,
-      [
-        "🎉 Ваш отклик принят!",
-        "",
-        `Заявка: ${offer.request.category}`,
-        `Заказчик: ${parentTitle}`,
-        "",
-        "Напишите заказчику в личку, чтобы согласовать время и детали.",
-      ].join("\n"),
-      {
-        buttons: [
-          { text: "Написать заказчику", url: parentChatUrl },
-          ...(webApp ? [{ text: "Открыть заявку", web_app: { url: webApp } } as const] : []),
-        ],
-      },
-    );
+    // Message to specialist (только если привязан Telegram)
+    if (specialistTgId != null) {
+      await this.telegram.sendMessage(
+        specialistTgId,
+        [
+          "🎉 Ваш отклик принят!",
+          "",
+          `Заявка: ${offer.request.category}`,
+          `Заказчик: ${parentTitle}`,
+          "",
+          "Напишите заказчику в личку, чтобы согласовать время и детали.",
+        ].join("\n"),
+        {
+          buttons: [
+            ...(parentChatUrl ? [{ text: "Написать заказчику", url: parentChatUrl } as const] : []),
+            ...(webApp ? [{ text: "Открыть заявку", web_app: { url: webApp } } as const] : []),
+          ],
+        },
+      );
+    }
   }
 
   async createForRequest(userId: bigint, requestId: bigint, dto: { priceOffer?: number | null; comment?: string | null }) {

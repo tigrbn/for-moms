@@ -4,11 +4,60 @@ import jwt from "jsonwebtoken";
 import { PrismaService } from "../prisma/prisma.service";
 import { verifyTelegramInitData } from "./telegram-initdata";
 
+type UserUpsertPayload = {
+  firstName: string | null;
+  lastName: string | null;
+  username: string | null;
+  photoUrl: string | null;
+  hasPhotoFromInit: boolean;
+};
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(private prisma: PrismaService, private config: ConfigService) {}
+
+  private async upsertUserByTelegramId(telegramId: bigint, payload: UserUpsertPayload) {
+    return this.prisma.user.upsert({
+      where: { telegramId },
+      create: {
+        telegramId,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        username: payload.username,
+        photoUrl: payload.photoUrl,
+      },
+      update: {
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        username: payload.username,
+        ...(payload.hasPhotoFromInit ? { photoUrl: payload.photoUrl! } : {}),
+      },
+      include: { profiles: true },
+    });
+  }
+
+  private async upsertUserByMaxId(maxId: bigint, payload: UserUpsertPayload) {
+    return this.prisma.user.upsert({
+      where: { maxId },
+      create: {
+        maxId,
+        telegramId: null,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        username: payload.username,
+        photoUrl: payload.photoUrl,
+      },
+      update: {
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        username: payload.username,
+        ...(payload.hasPhotoFromInit ? { photoUrl: payload.photoUrl! } : {}),
+      },
+      include: { profiles: true },
+    });
+  }
 
   async createSession(initData: string, platform: "telegram" | "max" = "telegram") {
     const jwtSecret = this.config.get<string>("JWT_SECRET");
@@ -41,24 +90,24 @@ export class AuthService {
     };
 
     const hasPhotoFromInit = tg.photo_url != null && String(tg.photo_url).trim() !== "";
+    const platformId = BigInt(tg.id);
 
-    const user = await this.prisma.user.upsert({
-      where: { telegramId: BigInt(tg.id) },
-      create: {
-        telegramId: BigInt(tg.id),
-        firstName: tg.first_name ?? null,
-        lastName: tg.last_name ?? null,
-        username: tg.username ?? null,
-        photoUrl: tg.photo_url ?? null,
-      },
-      update: {
-        firstName: tg.first_name ?? null,
-        lastName: tg.last_name ?? null,
-        username: tg.username ?? null,
-        ...(hasPhotoFromInit ? { photoUrl: tg.photo_url! } : {}),
-      },
-      include: { profiles: true },
-    });
+    const user =
+      platform === "max"
+        ? await this.upsertUserByMaxId(platformId, {
+            firstName: tg.first_name ?? null,
+            lastName: tg.last_name ?? null,
+            username: tg.username ?? null,
+            photoUrl: tg.photo_url ?? null,
+            hasPhotoFromInit,
+          })
+        : await this.upsertUserByTelegramId(platformId, {
+            firstName: tg.first_name ?? null,
+            lastName: tg.last_name ?? null,
+            username: tg.username ?? null,
+            photoUrl: tg.photo_url ?? null,
+            hasPhotoFromInit,
+          });
 
     if (platform === "telegram" && botToken) {
       try {
@@ -92,7 +141,7 @@ export class AuthService {
     }
 
     const accessToken = jwt.sign(
-      { sub: user.id.toString(), telegramId: user.telegramId.toString() },
+      { sub: user.id.toString(), telegramId: user.telegramId?.toString() ?? null },
       jwtSecret,
       { expiresIn: "7d" },
     );
@@ -101,11 +150,13 @@ export class AuthService {
       accessToken,
       user: {
         id: user.id.toString(),
-        telegramId: user.telegramId.toString(),
+        telegramId: user.telegramId?.toString() ?? null,
+        maxId: user.maxId?.toString() ?? null,
         firstName: user.firstName,
         lastName: user.lastName,
         username: user.username,
         photoUrl: user.photoUrl,
+        maxProfileUrl: user.maxProfileUrl ?? null,
       },
       profiles: user.profiles.map((p) => ({
         id: p.id.toString(),

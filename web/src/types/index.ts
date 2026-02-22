@@ -1,11 +1,13 @@
 export type MeResponse = {
   user: {
     id: string;
-    telegramId: string;
+    telegramId: string | null;
+    maxId?: string | null;
     firstName?: string | null;
     lastName?: string | null;
     username?: string | null;
     photoUrl?: string | null;
+    maxProfileUrl?: string | null;
   };
   profiles: Array<{
     id: string;
@@ -242,7 +244,7 @@ export type PublicProfile = {
   ratingCount: number;
   /** Телефон (только если специалист/компания разрешил показ в анкете) */
   contactPhone?: string | null;
-  user: { username?: string | null; firstName?: string | null; lastName?: string | null; photoUrl?: string | null };
+  user: { username?: string | null; firstName?: string | null; lastName?: string | null; photoUrl?: string | null; maxProfileUrl?: string | null };
   specialist: { category?: string | null; pricePerHour?: number | null; about?: string | null; portfolioImageUrls?: string[] } | null;
   parent: { childrenAges?: number[] | null; specialWishes?: string | null } | null;
   company: { companyName: string; inn?: string | null; legalAddress?: string | null } | null;

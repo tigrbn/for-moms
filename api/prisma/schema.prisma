@@ -221,11 +221,13 @@ model SpecialistProfile {
 
 model User {
   id              BigInt    @id @default(autoincrement())
-  telegramId      BigInt    @unique @map("telegram_id")
+  telegramId      BigInt?   @unique @map("telegram_id")
+  maxId           BigInt?   @unique @map("max_id")
   firstName       String?   @map("first_name")
   lastName        String?   @map("last_name")
   username        String?
   photoUrl        String?   @map("photo_url")
+  maxProfileUrl   String?   @map("max_profile_url")
   createdAt       DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
   updatedAt       DateTime  @default(now()) @db.Timestamptz(6) @map("updated_at")
   deletedAt       DateTime? @db.Timestamptz(6) @map("deleted_at")
@@ -236,8 +238,22 @@ model User {
   consentLogs     ConsentLog[]
   profileViews    ProfileView[]
   appOpens        AppOpen[]
+  linkCodes       LinkCode[]
 
   @@map("users")
+}
+
+model LinkCode {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  code      String
+  expiresAt DateTime @db.Timestamptz(6) @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([code])
+  @@index([expiresAt], map: "idx_link_codes_expires_at")
+  @@map("link_codes")
 }
 
 model AppOpen {

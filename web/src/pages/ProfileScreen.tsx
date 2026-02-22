@@ -23,6 +23,7 @@ export function ProfileScreen() {
     isAdmin,
     token,
     authedPatch,
+    authedPost,
     authedDelete,
     authedGet,
     refreshMe,
@@ -30,6 +31,7 @@ export function ProfileScreen() {
     missingRoles,
     addRole,
     setMeError,
+    platform,
   } = useApp();
 
   const [reviews, setReviews] = useState<ReviewListItem[] | null>(null);
@@ -74,6 +76,10 @@ export function ProfileScreen() {
   const [companyName, setCompanyName] = useState("");
   const [inn, setInn] = useState("");
   const [legalAddress, setLegalAddress] = useState("");
+  const [maxProfileUrl, setMaxProfileUrl] = useState(me?.user?.maxProfileUrl ?? "");
+  const [linkCode, setLinkCode] = useState<string | null>(null);
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [pendingDeleteProfileId, setPendingDeleteProfileId] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const [deletingPortfolioIndex, setDeletingPortfolioIndex] = useState<number | null>(null);
@@ -133,7 +139,8 @@ export function ProfileScreen() {
         setSpecialistCategory("");
       }
     }
-  }, [activeProfile, isEditing]);
+    setMaxProfileUrl(me?.user?.maxProfileUrl ?? "");
+  }, [activeProfile, isEditing, me?.user?.maxProfileUrl]);
 
   useEffect(() => {
     if (!profileId || !authedGet) return;
@@ -287,6 +294,7 @@ export function ProfileScreen() {
           portfolioImageUrls: portfolioImageUrls.length > 0 ? portfolioImageUrls : [],
         });
       }
+      await authedPatch("/me", { maxProfileUrl: maxProfileUrl.trim() || null });
       await refreshMe();
       setIsEditing(false);
     } catch (e: unknown) {
@@ -454,6 +462,40 @@ export function ProfileScreen() {
         )}
       </div>
       <div className="muted roles-page-desc">Выберите активный профиль или удалите ненужный.</div>
+      {pendingDeleteProfileId && (() => {
+        const p = roles.find((r) => r.id === pendingDeleteProfileId);
+        const roleName = p ? (p.type === "parent" ? getParentRoleLabel(p.gender) : p.type === "company" ? "Компания" : "Специалист") : "";
+        return (
+          <div className="card" style={{ marginBottom: 12, padding: 16 }}>
+            <p style={{ margin: "0 0 12px" }}>
+              Удалить аккаунт «{roleName}»? Все данные этого профиля будут удалены безвозвратно.
+            </p>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn danger"
+                onClick={async () => {
+                  if (!pendingDeleteProfileId) return;
+                  const profileId = pendingDeleteProfileId;
+                  setPendingDeleteProfileId(null);
+                  try {
+                    await authedDelete(`/profiles/${profileId}`);
+                    await refreshMe();
+                    if (me?.activeProfileId === profileId) navigate("/profile", { replace: true });
+                  } catch (e: unknown) {
+                    setMeError(e instanceof Error ? e.message : "Не удалось удалить");
+                  }
+                }}
+              >
+                Удалить
+              </button>
+              <button type="button" className="btn secondary" onClick={() => setPendingDeleteProfileId(null)}>
+                Отмена
+              </button>
+            </div>
+          </div>
+        );
+      })()}
       <div className="roles-list">
         {roles.map((p) => {
           const isActive = p.id === me.activeProfileId;
@@ -485,22 +527,7 @@ export function ProfileScreen() {
               <button
                 type="button"
                 className="btn danger roles-delete-btn roles-page-btn"
-                onClick={async () => {
-                  const roleName = p.type === "parent" ? getParentRoleLabel(p.gender) : p.type === "company" ? "Компания" : "Специалист";
-                  if (
-                    !confirm(
-                      `Удалить аккаунт «${roleName}»? Все данные этого профиля будут удалены безвозвратно.`,
-                    )
-                  )
-                    return;
-                  try {
-                    await authedDelete(`/profiles/${p.id}`);
-                    await refreshMe();
-                    if (me?.activeProfileId === p.id) navigate("/profile", { replace: true });
-                  } catch (e: unknown) {
-                    setMeError(e instanceof Error ? e.message : "Не удалось удалить");
-                  }
-                }}
+                onClick={() => setPendingDeleteProfileId(p.id)}
               >
                 Удалить аккаунт
               </button>
@@ -699,6 +726,46 @@ export function ProfileScreen() {
             <dt className="muted">Логин в Telegram</dt>
             <dd>{me?.user?.username ? `@${me.user.username}` : "—"}</dd>
           </div>
+          <div className="profile-view-row">
+            <dt className="muted">Ссылка на профиль в MAX</dt>
+            <dd>{me?.user?.maxProfileUrl ? me.user.maxProfileUrl : "—"}</dd>
+          </div>
+          {platform === "max" && !me?.user?.telegramId && (
+            <div className="card" style={{ marginTop: 12, padding: 12 }}>
+              <div className="muted" style={{ marginBottom: 8, fontSize: 14 }}>Связать с Telegram</div>
+              <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>
+                Чтобы получать уведомления в Telegram и использовать один аккаунт в обоих приложениях, привяжите Telegram.
+              </p>
+              {linkCode ? (
+                <>
+                  <p style={{ margin: "8px 0", fontWeight: 600 }}>Код: {linkCode}</p>
+                  <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>
+                    Откройте Telegram и отправьте боту <strong>@formoms_ykt_bot</strong> команду: <code>/start {linkCode}</code>
+                  </p>
+                  <button type="button" className="btn secondary" onClick={() => setLinkCode(null)}>Скрыть</button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={linkLoading}
+                  onClick={async () => {
+                    setLinkLoading(true);
+                    try {
+                      const res = await authedPost<{ code: string }>("/me/link-telegram-request", {});
+                      setLinkCode(res.code);
+                    } catch {
+                      setMeError("Не удалось получить код");
+                    } finally {
+                      setLinkLoading(false);
+                    }
+                  }}
+                >
+                  {linkLoading ? "Загрузка…" : "Получить код привязки"}
+                </button>
+              )}
+            </div>
+          )}
           <div className="profile-view-row">
             <dt className="muted">Телефон для связи</dt>
             <dd>{activeProfile.contactPhone || "—"}</dd>
@@ -967,6 +1034,18 @@ export function ProfileScreen() {
             {me?.user?.username
               ? "Логин подтягивается из Telegram."
               : "Задайте имя пользователя в Telegram: Настройки → Имя пользователя. Или укажите номер телефона ниже — его увидит специалист после принятия отклика."}
+          </p>
+        </div>
+        <div className="field">
+          <label className="label">Ссылка на профиль в MAX</label>
+          <input
+            className="input"
+            value={maxProfileUrl}
+            onChange={(e) => setMaxProfileUrl(e.target.value)}
+            placeholder="https://max.ru/u/..."
+          />
+          <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+            Если вы в MAX, укажите ссылку на ваш профиль (из раздела «Пригласить друзей»). По ней вас смогут найти для связи.
           </p>
         </div>
         <div className="field">

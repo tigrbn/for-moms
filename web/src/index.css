@@ -600,6 +600,67 @@ a {
   opacity: 0.8;
 }
 
+.topbar-notifications-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+.topbar-notifications-link:hover {
+  background: rgba(123, 124, 255, 0.1);
+  opacity: 0.9;
+}
+.topbar-notifications-link img {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+/* Футер со ссылками на открытие приложения в Telegram и MAX */
+.messenger-links-footer {
+  margin-top: 24px;
+  padding: 16px 0 24px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+.messenger-links-footer-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.messenger-links-footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.messenger-links-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+.messenger-links-footer-link:hover {
+  background: rgba(123, 124, 255, 0.12);
+  color: #7b7cff;
+}
+.messenger-links-footer-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 /* Нижнее меню — скрыто при фокусе в поле ввода (открыта клавиатура) */
 .app.input-focused .bottom-nav {
   visibility: hidden;

@@ -5,6 +5,7 @@ import { ErrorBox } from "../components/ErrorBox";
 import { ImageSlider } from "../components/ImageSlider";
 import { AvatarImage } from "../components/AvatarImage";
 import { formatRequestCreatedAt } from "../lib/format";
+import { openContactUrl } from "../shared/openContactUrl";
 
 type PostDetail = {
   id: string;
@@ -23,7 +24,7 @@ type PostDetail = {
 
 export function PostDetailScreen() {
   const { id } = useParams<{ id: string }>();
-  const { authedGet, authedDelete, activeProfileId, setFeedReloadKey, navigate, isAdmin } = useApp();
+  const { authedGet, authedDelete, activeProfileId, setFeedReloadKey, navigate, isAdmin, platform, isMiniApp } = useApp();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -54,6 +55,8 @@ export function PostDetailScreen() {
   const author = post.author;
   const tgUsername = author.username?.trim() || null;
   const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
+  const maxProfileUrl = (author as { maxProfileUrl?: string | null }).maxProfileUrl?.trim() || null;
+  const contactUrl = platform === "max" && maxProfileUrl ? maxProfileUrl : tgUrl;
   const isAuthor = Boolean(post.authorProfileId && activeProfileId && post.authorProfileId === activeProfileId);
   const canDelete = isAuthor || isAdmin;
 
@@ -96,7 +99,7 @@ export function PostDetailScreen() {
         {post.images && post.images.length > 0 && (
           <ImageSlider images={post.images} alt="Фото объявления" height={280} />
         )}
-        {(author.contactPhone || tgUrl) && (
+        {(author.contactPhone || contactUrl) && (
           <div className="profile-view-dl" style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-color)" }}>
             {author.contactPhone && (
               <div className="profile-view-row" style={{ marginBottom: 8 }}>
@@ -106,16 +109,26 @@ export function PostDetailScreen() {
                 </dd>
               </div>
             )}
-            {tgUrl && (
+            {contactUrl && (
               <div style={{ marginTop: 12 }}>
-                <a
-                  className="btn btn-telegram btn-with-icon"
-                  href={tgUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Написать в Telegram
-                </a>
+                {isMiniApp ? (
+                  <button
+                    type="button"
+                    className="btn btn-telegram btn-with-icon"
+                    onClick={() => openContactUrl(contactUrl)}
+                  >
+                    {platform === "max" ? "Связаться через MAX" : "Написать в Telegram"}
+                  </button>
+                ) : (
+                  <a
+                    className="btn btn-telegram btn-with-icon"
+                    href={contactUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {platform === "max" ? "Связаться через MAX" : "Написать в Telegram"}
+                  </a>
+                )}
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, NotFoundException, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -19,10 +19,12 @@ export class MeController {
       select: {
         id: true,
         telegramId: true,
+        maxId: true,
         firstName: true,
         lastName: true,
         username: true,
         photoUrl: true,
+        maxProfileUrl: true,
         activeProfileId: true,
       },
     });
@@ -189,11 +191,13 @@ export class MeController {
     return {
       user: {
         id: user.id.toString(),
-        telegramId: user.telegramId.toString(),
+        telegramId: user.telegramId?.toString() ?? null,
+        maxId: user.maxId?.toString() ?? null,
         firstName: user.firstName,
         lastName: user.lastName,
         username: user.username,
         photoUrl: user.photoUrl,
+        maxProfileUrl: user.maxProfileUrl ?? null,
       },
       profiles,
       activeProfileId: user.activeProfileId ? user.activeProfileId.toString() : null,
@@ -238,6 +242,45 @@ export class MeController {
       data: { parentProfileId: profile.id },
     });
     return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch()
+  async updateMe(@Req() req: Request, @Body() body: { maxProfileUrl?: string | null }) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const maxProfileUrl = body?.maxProfileUrl;
+    if (maxProfileUrl !== undefined) {
+      const value = typeof maxProfileUrl === "string" ? (maxProfileUrl.trim() || null) : null;
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { maxProfileUrl: value },
+      });
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { maxProfileUrl: true },
+    });
+    return { user: { maxProfileUrl: user?.maxProfileUrl ?? null } };
+  }
+
+  /** Запросить код для привязки аккаунта Telegram (вызывается из MAX). Код показывается пользователю; он вводит его в боте. */
+  @UseGuards(JwtAuthGuard)
+  @Post("link-telegram-request")
+  async linkTelegramRequest(@Req() req: Request) {
+    const { userId } = (req as unknown as AuthedRequest).auth!;
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { telegramId: true },
+    });
+    if (u?.telegramId != null) {
+      throw new BadRequestException("Аккаунт уже привязан к Telegram");
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    await this.prisma.linkCode.create({
+      data: { userId, code, expiresAt },
+    });
+    return { code, expiresAt: expiresAt.toISOString() };
   }
 
   @UseGuards(JwtAuthGuard)
