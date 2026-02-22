@@ -57,10 +57,7 @@ export class AuthService {
       update: {
         firstName: payload.firstName,
         lastName: payload.lastName,
-        // Не перезаписываем username пустым — сохраняем ручной ввод (Telegram-логин для MAX-пользователей)
-        ...(payload.username != null && payload.username.trim() !== ""
-          ? { username: payload.username }
-          : {}),
+        // Username для MAX-пользователей задаётся только вручную в профиле — не перезаписываем из initData
         ...(payload.hasPhotoFromInit ? { photoUrl: payload.photoUrl! } : {}),
       },
       include: { profiles: true },
