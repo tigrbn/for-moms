@@ -253,21 +253,36 @@ export class MeController {
 
   @UseGuards(JwtAuthGuard)
   @Patch()
-  async updateMe(@Req() req: Request, @Body() body: { maxProfileUrl?: string | null }) {
+  async updateMe(
+    @Req() req: Request,
+    @Body() body: { maxProfileUrl?: string | null; username?: string | null },
+  ) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
-    const maxProfileUrl = body?.maxProfileUrl;
-    if (maxProfileUrl !== undefined) {
-      const value = typeof maxProfileUrl === "string" ? (maxProfileUrl.trim() || null) : null;
+    const data: { maxProfileUrl?: string | null; username?: string | null } = {};
+    if (body?.maxProfileUrl !== undefined) {
+      data.maxProfileUrl =
+        typeof body.maxProfileUrl === "string" ? (body.maxProfileUrl.trim() || null) : null;
+    }
+    if (body?.username !== undefined) {
+      const raw = typeof body.username === "string" ? body.username.trim() : "";
+      data.username = raw ? raw.replace(/^@/, "") : null;
+    }
+    if (Object.keys(data).length > 0) {
       await this.prisma.user.update({
         where: { id: userId },
-        data: { maxProfileUrl: value },
+        data,
       });
     }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { maxProfileUrl: true },
+      select: { maxProfileUrl: true, username: true },
     });
-    return { user: { maxProfileUrl: user?.maxProfileUrl ?? null } };
+    return {
+      user: {
+        maxProfileUrl: user?.maxProfileUrl ?? null,
+        username: user?.username ?? null,
+      },
+    };
   }
 
   /** Запросить код для привязки аккаунта Telegram (вызывается из MAX). Код показывается пользователю; он вводит его в боте. */

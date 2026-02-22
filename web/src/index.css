@@ -1697,6 +1697,21 @@ a {
   fill: #fff;
 }
 
+/* Кнопка «Связаться через MAX» */
+.btn-max {
+  background: #00c853 !important;
+  color: #fff !important;
+  border-color: #00c853 !important;
+}
+.btn-max:hover {
+  background: #00a843 !important;
+  border-color: #00a843 !important;
+  color: #fff !important;
+}
+.btn-max .btn-icon-max img {
+  filter: brightness(0) invert(1);
+}
+
 /* Страница Профиль — заголовок «Категория» и выбор категории с иконкой */
 .profile-header-row {
   align-items: center;

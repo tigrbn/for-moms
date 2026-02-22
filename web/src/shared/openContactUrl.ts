@@ -1,10 +1,38 @@
+export type MiniAppPlatform = "telegram" | "max" | null;
+
+export type ContactLink = { url: string; label: string; type: "telegram" | "max" };
+
+/**
+ * Возвращает массив контактных ссылок: Telegram и/или MAX.
+ * Если заполнены оба поля — две кнопки, иначе одна.
+ */
+export function getContactLinks(
+  tgUsername: string | null,
+  maxProfileUrl: string | null,
+  platform: MiniAppPlatform,
+): ContactLink[] {
+  const links: ContactLink[] = [];
+  if (tgUsername?.trim()) {
+    const url = `https://t.me/${tgUsername.trim()}`;
+    links.push({
+      url,
+      label: platform === "telegram" ? "Написать в Telegram" : "Связаться через Telegram",
+      type: "telegram",
+    });
+  }
+  if (maxProfileUrl?.trim()) {
+    links.push({ url: maxProfileUrl.trim(), label: "Связаться через MAX", type: "max" });
+  }
+  return links;
+}
+
 /**
  * Текст кнопки контакта по фактической ссылке (куда ведёт), а не по платформе.
  * Если ссылка на Telegram — показываем «Связаться через Telegram», иначе «Связаться через MAX».
  */
 export function getContactButtonText(
   contactUrl: string,
-  platform: "telegram" | "max" | null,
+  platform: MiniAppPlatform,
 ): string {
   const isTelegramLink = /t\.me/i.test(contactUrl);
   if (isTelegramLink) {

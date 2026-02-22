@@ -5,7 +5,8 @@ import { ErrorBox } from "../components/ErrorBox";
 import { ImageSlider } from "../components/ImageSlider";
 import { AvatarImage } from "../components/AvatarImage";
 import { formatRequestCreatedAt } from "../lib/format";
-import { getContactButtonText, openContactUrl } from "../shared/openContactUrl";
+import { getContactLinks } from "../shared/openContactUrl";
+import { ContactButtons } from "../components/ContactButtons";
 
 type PostDetail = {
   id: string;
@@ -54,9 +55,8 @@ export function PostDetailScreen() {
 
   const author = post.author;
   const tgUsername = author.username?.trim() || null;
-  const tgUrl = tgUsername ? `https://t.me/${tgUsername}` : null;
   const maxProfileUrl = (author as { maxProfileUrl?: string | null }).maxProfileUrl?.trim() || null;
-  const contactUrl = platform === "max" && maxProfileUrl ? maxProfileUrl : tgUrl;
+  const contactLinks = getContactLinks(tgUsername, maxProfileUrl, platform);
   const isAuthor = Boolean(post.authorProfileId && activeProfileId && post.authorProfileId === activeProfileId);
   const canDelete = isAuthor || isAdmin;
 
@@ -99,7 +99,7 @@ export function PostDetailScreen() {
         {post.images && post.images.length > 0 && (
           <ImageSlider images={post.images} alt="Фото объявления" height={280} />
         )}
-        {(author.contactPhone || contactUrl) && (
+        {(author.contactPhone || contactLinks.length > 0) && (
           <div className="profile-view-dl" style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-color)" }}>
             {author.contactPhone && (
               <div className="profile-view-row" style={{ marginBottom: 8 }}>
@@ -109,26 +109,9 @@ export function PostDetailScreen() {
                 </dd>
               </div>
             )}
-            {contactUrl && (
+            {contactLinks.length > 0 && (
               <div style={{ marginTop: 12 }}>
-                {isMiniApp ? (
-                  <button
-                    type="button"
-                    className="btn btn-telegram btn-with-icon"
-                    onClick={() => openContactUrl(contactUrl)}
-                  >
-                    {getContactButtonText(contactUrl, platform)}
-                  </button>
-                ) : (
-                  <a
-                    className="btn btn-telegram btn-with-icon"
-                    href={contactUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {getContactButtonText(contactUrl, platform)}
-                  </a>
-                )}
+                <ContactButtons contactLinks={contactLinks} isMiniApp={isMiniApp} />
               </div>
             )}
           </div>
