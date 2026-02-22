@@ -58,6 +58,7 @@ export default function App() {
       setTimeout(() => tg?.expand?.(), 150);
       setTimeout(() => tg?.expand?.(), 600);
       tg.requestFullscreen?.();
+      tg.disableVerticalSwipes?.();
     }
     if (max) {
       max.ready?.();
@@ -65,6 +66,15 @@ export default function App() {
 
     if (tg?.enableClosingConfirmation) tg.enableClosingConfirmation();
     if (max?.enableClosingConfirmation) max.enableClosingConfirmation();
+  }, []);
+
+  // При свайпе вниз (viewport уменьшился) — возвращаем expanded
+  useEffect(() => {
+    const tg = getTg();
+    if (!tg) return;
+    const forceExpand = () => tg?.expand?.();
+    tg.onEvent?.("viewportChanged", forceExpand);
+    return () => tg.offEvent?.("viewportChanged", forceExpand);
   }, []);
 
   // Только для Telegram: светлый цвет шапки — индикаторы (время, батарея) будут тёмными и читаемыми
