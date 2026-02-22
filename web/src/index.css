@@ -118,6 +118,46 @@ a {
   gap: 12px;
 }
 
+/* Прелоадер при старте приложения (Telegram/MAX) */
+.app-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tg-bg, #f4f4f5);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.app-preloader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.app-preloader-logo {
+  width: 140px;
+  height: auto;
+  display: block;
+  opacity: 0.95;
+}
+.app-preloader-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: app-preloader-spin 0.7s linear infinite;
+}
+@keyframes app-preloader-spin {
+  to { transform: rotate(360deg); }
+}
+.app-preloader-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 .card {
   background: #ffffff;
   border-radius: 22px;
@@ -228,6 +268,26 @@ a {
 }
 .roles-delete-btn {
   align-self: flex-start;
+}
+
+/* Блок подтверждения удаления роли — компактный, в стиле страницы ролей */
+.roles-delete-confirm {
+  margin-top: 4px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  background: var(--tg-bg, #fff);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+.roles-delete-confirm-text {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.roles-delete-confirm-actions {
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .muted {

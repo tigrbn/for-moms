@@ -50,8 +50,13 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
   if (images.length === 0) return null;
 
   const clampedIndex = Math.max(0, Math.min(currentIndex, images.length - 1));
+  const [currentImageLoaded, setCurrentImageLoaded] = useState(false);
   const goPrev = () => setCurrentIndex((i) => Math.max(0, i - 1));
   const goNext = () => setCurrentIndex((i) => Math.min(images.length - 1, i + 1));
+
+  useEffect(() => {
+    setCurrentImageLoaded(false);
+  }, [clampedIndex, images]);
 
   const openModal = (index: number) => {
     if (!allowModal) return;
@@ -96,11 +101,15 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
       <img
         src={images[clampedIndex]}
         alt={`${alt} ${clampedIndex + 1} из ${images.length}`}
+        loading="lazy"
+        onLoad={() => setCurrentImageLoaded(true)}
         style={{
           width: "100%",
           height: "100%",
           objectFit: "cover",
           display: "block",
+          opacity: currentImageLoaded ? 1 : 0,
+          transition: "opacity 0.2s ease-out",
         }}
       />
       {images.length > 1 && (
@@ -179,6 +188,7 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
           <img
             src={images[0]}
             alt={alt}
+            loading="lazy"
             style={{
               width: "100%",
               height,

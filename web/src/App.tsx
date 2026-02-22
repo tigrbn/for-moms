@@ -29,6 +29,7 @@ import { PostDetailScreen } from "./pages/PostDetailScreen";
 import { AnalyticsScreen } from "./pages/AnalyticsScreen";
 import { NotificationsScreen } from "./pages/NotificationsScreen";
 import { MessengerLinksFooter } from "./components/MessengerLinksFooter";
+import { AppPreloader } from "./components/AppPreloader";
 import { useParams } from "react-router-dom";
 
 function NewProfileByRoleRoute() {
@@ -40,7 +41,7 @@ function NewProfileByRoleRoute() {
 }
 
 export default function App() {
-  const { token, clearToken, error, isMiniApp, platform } = useTelegramAuth();
+  const { token, clearToken, error, isMiniApp, platform, loading: authLoading } = useTelegramAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingRoleType, setPendingRoleType] = useState<"parent" | "specialist" | "company" | null>(null);
@@ -376,8 +377,12 @@ export default function App() {
     ],
   );
 
+  const showPreloader =
+    authLoading || (token != null && meLoading && me == null && meError == null);
+
   return (
     <div className={`app safe${inputFocused ? " input-focused" : ""}`}>
+      {showPreloader && <AppPreloader logoUrl={mainLogoImg} />}
       <div className="container">
         <TopBar
           logo={mainLogoImg}
@@ -466,7 +471,10 @@ export default function App() {
                       ) : !pendingRoleType ? (
                         authRoleChoice
                       ) : (
-                        <NewProfileScreen type={pendingRoleType} />
+                        <NewProfileScreen
+                          type={pendingRoleType}
+                          backToRoleChoice={() => setPendingRoleType(null)}
+                        />
                       )
                     }
                   />

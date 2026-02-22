@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { getAvatarSrc, getDefaultAvatar } from "../lib/avatar";
 
 type Props = {
@@ -10,7 +11,7 @@ type Props = {
   style?: React.CSSProperties;
 };
 
-/** Аватарка с подстановкой дефолта при ошибке загрузки (например 404 от Telegram). */
+/** Аватарка с подстановкой дефолта при ошибке загрузки; плейсхолдер и плавное появление. */
 export function AvatarImage({
   avatarUrl,
   telegramPhotoUrl,
@@ -20,6 +21,7 @@ export function AvatarImage({
   className,
   style,
 }: Props) {
+  const [loaded, setLoaded] = useState(false);
   const src = getAvatarSrc(avatarUrl, telegramPhotoUrl, gender, profileType);
   const fallbackSrc = getDefaultAvatar(gender, profileType);
 
@@ -31,5 +33,20 @@ export function AvatarImage({
     }
   };
 
-  return <img src={src} alt={alt} className={className} style={style} onError={handleError} />;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      style={{
+        ...style,
+        background: "var(--border-color)",
+        opacity: loaded ? 1 : 0,
+        transition: "opacity 0.2s ease-out",
+      }}
+      loading="lazy"
+      onLoad={() => setLoaded(true)}
+      onError={handleError}
+    />
+  );
 }

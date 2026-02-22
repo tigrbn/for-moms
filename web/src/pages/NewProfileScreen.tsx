@@ -9,7 +9,11 @@ import { CATEGORY_TREE } from "../constants/feed";
 
 const DOC_VERSION = "v1.0";
 
-type Props = { type: "parent" | "specialist" | "company" };
+type Props = {
+  type: "parent" | "specialist" | "company";
+  /** При создании первого профиля (экран авторизации) — вернуться к выбору роли */
+  backToRoleChoice?: () => void;
+};
 
 function validateParent(
   displayName: string,
@@ -105,7 +109,7 @@ function validateCompany(
   return { ok: true };
 }
 
-export function NewProfileScreen({ type }: Props) {
+export function NewProfileScreen({ type, backToRoleChoice }: Props) {
   const { me, token, authedPost, refreshMe, ensureActiveProfile, setMeError, navigate } = useApp();
   const [agreeUserAgreement, setAgreeUserAgreement] = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
@@ -221,6 +225,11 @@ export function NewProfileScreen({ type }: Props) {
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
+      {backToRoleChoice && (
+        <button type="button" className="btn secondary" onClick={backToRoleChoice} style={{ alignSelf: "start" }}>
+          ← Назад к выбору роли
+        </button>
+      )}
       <div className="card profile-edit-card">
         <div className="profile-edit-header">
           <h2 className="h2" style={{ margin: 0 }}>

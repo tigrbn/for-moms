@@ -466,14 +466,14 @@ export function ProfileScreen() {
         const p = roles.find((r) => r.id === pendingDeleteProfileId);
         const roleName = p ? (p.type === "parent" ? getParentRoleLabel(p.gender) : p.type === "company" ? "Компания" : "Специалист") : "";
         return (
-          <div className="card" style={{ marginBottom: 12, padding: 16 }}>
-            <p style={{ margin: "0 0 12px" }}>
+          <div className="card roles-delete-confirm">
+            <p className="roles-delete-confirm-text">
               Удалить аккаунт «{roleName}»? Все данные этого профиля будут удалены безвозвратно.
             </p>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <div className="row roles-delete-confirm-actions">
               <button
                 type="button"
-                className="btn danger"
+                className="btn btn-sm danger"
                 onClick={async () => {
                   if (!pendingDeleteProfileId) return;
                   const profileId = pendingDeleteProfileId;
@@ -489,7 +489,7 @@ export function ProfileScreen() {
               >
                 Удалить
               </button>
-              <button type="button" className="btn secondary" onClick={() => setPendingDeleteProfileId(null)}>
+              <button type="button" className="btn btn-sm secondary" onClick={() => setPendingDeleteProfileId(null)}>
                 Отмена
               </button>
             </div>
