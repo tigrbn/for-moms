@@ -467,16 +467,15 @@ export function RequestDetailsScreen() {
                   ) : (
                     <div className="muted">Исполнитель уже выбран</div>
                   )}
-                  {(o.specialist.username || (platform === "max" && (o.specialist as { maxProfileUrl?: string | null }).maxProfileUrl)) && (
-                    isMiniApp ? (
+                  {(() => {
+                    const specialistMaxUrl = (o.specialist as unknown as { maxProfileUrl?: string | null }).maxProfileUrl?.trim() || null;
+                    const contactUrl = platform === "max" && specialistMaxUrl ? specialistMaxUrl : (o.specialist.username ? `https://t.me/${o.specialist.username}` : null);
+                    if (!contactUrl) return null;
+                    return isMiniApp ? (
                       <button
                         type="button"
                         className="btn btn-telegram btn-with-icon"
-                        onClick={() => openContactUrl(
-                          platform === "max" && (o.specialist as { maxProfileUrl?: string | null }).maxProfileUrl
-                            ? (o.specialist as { maxProfileUrl: string }).maxProfileUrl
-                            : `https://t.me/${o.specialist.username}`
-                        )}
+                        onClick={() => openContactUrl(contactUrl)}
                       >
                         <span className="btn-icon-telegram" aria-hidden>
                           <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -488,11 +487,7 @@ export function RequestDetailsScreen() {
                     ) : (
                       <a
                         className="btn btn-telegram btn-with-icon"
-                        href={
-                          platform === "max" && (o.specialist as { maxProfileUrl?: string | null }).maxProfileUrl
-                            ? (o.specialist as { maxProfileUrl: string }).maxProfileUrl
-                            : `https://t.me/${o.specialist.username}`
-                        }
+                        href={contactUrl}
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -503,8 +498,8 @@ export function RequestDetailsScreen() {
                         </span>
                         {platform === "max" ? "Связаться через MAX" : "Написать в Telegram"}
                       </a>
-                    )
-                  )}
+                    );
+                  })()}
                 </div>
               </div>
             ))}
