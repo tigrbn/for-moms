@@ -47,6 +47,14 @@ export default function App() {
     (window as any).WebApp?.ready?.();
   }, []);
 
+  // Уточняющее окно при нажатии «Закрыть» в Telegram и MAX
+  useEffect(() => {
+    const tg = (window as any).Telegram?.WebApp;
+    const max = (window as any).WebApp;
+    if (tg?.enableClosingConfirmation) tg.enableClosingConfirmation();
+    if (max?.enableClosingConfirmation) max.enableClosingConfirmation();
+  }, []);
+
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
   const [meError, setMeError] = useState<string | null>(null);

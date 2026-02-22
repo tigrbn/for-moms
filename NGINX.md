@@ -57,6 +57,8 @@ npm run build
 
 **Лента из браузера (без авторизации):** чтобы при открытии сайта в обычном браузере лента загружалась без 401, на API должен быть задеплоен код с опциональной авторизацией для `GET /feed`. После `git pull` обязательно выполните `npm run build` и `pm2 restart formoms-api --update-env` в каталоге `api`.
 
+**Смена домена (например на formoms-ykt.ru):** в BotFather обновите URL мини-приложения на новый домен. В файле с секретами API (например `api.env`) задайте `WEBAPP_URL=https://formoms-ykt.ru` (без слеша в конце), затем `pm2 restart formoms-api --update-env`. Если после смены URL в Telegram всё ещё открывается старый адрес — закройте чат с ботом, очистите кэш Telegram и откройте бота заново.
+
 ---
 
 ## Без кэша для Telegram Mini App (всегда свежая версия)
@@ -72,6 +74,10 @@ location / {
     root /var/www/formoms;   # или /root/formoms/web/dist
     index index.html;
     try_files $uri $uri/ /index.html;
+
+    # Разрешить отображение в Telegram и в MAX
+    add_header Content-Security-Policy "frame-ancestors 'self' https://web.telegram.org https://web.max.ru";
+    add_header X-Frame-Options "ALLOW-FROM https://web.max.ru";
 
     # Не кэшировать — Telegram Mini App всегда получит свежую версию
     add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
@@ -103,6 +109,45 @@ sudo systemctl reload nginx
 ```
 
 После этого при каждом открытии мини-приложения в Telegram будет запрашиваться актуальная версия.
+
+---
+
+## Заголовки для отображения в MAX
+
+Чтобы сайт открывался внутри приложения MAX (в iframe), nginx должен отдавать заголовки, разрешающие встраивание с домена MAX.
+
+Добавьте в блок **`location /`**, который раздаёт фронт (статику приложения), строки:
+
+```nginx
+add_header Content-Security-Policy "frame-ancestors 'self' https://web.telegram.org https://web.max.ru";
+add_header X-Frame-Options "ALLOW-FROM https://web.max.ru";
+```
+
+(В CSP нужны оба домена: **web.telegram.org** — для открытия в Telegram, **web.max.ru** — для открытия в MAX.)
+
+Полный пример блока (с кэшем, Telegram и MAX):
+
+```nginx
+location / {
+    root /root/formoms/web/dist;   # или /var/www/formoms
+    index index.html;
+    try_files $uri $uri/ /index.html;
+
+    # Telegram и MAX: разрешить отображение внутри приложений
+    add_header Content-Security-Policy "frame-ancestors 'self' https://web.telegram.org https://web.max.ru";
+    add_header X-Frame-Options "ALLOW-FROM https://web.max.ru";
+
+    add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+    add_header Pragma "no-cache";
+}
+```
+
+После правок:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
 ---
 
