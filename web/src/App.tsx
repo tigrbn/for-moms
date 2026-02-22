@@ -59,6 +59,13 @@ export default function App() {
     if (max?.enableClosingConfirmation) max.enableClosingConfirmation();
   }, []);
 
+  // Только для Telegram: светлый цвет шапки — индикаторы (время, батарея) будут тёмными и читаемыми
+  useEffect(() => {
+    if (platform !== "telegram") return;
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg?.setHeaderColor) tg.setHeaderColor("#fff9f6");
+  }, [platform]);
+
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
   const [meError, setMeError] = useState<string | null>(null);
