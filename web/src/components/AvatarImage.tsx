@@ -24,6 +24,7 @@ export function AvatarImage({
   const [loaded, setLoaded] = useState(false);
   const src = getAvatarSrc(avatarUrl, telegramPhotoUrl, gender, profileType);
   const fallbackSrc = getDefaultAvatar(gender, profileType);
+  const isDefault = src === fallbackSrc;
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -34,18 +35,37 @@ export function AvatarImage({
   };
 
   return (
-    <img
-      src={src}
-      alt={alt}
+    <span
       className={className}
       style={{
         ...style,
-        background: "var(--border-color)",
-        opacity: loaded ? 1 : 0,
-        transition: "opacity 0.2s ease-out",
+        display: "block",
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        overflow: "hidden",
+        backgroundImage: `url(${fallbackSrc})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundColor: "var(--border-color)",
       }}
-      onLoad={() => setLoaded(true)}
-      onError={handleError}
-    />
+    >
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: loaded || isDefault ? 1 : 0,
+          transition: "opacity 0.2s ease-out",
+        }}
+        onLoad={() => setLoaded(true)}
+        onError={handleError}
+      />
+    </span>
   );
 }
