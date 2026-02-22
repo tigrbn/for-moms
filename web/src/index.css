@@ -479,6 +479,16 @@ a {
   border-color: #006699;
 }
 
+.btn-avatar-max {
+  background: #00c853;
+  color: #fff;
+  border-color: #00c853;
+}
+.btn-avatar-max:hover {
+  background: #00a843;
+  border-color: #00a843;
+}
+
 .segmented {
   display: inline-flex;
   background: var(--surface-2, var(--tg-bg));
@@ -674,8 +684,8 @@ a {
   opacity: 0.9;
 }
 .topbar-notifications-link img {
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   display: block;
 }
 

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, NotFoundException, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -11,7 +11,7 @@ export class MeController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async me(@Req() req: Request) {
+  async me(@Req() req: Request, @Query("platform") platform?: string) {
     const { userId } = (req as unknown as AuthedRequest).auth!;
 
     const user = await this.prisma.user.findUnique({
@@ -186,7 +186,8 @@ export class MeController {
 
     const isAdmin = await isAdminUser(this.prisma, userId);
 
-    await this.prisma.appOpen.create({ data: { userId } }).catch(() => {});
+    const appOpenPlatform = platform === "max" || platform === "telegram" ? platform : null;
+    await this.prisma.appOpen.create({ data: { userId, platform: appOpenPlatform } }).catch(() => {});
 
     return {
       user: {

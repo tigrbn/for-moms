@@ -252,7 +252,6 @@ export type PublicProfile = {
 
 /** Ответ GET /analytics/specialist (для специалиста/компании) */
 export type SpecialistAnalyticsResponse = {
-  uniqueProfileViews: number;
   acceptedOffersCount: number;
   completedOrdersCount: number;
   totalEarnings: number;
@@ -289,6 +288,10 @@ export type AnalyticsDashboardResponse = {
   activeCompanyProfilesCount: number;
   uniqueUsersOpenedBotThisMonth: number;
   uniqueUsersOpenedBotAllTime: number;
+  uniqueUsersTelegramThisMonth: number;
+  uniqueUsersTelegramAllTime: number;
+  uniqueUsersMaxThisMonth: number;
+  uniqueUsersMaxAllTime: number;
   periodYear: number;
   periodMonth: number;
 };

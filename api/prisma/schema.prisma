@@ -260,10 +260,13 @@ model AppOpen {
   id        BigInt   @id @default(autoincrement())
   userId    BigInt   @map("user_id")
   openedAt  DateTime @default(now()) @db.Timestamptz(6) @map("opened_at")
+  /** "telegram" | "max" — откуда открыли мини-приложение; null для старых записей или браузера */
+  platform  String?  @map("platform")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([openedAt], map: "idx_app_opens_opened_at")
+  @@index([platform, openedAt], map: "idx_app_opens_platform_opened_at")
   @@map("app_opens")
 }
 

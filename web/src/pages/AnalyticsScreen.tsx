@@ -96,13 +96,8 @@ export function AnalyticsScreen() {
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>Как идёт работа в системе: анкета, отклики, заказы</p>
           <div style={{ marginTop: 16, display: "grid", gap: 16 }}>
           <section>
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Анкета и отклики</h3>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Отклики</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-              <MetricCard
-                title="Уникальных переходов на анкету"
-                value={specialistData.uniqueProfileViews}
-                subtitle="пользователей открыли вашу анкету"
-              />
               <MetricCard
                 title="Принятых откликов"
                 value={specialistData.acceptedOffersCount}
@@ -189,6 +184,33 @@ export function AnalyticsScreen() {
                 title="Обе роли"
                 value={adminData.usersWithBothRoles}
                 subtitle="родитель и специалист"
+              />
+            </div>
+          </section>
+
+          <section>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Пользователи по мессенджерам</h3>
+            <p className="muted" style={{ margin: "0 0 10px", fontSize: 12 }}>Уникальные пользователи, открывшие приложение из Telegram или MAX (по записям открытий за период)</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+              <MetricCard
+                title="Telegram (за месяц)"
+                value={adminData.uniqueUsersTelegramThisMonth}
+                subtitle={`${MONTH_NAMES[adminData.periodMonth - 1]} ${adminData.periodYear}`}
+              />
+              <MetricCard
+                title="Telegram (всего)"
+                value={adminData.uniqueUsersTelegramAllTime}
+                subtitle="уникальных открытий из Telegram"
+              />
+              <MetricCard
+                title="MAX (за месяц)"
+                value={adminData.uniqueUsersMaxThisMonth}
+                subtitle={`${MONTH_NAMES[adminData.periodMonth - 1]} ${adminData.periodYear}`}
+              />
+              <MetricCard
+                title="MAX (всего)"
+                value={adminData.uniqueUsersMaxAllTime}
+                subtitle="уникальных открытий из MAX"
               />
             </div>
           </section>

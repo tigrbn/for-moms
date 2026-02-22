@@ -128,7 +128,8 @@ export default function App() {
       setMeLoading(true);
       setMeError(null);
       try {
-        const data = await getJSON<MeResponse>("/me", token);
+        const path = platform ? `/me?platform=${encodeURIComponent(platform)}` : "/me";
+        const data = await getJSON<MeResponse>(path, token);
         setMe(data);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Failed to load /me";
@@ -144,7 +145,7 @@ export default function App() {
       }
     };
     void run();
-  }, [token]);
+  }, [token, platform]);
 
   useEffect(() => {
     const run = async () => {
@@ -195,10 +196,11 @@ export default function App() {
       if (!token) return;
       const { postJSON } = await import("./shared/api");
       await postJSON<{ activeProfileId: string | null }>("/me/active-profile", { profileId }, token);
-      const data = await getJSON<MeResponse>("/me", token);
+      const path = platform ? `/me?platform=${encodeURIComponent(platform)}` : "/me";
+      const data = await getJSON<MeResponse>(path, token);
       setMe(data);
     },
-    [token],
+    [token, platform],
   );
 
   const createRole = useCallback(
@@ -214,10 +216,11 @@ export default function App() {
 
   const refreshMe = useCallback(async (): Promise<MeResponse | null> => {
     if (!token) return null;
-    const data = await getJSON<MeResponse>("/me", token);
+    const path = platform ? `/me?platform=${encodeURIComponent(platform)}` : "/me";
+    const data = await getJSON<MeResponse>(path, token);
     setMe(data);
     return data;
-  }, [token]);
+  }, [token, platform]);
 
   const authedGet = useCallback(
     async <T,>(path: string): Promise<T> => {
@@ -377,12 +380,22 @@ export default function App() {
     ],
   );
 
-  const showPreloader =
+  const needPreloader =
     authLoading || (token != null && meLoading && me == null && meError == null);
+
+  const [showPreloader, setShowPreloader] = useState(false);
+  useEffect(() => {
+    if (!needPreloader) {
+      setShowPreloader(false);
+      return;
+    }
+    const t = setTimeout(() => setShowPreloader(true), 400);
+    return () => clearTimeout(t);
+  }, [needPreloader]);
 
   return (
     <div className={`app safe${inputFocused ? " input-focused" : ""}`}>
-      {showPreloader && <AppPreloader logoUrl={mainLogoImg} />}
+      {needPreloader && showPreloader && <AppPreloader logoUrl={mainLogoImg} />}
       <div className="container">
         <TopBar
           logo={mainLogoImg}

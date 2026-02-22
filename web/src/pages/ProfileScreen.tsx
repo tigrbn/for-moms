@@ -565,7 +565,7 @@ export function ProfileScreen() {
           <div style={{ paddingBottom: 16, borderBottom: "1px solid var(--border-color)" }}>
             <div className="muted" style={{ marginBottom: 8, fontSize: 13 }}>Фото профиля</div>
             <p className="muted" style={{ margin: "0 0 12px", fontSize: 13 }}>
-              По умолчанию подставляется фото из Telegram. Можно загрузить своё — оно не будет заменяться при входе.
+              По умолчанию подставляется фото {platform === "max" ? "из MAX" : "из Telegram"}. Можно загрузить своё — оно не будет заменяться при входе.
             </p>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
               <div style={{ flexShrink: 0 }}>
@@ -664,7 +664,7 @@ export function ProfileScreen() {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm btn-avatar-telegram"
+                    className={platform === "max" ? "btn btn-sm btn-avatar-max" : "btn btn-sm btn-avatar-telegram"}
                     onClick={async () => {
                       if (!profileId) return;
                       setErr(null);
@@ -676,7 +676,7 @@ export function ProfileScreen() {
                       }
                     }}
                   >
-                    Из Telegram
+                    {platform === "max" ? "Из MAX" : "Из Telegram"}
                   </button>
                 </div>
               </div>

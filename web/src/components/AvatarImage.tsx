@@ -44,7 +44,6 @@ export function AvatarImage({
         opacity: loaded ? 1 : 0,
         transition: "opacity 0.2s ease-out",
       }}
-      loading="lazy"
       onLoad={() => setLoaded(true)}
       onError={handleError}
     />

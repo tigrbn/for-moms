@@ -71,6 +71,12 @@ export type DashboardMetrics = {
   uniqueUsersOpenedBotThisMonth: number;
   /** Уникальных пользователей, когда-либо открывших бот (всего по app_opens) */
   uniqueUsersOpenedBotAllTime: number;
+  /** По мессенджерам: открывали из Telegram за месяц / всего */
+  uniqueUsersTelegramThisMonth: number;
+  uniqueUsersTelegramAllTime: number;
+  /** По мессенджерам: открывали из MAX за месяц / всего */
+  uniqueUsersMaxThisMonth: number;
+  uniqueUsersMaxAllTime: number;
   /** Текущий месяц/год для подписи */
   periodYear: number;
   periodMonth: number;
@@ -110,6 +116,10 @@ export class AnalyticsService {
       activeCompanyProfilesCount,
       uniqueUsersOpenedBotThisMonth,
       uniqueUsersOpenedBotAllTime,
+      uniqueUsersTelegramThisMonth,
+      uniqueUsersTelegramAllTime,
+      uniqueUsersMaxThisMonth,
+      uniqueUsersMaxAllTime,
     ] = await Promise.all([
       this.closedRequestsInPeriod(periodFrom, periodTo),
       this.totalRequestsInPeriod(periodFrom, periodTo),
@@ -133,6 +143,10 @@ export class AnalyticsService {
       this.getActiveCompanyProfilesCount(),
       this.getUniqueUsersOpenedBotInPeriod(periodFrom, periodTo),
       this.getUniqueUsersOpenedBotAllTime(),
+      this.getUniqueUsersOpenedBotInPeriodByPlatform("telegram", periodFrom, periodTo),
+      this.getUniqueUsersOpenedBotAllTimeByPlatform("telegram"),
+      this.getUniqueUsersOpenedBotInPeriodByPlatform("max", periodFrom, periodTo),
+      this.getUniqueUsersOpenedBotAllTimeByPlatform("max"),
     ]);
 
     const liquidityRatePercent =
@@ -192,9 +206,33 @@ export class AnalyticsService {
       activeCompanyProfilesCount,
       uniqueUsersOpenedBotThisMonth,
       uniqueUsersOpenedBotAllTime,
+      uniqueUsersTelegramThisMonth,
+      uniqueUsersTelegramAllTime,
+      uniqueUsersMaxThisMonth,
+      uniqueUsersMaxAllTime,
       periodYear: y,
       periodMonth: m,
     };
+  }
+
+  private async getUniqueUsersOpenedBotInPeriodByPlatform(
+    platform: string,
+    from: Date,
+    to: Date,
+  ): Promise<number> {
+    const rows = await this.prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+      SELECT COUNT(DISTINCT user_id) AS count
+      FROM app_opens
+      WHERE platform = ${platform} AND opened_at >= ${from} AND opened_at < ${to}
+    `);
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  private async getUniqueUsersOpenedBotAllTimeByPlatform(platform: string): Promise<number> {
+    const rows = await this.prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+      SELECT COUNT(DISTINCT user_id) AS count FROM app_opens WHERE platform = ${platform}
+    `);
+    return Number(rows[0]?.count ?? 0);
   }
 
   private async getUniqueUsersOpenedBotInPeriod(from: Date, to: Date): Promise<number> {
@@ -388,9 +426,8 @@ export class AnalyticsService {
     return Number(rows[0]?.count ?? 0);
   }
 
-  /** Метрики для специалиста/компании: переходы на анкету, отклики, заказы, заработок, непереходные заявки. */
+  /** Метрики для специалиста/компании: отклики, заказы, заработок, непереходные заявки. */
   async getSpecialistDashboard(specialistProfileId: bigint): Promise<{
-    uniqueProfileViews: number;
     acceptedOffersCount: number;
     completedOrdersCount: number;
     totalEarnings: number;
@@ -398,16 +435,10 @@ export class AnalyticsService {
     uncontactableRequestsCount: number;
   }> {
     const [
-      uniqueProfileViews,
       acceptedOffersCount,
       completedRows,
       uncontactableRows,
     ] = await Promise.all([
-      this.prisma.profileView.groupBy({
-        by: ["userId"],
-        where: { profileId: specialistProfileId },
-        _count: { userId: true },
-      }).then((g) => g.length),
       this.prisma.offer.count({
         where: { specialistProfileId, status: "accepted" },
       }),
@@ -432,7 +463,6 @@ export class AnalyticsService {
     const totalEarnings = Number(completedRows[0]?.sum ?? 0) || 0;
 
     return {
-      uniqueProfileViews,
       acceptedOffersCount,
       completedOrdersCount: completedCount,
       totalEarnings,

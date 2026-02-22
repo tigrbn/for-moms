@@ -101,7 +101,6 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
       <img
         src={images[clampedIndex]}
         alt={`${alt} ${clampedIndex + 1} из ${images.length}`}
-        loading="lazy"
         onLoad={() => setCurrentImageLoaded(true)}
         style={{
           width: "100%",
@@ -188,7 +187,6 @@ export function ImageSlider({ images, alt = "", height = 280, className = "", al
           <img
             src={images[0]}
             alt={alt}
-            loading="lazy"
             style={{
               width: "100%",
               height,
