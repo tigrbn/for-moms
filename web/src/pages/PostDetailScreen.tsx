@@ -5,7 +5,7 @@ import { ErrorBox } from "../components/ErrorBox";
 import { ImageSlider } from "../components/ImageSlider";
 import { AvatarImage } from "../components/AvatarImage";
 import { formatRequestCreatedAt } from "../lib/format";
-import { openContactUrl } from "../shared/openContactUrl";
+import { getContactButtonText, openContactUrl } from "../shared/openContactUrl";
 
 type PostDetail = {
   id: string;
@@ -117,7 +117,7 @@ export function PostDetailScreen() {
                     className="btn btn-telegram btn-with-icon"
                     onClick={() => openContactUrl(contactUrl)}
                   >
-                    {platform === "max" ? "Связаться через MAX" : "Написать в Telegram"}
+                    {getContactButtonText(contactUrl, platform)}
                   </button>
                 ) : (
                   <a
@@ -126,7 +126,7 @@ export function PostDetailScreen() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {platform === "max" ? "Связаться через MAX" : "Написать в Telegram"}
+                    {getContactButtonText(contactUrl, platform)}
                   </a>
                 )}
               </div>
