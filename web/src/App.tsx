@@ -52,29 +52,41 @@ export default function App() {
     const tg = getTg();
     const max = getMax();
 
-    if (tg) {
-      tg.ready?.();
-      tg.expand?.();
-      setTimeout(() => tg?.expand?.(), 150);
-      setTimeout(() => tg?.expand?.(), 600);
-      tg.requestFullscreen?.();
-      tg.disableVerticalSwipes?.();
-    }
-    if (max) {
-      max.ready?.();
-    }
+    try {
+      if (tg) {
+        tg.ready?.();
+        tg.expand?.();
+        setTimeout(() => tg?.expand?.(), 150);
+        setTimeout(() => tg?.expand?.(), 600);
+        /* requestFullscreen убран: не поддерживается в WebApp 6.0, вызывает WebAppMethodUnsupported */
+        tg.disableVerticalSwipes?.();
+      }
+      if (max) {
+        max.ready?.();
+      }
 
-    if (tg?.enableClosingConfirmation) tg.enableClosingConfirmation();
-    if (max?.enableClosingConfirmation) max.enableClosingConfirmation();
+      if (tg?.enableClosingConfirmation) tg.enableClosingConfirmation();
+      if (max?.enableClosingConfirmation) max.enableClosingConfirmation();
+    } catch {
+      /* Игнорируем ошибки WebApp при открытии в браузере/MAX */
+    }
   }, []);
 
   // При свайпе вниз (viewport уменьшился) — возвращаем expanded
   useEffect(() => {
     const tg = getTg();
     if (!tg) return;
-    const forceExpand = () => tg?.expand?.();
-    tg.onEvent?.("viewportChanged", forceExpand);
-    return () => tg.offEvent?.("viewportChanged", forceExpand);
+    try {
+      const forceExpand = () => tg?.expand?.();
+      tg.onEvent?.("viewportChanged", forceExpand);
+      return () => {
+        try {
+          tg.offEvent?.("viewportChanged", forceExpand);
+        } catch {}
+      };
+    } catch {
+      return () => {};
+    }
   }, []);
 
   // Только для Telegram: светлый цвет шапки — индикаторы (время, батарея) будут тёмными и читаемыми
