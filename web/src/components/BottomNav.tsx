@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import menuLenta from "../assets/img/menu/лента.png";
-import menuProfil from "../assets/img/menu/профиль.png";
-import menuCreate from "../assets/img/menu/создать заявку.png";
-import menuAll from "../assets/img/menu/все заявки.png";
+import menuLenta from "../assets/img/menu/лента.svg";
+import menuProfil from "../assets/img/menu/профиль.svg";
+import menuCreate from "../assets/img/menu/создать заявку.svg";
+import menuAll from "../assets/img/menu/все заявки.svg";
 
 export function BottomNav() {
   const location = useLocation();

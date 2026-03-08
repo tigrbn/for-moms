@@ -6,7 +6,7 @@ import { getTg, getMax } from "./shared/telegramWebApp";
 import "./App.css";
 
 import mainLogoImg from "./assets/img/main_logo.png";
-import notificationsIcon from "./assets/img/notifications.png";
+import notificationsIcon from "./assets/img/notifications.svg";
 
 import type { MeResponse, FeedResponse } from "./types";
 import { AppContext } from "./context/AppContext";

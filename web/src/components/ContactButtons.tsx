@@ -1,5 +1,5 @@
 import { openContactUrl, type ContactLink } from "../shared/openContactUrl";
-import maxIcon from "../assets/img/max.png";
+import maxIcon from "../assets/img/max.svg";
 
 const TELEGRAM_SVG = (
   <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
