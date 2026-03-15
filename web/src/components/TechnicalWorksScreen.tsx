@@ -1,4 +1,4 @@
-import technicalWorksImg from "../assets/img/technical-works.png";
+import technicalWorksImg from "../assets/img/technical-works.svg";
 
 export function TechnicalWorksScreen() {
   return (

@@ -999,9 +999,7 @@ a {
 }
 .feed-header-card {
   min-width: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: linear-gradient(135deg, #f4efff 0%, #e8e0fa 50%, #ede6fc 100%);
   overflow: visible;
 }
 .feed-header-row {
@@ -1031,15 +1029,11 @@ a {
   margin-top: 12px;
   margin-bottom: 6px;
 }
-/* Полоса категорий: слева в край карточки, справа не выходим за wrap (overflow: hidden), чтобы не обрезало последний чип */
 .feed-categories-scroll {
   margin-left: -16px;
-  margin-right: 0;
+  margin-right: -16px;
   padding-left: 16px;
-  padding-right: 24px;
   padding-bottom: 10px;
-  width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
   overflow-x: auto;
   overflow-y: hidden;

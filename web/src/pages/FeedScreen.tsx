@@ -9,7 +9,6 @@ import { AvatarImage } from "../components/AvatarImage";
 import { ImageSlider } from "../components/ImageSlider";
 import { FEED_CATEGORIES, CATEGORY_TREE, getCategoryIcon, getCategoryDisplayText } from "../constants/feed";
 import { CategoryDisplay } from "../components/CategoryDisplay";
-import feedHeaderBg from "../assets/img/background.png";
 
 const VISIT_SENT_KEY = "for_moms_visit_sent";
 
@@ -145,10 +144,7 @@ export function FeedScreen() {
         </button>
       </div>
       <div className="feed-header-card-wrap" ref={feedHeaderCardRef}>
-        <div
-          className="card feed-header-card"
-          style={{ backgroundImage: `url(${feedHeaderBg})` }}
-        >
+        <div className="card feed-header-card">
         <div className="row feed-header-row">
           <span className="h2 feed-title-text">
             <span className="feed-title-hello">Привет</span> {feedSubtitle}

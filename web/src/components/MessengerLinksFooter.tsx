@@ -2,7 +2,7 @@ const TELEGRAM_BOT_URL = "https://t.me/formoms_ykt_bot";
 const MAX_BOT_URL = "https://max.ru/id142702883207_bot";
 
 // Если файлы имеют другое расширение (.svg и т.д.) — измените импорты
-import telegramIcon from "../assets/img/telegram.png";
+import telegramIcon from "../assets/img/telegram.svg";
 import maxIcon from "../assets/img/max.svg";
 
 export function MessengerLinksFooter() {

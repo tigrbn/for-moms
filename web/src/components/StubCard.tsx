@@ -1,4 +1,4 @@
-import stubImg from "../assets/img/заглушка.png";
+import stubImg from "../assets/img/заглушка.svg";
 
 type StubCardProps = {
   title: string;
